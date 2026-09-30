@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
@@ -8,7 +10,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// Fires each round/tick of an active interaction. Provides progress info.
 /// Route to <c>interaction.fail</c> to cancel the interaction mid-progress.
 /// </summary>
-public class InteractionTickStageExecutor : InteractionStageExecutorBase
+[GlyphNode]
+public partial class InteractionTickStageExecutor : InteractionStageExecutorBase
 {
     public const string NodeTypeId = "stage.interaction_tick";
 
@@ -19,34 +22,20 @@ public class InteractionTickStageExecutor : InteractionStageExecutorBase
     protected override void AddStageContextPins(List<ContextPinDescriptor> pins)
     {
         pins.Add(new("session_id", "Session ID", GlyphDataType.String,
-            ctx => ctx.InteractionSessionId.ToString()));
+            ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionSessionId.ToString() : Guid.Empty.ToString()));
         pins.Add(new("progress", "Progress", GlyphDataType.Int,
-            ctx => ctx.InteractionProgress));
+            ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionProgress : 0));
         pins.Add(new("required_rounds", "Required Rounds", GlyphDataType.Int,
-            ctx => ctx.InteractionRequiredRounds));
+            ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionRequiredRounds : 0));
         pins.Add(new("proficiency", "Proficiency", GlyphDataType.String,
-            ctx => ctx.InteractionProficiency ?? string.Empty));
+            ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionProficiency ?? string.Empty : string.Empty));
     }
 
-    protected override void AddStageOutputs(Dictionary<string, object?> outputs, GlyphExecutionContext context)
-    {
-        outputs["session_id"] = context.InteractionSessionId.ToString();
-        outputs["progress"] = context.InteractionProgress;
-        outputs["required_rounds"] = context.InteractionRequiredRounds;
-        outputs["proficiency"] = context.InteractionProficiency ?? string.Empty;
-    }
-
-    protected override (string TypeId, string DisplayName, string Description, List<GlyphPin> ExtraOutputPins) CreateStageDefinition() =>
+    protected override (string TypeId, string DisplayName, string Description) CreateStageDefinition() =>
     (
         NodeTypeId,
         "3. Tick",
         "Third stage in the interaction pipeline. Fires each round of an active interaction. " +
-        "Route to Fail Interaction to cancel mid-progress.",
-        [
-            new GlyphPin { Id = "session_id", Name = "Session ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "progress", Name = "Progress", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "required_rounds", Name = "Required Rounds", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "proficiency", Name = "Proficiency", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-        ]
+        "Route to Fail Interaction to cancel mid-progress."
     );
 }

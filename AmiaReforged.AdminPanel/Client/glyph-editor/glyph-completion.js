@@ -302,6 +302,7 @@ function memberCompletions(context, word, scope, functions, fields, metadata) {
     for (const rm of metadata?.receiverMethods || []) {
       if (
         rm.receiverType === receiverType &&
+        (!metadata?.events?.some(e => e.name === scope.event) || available(rm, scope)) &&
         rm.name.startsWith(memberPrefix)
       ) {
         completions.push(receiverCompletion(rm, context));
@@ -418,7 +419,7 @@ export function glyphCompletions(metadata) {
         ];
       }
     } else if (
-      scope.event === "interaction" &&
+      (scope.event === "interaction" || metadata?.events.find(e => e.name === scope.event)?.stages?.length > 0) &&
       !scope.stage &&
       scope.blocks.length === 1
     ) {
@@ -431,7 +432,7 @@ export function glyphCompletions(metadata) {
       );
 
       options = (
-        metadata?.events.find((e) => e.name === "interaction")
+        metadata?.events.find((e) => e.name === scope.event)
           ?.stages || [
           "attempted",
           "started",
@@ -572,6 +573,12 @@ export function glyphCompletions(metadata) {
 
       if (!scope.argumentsNode) {
         options.push(...statementSnippets);
+        for (const state of metadata?.writableState || []) {
+          if (!knownEvent || available(state, scope)) {
+            options.push({ label: state.name, type: "variable", detail: `${state.type} (writable)`,
+              info: `Assignment calls ${state.setter}` });
+          }
+        }
 
         if (scope.inLoop) {
           options.push({

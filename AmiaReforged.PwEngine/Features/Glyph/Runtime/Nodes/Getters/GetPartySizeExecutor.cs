@@ -1,11 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Returns the party size from the encounter context.
 /// </summary>
-public class GetPartySizeExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetPartySizeExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.party_size";
     public string TypeId => NodeTypeId;

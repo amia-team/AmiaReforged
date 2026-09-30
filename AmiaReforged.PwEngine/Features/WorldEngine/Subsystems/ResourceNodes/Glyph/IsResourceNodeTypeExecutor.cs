@@ -1,5 +1,9 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Glyph;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
@@ -11,7 +15,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// <c>ResourceType</c> matches the selected type, the <c>result</c> output is <c>true</c>.
 /// </para>
 /// </summary>
-public class IsResourceNodeTypeExecutor : IGlyphNodeExecutor
+[GlyphNode(Automatic = false)]
+public partial class IsResourceNodeTypeExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.is_resource_node_type";
 
@@ -31,9 +36,9 @@ public class IsResourceNodeTypeExecutor : IGlyphNodeExecutor
 
         bool isMatch = false;
 
-        if (targetHandle != 0 && targetHandle != 0x7F000000 && context.WorldEngine != null)
+        if (targetHandle != 0 && targetHandle != 0x7F000000 && context.ResourceNodes != null)
         {
-            string? actualType = context.WorldEngine.GetResourceNodeType(targetHandle);
+            string? actualType = context.ResourceNodes.GetResourceNodeType(targetHandle);
             isMatch = actualType != null &&
                       string.Equals(actualType, selectedType, StringComparison.OrdinalIgnoreCase);
         }

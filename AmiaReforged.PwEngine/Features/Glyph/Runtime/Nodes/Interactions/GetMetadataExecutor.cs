@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
@@ -6,7 +7,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// Pure function node that reads a value from the interaction session's metadata dictionary.
 /// Returns the value as a string and whether the key exists.
 /// </summary>
-public class GetMetadataExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetMetadataExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "interaction.get_metadata";
 
@@ -17,7 +19,7 @@ public class GetMetadataExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? keyValue = await resolveInput("key");
+        object? keyValue = await resolveInput(Inputs.Key);
         string key = keyValue?.ToString() ?? string.Empty;
 
         bool exists = false;
@@ -38,9 +40,12 @@ public class GetMetadataExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("metadata", "value", Indexer: new("metadata", "metadata", "set_metadata"))
+        ],
         DisplayName = "Get Metadata",
         Category = "Interactions",
         Description = "Reads a value from the interaction session's metadata dictionary. " +
@@ -48,14 +53,14 @@ public class GetMetadataExecutor : IGlyphNodeExecutor
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "key", Name = "Key", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input }
+            Pins.In("key", "Key", GlyphDataType.String)
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin { Id = "value", Name = "Value", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "exists", Name = "Exists", DataType = GlyphDataType.Bool, Direction = GlyphPinDirection.Output }
+            Pins.Out("value", "Value", GlyphDataType.String),
+            Pins.Out("exists", "Exists", GlyphDataType.Bool)
         ]
     };
 }

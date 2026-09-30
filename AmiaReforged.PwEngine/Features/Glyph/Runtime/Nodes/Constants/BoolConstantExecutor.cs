@@ -1,11 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Constants;
 
 /// <summary>
 /// Outputs a constant boolean value configured via PropertyOverrides.
 /// </summary>
-public sealed class BoolConstantExecutor : GlyphPureNode
+[GlyphNode]
+public sealed partial class BoolConstantExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "constant.bool";
     public override string TypeId => NodeTypeId;

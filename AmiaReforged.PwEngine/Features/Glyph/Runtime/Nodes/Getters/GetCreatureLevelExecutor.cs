@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using Anvil.API;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Gets the level (hit dice) of a creature by its object ID.
 /// </summary>
-public class GetCreatureLevelExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetCreatureLevelExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.creature_level";
     public string TypeId => NodeTypeId;

@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
 /// <summary>
 /// Sets a local variable on an NWN object. Supports int, string, and float types.
 /// </summary>
-public class SetLocalVariableExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class SetLocalVariableExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "action.set_local_variable";
 

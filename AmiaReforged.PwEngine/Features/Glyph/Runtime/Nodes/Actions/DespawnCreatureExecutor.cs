@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
 /// <summary>
 /// Destroys a creature after an optional delay. Useful for custom despawn logic.
 /// </summary>
-public class DespawnCreatureExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class DespawnCreatureExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "action.despawn_creature";
 

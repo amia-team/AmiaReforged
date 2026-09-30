@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Returns the tag of any NWN game object. Pure data node — no execution flow.
 /// </summary>
-public class GetTagExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetTagExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.tag";
 

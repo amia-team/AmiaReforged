@@ -1,11 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Math;
 
 /// <summary>
 /// Inverts a boolean value. True becomes False, False becomes True.
 /// </summary>
-public sealed class NotExecutor : GlyphPureNode
+[GlyphNode]
+public sealed partial class NotExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "math.not";
     public override string TypeId => NodeTypeId;

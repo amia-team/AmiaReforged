@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NLog;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
@@ -8,7 +9,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 /// Sends floating text above a creature. Useful for feedback during encounters
 /// (e.g., "Enraged!" above a buffed creature).
 /// </summary>
-public class SendFloatingTextExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class SendFloatingTextExecutor : IGlyphNodeExecutor
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -21,8 +23,8 @@ public class SendFloatingTextExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? creatureValue = await resolveInput("creature");
-        object? messageValue = await resolveInput("message");
+        object? creatureValue = await resolveInput(Inputs.Creature);
+        object? messageValue = await resolveInput(Inputs.Message);
 
         uint creature = Convert.ToUInt32(creatureValue);
         string message = messageValue?.ToString() ?? string.Empty;
@@ -44,23 +46,21 @@ public class SendFloatingTextExecutor : IGlyphNodeExecutor
         return GlyphNodeResult.Continue("exec_out");
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("floating_text", null)
+        ],
         DisplayName = "Send Floating Text",
         Category = "Actions",
         Description = "Displays floating text above a creature.",
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "message", Name = "Message", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input, DefaultValue = "" }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
+            Pins.In("creature", "Creature", GlyphDataType.NwObject),
+            Pins.In("message", "Message", GlyphDataType.String, "")
         ]
     };
 }

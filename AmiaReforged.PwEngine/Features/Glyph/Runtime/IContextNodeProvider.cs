@@ -56,4 +56,6 @@ public record ContextPinDescriptor(
     string PinId,
     string DisplayName,
     GlyphDataType DataType,
-    Func<GlyphExecutionContext, object?> Accessor);
+    Func<GlyphExecutionContext, object?> Accessor,
+    IReadOnlyList<string>? Aliases = null,
+    bool AllowInputOverride = false);

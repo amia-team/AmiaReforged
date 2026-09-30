@@ -1,3 +1,6 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Glyph;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem.Glyph;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Glyph;
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
@@ -35,7 +38,9 @@ public class GlyphInteractionHookService
     private readonly GlyphBootstrap _bootstrap;
     private readonly IGlyphRepository _repository;
     private readonly IInteractionSessionManager _sessionManager;
-    private readonly IGlyphWorldEngineApi _worldEngineApi;
+    private readonly IGlyphIndustryApi _industries;
+    private readonly IGlyphKnowledgeApi _knowledge;
+    private readonly IGlyphResourceNodeApi _resources;
 
     /// <summary>
     /// Cache of active pipeline bindings keyed by InteractionTag.
@@ -53,12 +58,16 @@ public class GlyphInteractionHookService
         GlyphBootstrap bootstrap,
         IGlyphRepository repository,
         IInteractionSessionManager sessionManager,
-        IGlyphWorldEngineApi worldEngineApi)
+        IGlyphIndustryApi industries,
+        IGlyphKnowledgeApi knowledge,
+        IGlyphResourceNodeApi resources)
     {
         _bootstrap = bootstrap;
         _repository = repository;
         _sessionManager = sessionManager;
-        _worldEngineApi = worldEngineApi;
+        _industries = industries;
+        _knowledge = knowledge;
+        _resources = resources;
 
         RefreshCacheAsync().GetAwaiter().GetResult();
         Log.Info("GlyphInteractionHookService initialized with {Count} cached interaction bindings.", _cache.Count);
@@ -514,7 +523,7 @@ public class GlyphInteractionHookService
             InteractionProficiency = proficiency,
             InteractionMetadata = metadata,
             InteractionCreature = creatureObjectId,
-            WorldEngine = _worldEngineApi,
+            Industries = _industries, Knowledge = _knowledge, ResourceNodes = _resources,
             MaxExecutionSteps = 10_000,
             EnableTracing = true,
             CancellationToken = cancellationToken

@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
@@ -7,7 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 /// Deals damage to a creature by applying EffectDamage. Works in any encounter event.
 /// Supports common NWN damage types via string input.
 /// </summary>
-public class DamageCreatureExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class DamageCreatureExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "action.damage_creature";
 
@@ -18,9 +20,9 @@ public class DamageCreatureExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? creatureValue = await resolveInput("creature");
-        object? amountValue = await resolveInput("amount");
-        object? damageTypeValue = await resolveInput("damage_type");
+        object? creatureValue = await resolveInput(Inputs.Creature);
+        object? amountValue = await resolveInput(Inputs.Amount);
+        object? damageTypeValue = await resolveInput(Inputs.DamageType);
 
         uint creature = Convert.ToUInt32(creatureValue);
         int amount = Convert.ToInt32(amountValue);
@@ -52,9 +54,12 @@ public class DamageCreatureExecutor : IGlyphNodeExecutor
         return GlyphNodeResult.Continue("exec_out");
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("damage", null)
+        ],
         DisplayName = "Damage Creature",
         Category = "Actions",
         Description = "Deals damage of a specified type to a creature. " +
@@ -62,16 +67,11 @@ public class DamageCreatureExecutor : IGlyphNodeExecutor
                       "ELECTRICAL, DIVINE, NEGATIVE, POSITIVE, SONIC, MAGICAL.",
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "amount", Name = "Amount", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Input, DefaultValue = "10" },
-            new GlyphPin { Id = "damage_type", Name = "Damage Type", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input, DefaultValue = "MAGICAL" }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
+            Pins.In("creature", "Creature", GlyphDataType.NwObject),
+            Pins.In("amount", "Amount", GlyphDataType.Int, "10"),
+            Pins.In("damage_type", "Damage Type", GlyphDataType.String, "MAGICAL")
         ]
     };
 }

@@ -683,7 +683,7 @@ public class GlyphInteractionHookServiceTests
 
     private void CreateHookService()
     {
-        _hookService = new GlyphInteractionHookService(_bootstrap, _repository, new InteractionSessionManager(), new NullWorldEngineApi());
+        _hookService = new GlyphInteractionHookService(_bootstrap, _repository, new InteractionSessionManager(), new NullWorldEngineApi(), new NullWorldEngineApi(), new NullWorldEngineApi());
     }
 
     // ==================== Stub World Engine API ====================

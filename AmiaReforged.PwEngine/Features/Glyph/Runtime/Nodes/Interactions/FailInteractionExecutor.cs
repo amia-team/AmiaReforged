@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
@@ -14,7 +15,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// </list>
 /// Terminates the exec chain after setting the failure flags (returns <see cref="GlyphNodeResult.Done"/>).
 /// </summary>
-public class FailInteractionExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class FailInteractionExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "interaction.fail";
 
@@ -25,7 +27,7 @@ public class FailInteractionExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? messageValue = await resolveInput("message");
+        object? messageValue = await resolveInput(Inputs.Message);
         string message = messageValue?.ToString() ?? "Interaction failed";
 
         string stage = context.CurrentPipelineStage ?? string.Empty;
@@ -47,9 +49,12 @@ public class FailInteractionExecutor : IGlyphNodeExecutor
         return GlyphNodeResult.Done();
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("fail", null)
+        ],
         DisplayName = "Fail Interaction",
         Category = "Interactions",
         Description = "Fails the interaction at the current pipeline stage. During Attempted, blocks the " +
@@ -59,11 +64,9 @@ public class FailInteractionExecutor : IGlyphNodeExecutor
         Archetype = GlyphNodeArchetype.Action,
         RestrictToEventType = GlyphEventType.InteractionPipeline,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "message", Name = "Message", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input, DefaultValue = "Interaction failed" }
-        ],
-        OutputPins = []
+            Pins.In("message", "Message", GlyphDataType.String, "Interaction failed")
+        ]
     };
 }

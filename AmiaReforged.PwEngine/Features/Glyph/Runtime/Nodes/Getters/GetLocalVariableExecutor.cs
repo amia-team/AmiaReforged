@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Gets a local variable from an NWN object. Supports int, string, and float types.
 /// </summary>
-public class GetLocalVariableExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetLocalVariableExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.local_variable";
     public string TypeId => NodeTypeId;

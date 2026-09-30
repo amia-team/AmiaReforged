@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Math;
 
 /// <summary>
 /// Performs a basic arithmetic operation on two numeric values.
 /// Supports +, -, *, / operators.
 /// </summary>
-public sealed class MathOpExecutor : GlyphPureNode
+[GlyphNode]
+public sealed partial class MathOpExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "math.math_op";
     public override string TypeId => NodeTypeId;

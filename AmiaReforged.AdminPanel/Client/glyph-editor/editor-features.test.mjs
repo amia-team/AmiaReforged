@@ -47,7 +47,7 @@ test('browser completion insertion, scope filtering, diagnostics and revision gu
         await document('glyph g : interaction { tick { | } }');
         await page.keyboard.type('player.');
         await menu.waitFor();
-        await menu.getByText('player.has_item', { exact: true }).click();
+        await menu.getByText('has_item', { exact: true }).click();
         assert.match(await source(), /player\.has_item\(tag\)/);
         assert.doesNotMatch(await source(), /player\.player/);
         await page.keyboard.press('Escape');

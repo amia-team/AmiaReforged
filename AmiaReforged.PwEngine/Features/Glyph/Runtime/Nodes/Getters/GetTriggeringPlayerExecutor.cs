@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
@@ -7,7 +9,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// Useful when the triggering player reference is needed deeper in a subgraph where the event
 /// entry node's output pin isn't directly wirable.
 /// </summary>
-public class GetTriggeringPlayerExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetTriggeringPlayerExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.triggering_player";
 

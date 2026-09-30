@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Gets the blueprint ResRef of a creature. Pure data node — no execution flow.
 /// </summary>
-public class GetCreatureResRefExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetCreatureResRefExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.creature_resref";
 

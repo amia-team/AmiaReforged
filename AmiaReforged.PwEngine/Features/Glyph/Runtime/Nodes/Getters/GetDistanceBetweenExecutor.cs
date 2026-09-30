@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
@@ -7,7 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// Returns the distance in meters between two NWN game objects. Pure data node.
 /// Returns 0.0 if either object is invalid.
 /// </summary>
-public class GetDistanceBetweenExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetDistanceBetweenExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.distance_between";
 
@@ -18,8 +20,8 @@ public class GetDistanceBetweenExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? objectAValue = await resolveInput("object_a");
-        object? objectBValue = await resolveInput("object_b");
+        object? objectAValue = await resolveInput(Inputs.ObjectA);
+        object? objectBValue = await resolveInput(Inputs.ObjectB);
 
         uint objectA = Convert.ToUInt32(objectAValue);
         uint objectB = Convert.ToUInt32(objectBValue);
@@ -36,22 +38,26 @@ public class GetDistanceBetweenExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("distance", "distance", null),
+            new("Object.get_distance", "distance", null, ReceiverMethods: ["get_distance"])
+        ],
         DisplayName = "Get Distance Between",
         Category = "Getters",
         Description = "Returns the distance in meters between two game objects. Returns 0 if either object is invalid.",
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "object_a", Name = "Object A", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "object_b", Name = "Object B", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input }
+            Pins.In("object_a", "Object A", GlyphDataType.NwObject),
+            Pins.In("object_b", "Object B", GlyphDataType.NwObject)
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin { Id = "distance", Name = "Distance", DataType = GlyphDataType.Float, Direction = GlyphPinDirection.Output }
+            Pins.Out("distance", "Distance", GlyphDataType.Float)
         ]
     };
 }

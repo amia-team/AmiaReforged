@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
@@ -7,7 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// Metadata persists for the life of the session and can be read by other nodes/handlers.
 /// Operates on the live <see cref="GlyphExecutionContext.Session"/>.
 /// </summary>
-public class SetMetadataExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class SetMetadataExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "interaction.set_metadata";
 
@@ -18,8 +20,8 @@ public class SetMetadataExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? keyValue = await resolveInput("key");
-        object? valueValue = await resolveInput("value");
+        object? keyValue = await resolveInput(Inputs.Key);
+        object? valueValue = await resolveInput(Inputs.Value);
         string key = keyValue?.ToString() ?? string.Empty;
         string value = valueValue?.ToString() ?? string.Empty;
 
@@ -45,9 +47,12 @@ public class SetMetadataExecutor : IGlyphNodeExecutor
         return GlyphNodeResult.Continue("exec_out");
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("set_metadata", null)
+        ],
         DisplayName = "Set Metadata",
         Category = "Interactions",
         Description = "Writes a key-value pair to the interaction session's metadata. " +
@@ -56,15 +61,10 @@ public class SetMetadataExecutor : IGlyphNodeExecutor
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "key", Name = "Key", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "value", Name = "Value", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
+            Pins.In("key", "Key", GlyphDataType.String),
+            Pins.In("value", "Value", GlyphDataType.String)
         ]
     };
 }

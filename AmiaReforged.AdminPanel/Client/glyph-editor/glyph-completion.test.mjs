@@ -510,3 +510,29 @@ test("diagnostic offsets preserve UTF-16/multiline ranges and clamp EOF spans", 
     },
   );
 });
+
+
+test("descriptor-owned receiver and writable-state restrictions filter completion", () => {
+  const catalog = {
+    ...metadata,
+    receiverMethods: [{ ...metadata.receiverMethods[0], name: "tick_only",
+      availableIn: [{ event: "interaction", stage: "tick" }] }],
+    writableState: [{ name: "new_state", type: "Int", setter: "set_new_state",
+      availableIn: [{ event: "interaction", stage: "tick" }] }],
+  };
+  const attempted = complete("glyph g : interaction { attempted { player.| } }", true, catalog);
+  assert.ok(!attempted.options.some(o => o.label === "tick_only"));
+  const tick = complete("glyph g : interaction { tick { player.| } }", true, catalog);
+  assert.ok(tick.options.some(o => o.label === "tick_only"));
+  assert.ok(!complete("glyph g : interaction { attempted { | } }", true, catalog).options.some(o => o.label === "new_state"));
+  const state = complete("glyph g : interaction { tick { | } }", true, catalog).options.find(o => o.label === "new_state");
+  assert.equal(state.detail, "Int (writable)");
+});
+
+
+test("new pipeline event completions derive their stage list from metadata", () => {
+  const catalog = { ...metadata, events: [...metadata.events,
+    { name: "sample.pipeline", category: "Narrative", stages: ["tick"] }] };
+  const result = complete("glyph g : sample.pipeline { | }", true, catalog);
+  assert.deepEqual(result.options.map(o => o.label), ["tick"]);
+});

@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
@@ -9,7 +11,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// The suppression key is the stage TypeId (e.g., "stage.interaction_tick").
 /// Operates on the live <see cref="GlyphExecutionContext.Session"/>.
 /// </summary>
-public class SuppressEventExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class SuppressEventExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "interaction.suppress_event";
 

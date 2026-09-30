@@ -20,6 +20,7 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "node --test *.test.mjs",
-    "test:language": "node --test glyph-language.test.mjs"
+    "test:language": "node --test glyph-language.test.mjs",
+    "test:platform": "node --test compiler-metadata.integration.mjs"
   }
 }

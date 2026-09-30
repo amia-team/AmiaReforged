@@ -1,11 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Returns region information from the encounter context.
 /// </summary>
-public class GetRegionInfoExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetRegionInfoExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.region_info";
     public string TypeId => NodeTypeId;

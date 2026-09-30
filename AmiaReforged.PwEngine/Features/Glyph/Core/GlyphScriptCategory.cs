@@ -40,29 +40,9 @@ public static class GlyphEventTypeExtensions
     /// <summary>
     /// Returns the script category that the given event type belongs to.
     /// </summary>
-    public static GlyphScriptCategory GetCategory(this GlyphEventType eventType) => eventType switch
-    {
-        GlyphEventType.BeforeGroupSpawn => GlyphScriptCategory.Encounter,
-        GlyphEventType.AfterGroupSpawn => GlyphScriptCategory.Encounter,
-        GlyphEventType.OnCreatureDeath => GlyphScriptCategory.Encounter,
-        GlyphEventType.OnCreatureSpawn => GlyphScriptCategory.Encounter,
-        GlyphEventType.OnBossSpawn => GlyphScriptCategory.Encounter,
-        GlyphEventType.OnTraitGranted => GlyphScriptCategory.Trait,
-        GlyphEventType.OnTraitRemoved => GlyphScriptCategory.Trait,
-        GlyphEventType.InteractionPipeline => GlyphScriptCategory.Interaction,
-        _ => GlyphScriptCategory.Encounter
-    };
+    public static GlyphScriptCategory GetCategory(this GlyphEventType eventType) =>
+        Platform.GlyphEvents.All.FirstOrDefault(e => e.EventType == eventType)?.Category ?? GlyphScriptCategory.Encounter;
 
-    /// <summary>
-    /// Returns all event types belonging to the given category.
-    /// </summary>
-    public static IReadOnlyList<GlyphEventType> GetEventTypes(this GlyphScriptCategory category) => category switch
-    {
-        GlyphScriptCategory.Encounter => [GlyphEventType.BeforeGroupSpawn, GlyphEventType.AfterGroupSpawn, GlyphEventType.OnCreatureDeath, GlyphEventType.OnCreatureSpawn, GlyphEventType.OnBossSpawn],
-        GlyphScriptCategory.Trait => [GlyphEventType.OnTraitGranted, GlyphEventType.OnTraitRemoved],
-        GlyphScriptCategory.Environmental => [],
-        GlyphScriptCategory.Narrative => [],
-        GlyphScriptCategory.Interaction => [GlyphEventType.InteractionPipeline],
-        _ => []
-    };
+    public static IReadOnlyList<GlyphEventType> GetEventTypes(this GlyphScriptCategory category) =>
+        Platform.GlyphEvents.All.Where(e => e.Category == category).Select(e => e.EventType).ToArray();
 }

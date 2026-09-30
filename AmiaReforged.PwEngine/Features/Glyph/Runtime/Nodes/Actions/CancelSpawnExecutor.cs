@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
@@ -7,7 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 /// <see cref="GlyphEventType.BeforeGroupSpawn"/> graph execution.
 /// Sets <see cref="GlyphExecutionContext.ShouldCancelSpawn"/> to true.
 /// </summary>
-public class CancelSpawnExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class CancelSpawnExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "action.cancel_spawn";
 
@@ -22,22 +24,20 @@ public class CancelSpawnExecutor : IGlyphNodeExecutor
         return Task.FromResult(GlyphNodeResult.Continue("exec_out"));
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("spawn.cancel", null)
+        ],
         DisplayName = "Cancel Spawn",
         Category = "Actions",
         Description = "Prevents the current spawn group from spawning. Only works in BeforeGroupSpawn graphs.",
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
         RestrictToEventType = GlyphEventType.BeforeGroupSpawn,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
         ]
     };
 }

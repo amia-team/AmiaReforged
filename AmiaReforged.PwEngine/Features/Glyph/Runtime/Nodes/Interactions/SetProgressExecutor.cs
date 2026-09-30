@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
@@ -6,7 +7,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// Action node that modifies the current interaction session's progress (tick count).
 /// Operates on the live <see cref="GlyphExecutionContext.Session"/>.
 /// </summary>
-public class SetProgressExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class SetProgressExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "interaction.set_progress";
 
@@ -17,7 +19,7 @@ public class SetProgressExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? newProgressValue = await resolveInput("new_progress");
+        object? newProgressValue = await resolveInput(Inputs.NewProgress);
         int newProgress = Convert.ToInt32(newProgressValue);
 
         if (context.Session != null)
@@ -30,9 +32,12 @@ public class SetProgressExecutor : IGlyphNodeExecutor
         return GlyphNodeResult.Continue("exec_out");
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("set_progress", AllowedStages: ["started", "tick"], WritableAs: "progress")
+        ],
         DisplayName = "Set Progress",
         Category = "Interactions",
         Description = "Sets the interaction session's progress (tick count) to a new value. " +
@@ -40,14 +45,9 @@ public class SetProgressExecutor : IGlyphNodeExecutor
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "new_progress", Name = "New Progress", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Input, DefaultValue = "0" }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
+            Pins.In("new_progress", "New Progress", GlyphDataType.Int, "0")
         ]
     };
 }

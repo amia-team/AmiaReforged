@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
@@ -7,7 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 /// Action node that sends a text message to a creature via a specified channel.
 /// Supports server messages, floating text, and shout.
 /// </summary>
-public sealed class SendMessageExecutor : GlyphActionNode
+[GlyphNode]
+public sealed partial class SendMessageExecutor : GlyphActionNode
 {
     public const string NodeTypeId = "action.send_message";
 
@@ -15,9 +17,9 @@ public sealed class SendMessageExecutor : GlyphActionNode
 
     protected override async Task RunActionAsync(GlyphNodeContext cx)
     {
-        uint creature = await cx.InObject("creature");
-        string message = await cx.InString("message");
-        string channel = await cx.InString("channel", "server");
+        uint creature = await cx.InObject(Inputs.Creature);
+        string message = await cx.InString(Inputs.Message);
+        string channel = await cx.InString(Inputs.Channel, "server");
 
         if (creature == NWScript.OBJECT_INVALID || string.IsNullOrEmpty(message))
             return;
@@ -39,9 +41,12 @@ public sealed class SendMessageExecutor : GlyphActionNode
         }
     }
 
-    public override GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("message", null)
+        ],
         DisplayName = "Send Message",
         Category = "Actions",
         Description = "Sends a text message to a creature. Channels: 'server' (system message), " +
@@ -49,16 +54,11 @@ public sealed class SendMessageExecutor : GlyphActionNode
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            Pins.ExecIn(),
             Pins.InObject("creature", "Creature"),
             Pins.In("message", "Message", GlyphDataType.String),
             Pins.InString("channel", "Channel", "server"),
-        ],
-        OutputPins =
-        [
-            Pins.ExecOut("exec_out", "Then"),
         ]
     };
 }

@@ -1,5 +1,9 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem.Glyph;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
@@ -7,7 +11,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// through the knowledge system. A knowledge article with a <c>KnowledgeEffectType.UnlockInteraction</c>
 /// effect targeting the given interaction tag grants this unlock.
 /// </summary>
-public class HasUnlockedInteractionExecutor : IGlyphNodeExecutor
+[GlyphNode(Automatic = false)]
+public partial class HasUnlockedInteractionExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "knowledge.has_unlocked_interaction";
 
@@ -26,10 +31,10 @@ public class HasUnlockedInteractionExecutor : IGlyphNodeExecutor
 
         bool result = false;
 
-        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.WorldEngine != null &&
+        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.Knowledge != null &&
             !string.IsNullOrEmpty(interactionTag))
         {
-            result = context.WorldEngine.HasUnlockedInteraction(charGuid, interactionTag);
+            result = context.Knowledge.HasUnlockedInteraction(charGuid, interactionTag);
         }
 
         return GlyphNodeResult.Data(new Dictionary<string, object?>

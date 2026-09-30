@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
@@ -7,7 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 /// Only effective during <see cref="GlyphEventType.OnCreatureSpawn"/> or
 /// <see cref="GlyphEventType.OnBossSpawn"/> graph execution.
 /// </summary>
-public class SkipBonusesExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class SkipBonusesExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "action.skip_bonuses";
 
@@ -22,9 +24,12 @@ public class SkipBonusesExecutor : IGlyphNodeExecutor
         return Task.FromResult(GlyphNodeResult.Continue("exec_out"));
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("spawn.skip_bonuses", null)
+        ],
         DisplayName = "Skip Bonuses",
         Category = "Actions",
         Description = "Prevents the data-driven bonus pipeline from being applied to this creature. " +
@@ -32,13 +37,8 @@ public class SkipBonusesExecutor : IGlyphNodeExecutor
                       "graph applies its own custom bonuses.",
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
         ]
     };
 }

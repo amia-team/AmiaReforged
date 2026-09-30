@@ -6,7 +6,12 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Language.Binding;
 public sealed record GlyphLanguageMetadataDto(int LanguageVersion, IReadOnlyList<GlyphFunctionMetadataDto> Functions,
     IReadOnlyList<GlyphEventMetadataDto> Events, IReadOnlyList<GlyphContextMetadataDto> Contexts,
     IReadOnlyList<GlyphIndexerMetadataDto> Indexers,
-    IReadOnlyList<GlyphReceiverMethodMetadataDto> ReceiverMethods);
+    IReadOnlyList<GlyphReceiverMethodMetadataDto> ReceiverMethods)
+{
+    public IReadOnlyList<GlyphWritableStateMetadataDto> WritableState { get; init; } = [];
+}
+public sealed record GlyphWritableStateMetadataDto(string Name, string Type, string Setter,
+    IReadOnlyList<GlyphAvailabilityDto> AvailableIn);
 public sealed record GlyphParameterMetadataDto(string Name, string DisplayName, string Type, bool Required, string? DefaultValue);
 public sealed record GlyphAvailabilityDto(string Event, string? Stage);
 public sealed record GlyphFunctionMetadataDto(string Name, string CanonicalName, string Description, string ReturnType,
@@ -27,17 +32,16 @@ public static class GlyphLanguageMetadata
 {
     public static GlyphLanguageMetadataDto Create(GlyphLanguageCatalog catalog)
     {
-        var scopes = GlyphLanguageCatalog.Events.SelectMany(e =>
-            (e.Value == GlyphEventType.InteractionPipeline ? GlyphLanguageAliases.Stages.Select(s => (string?)s) : [null])
-            .Select(stage => (Name: e.Key, Event: e.Value, Stage: stage,
-                Entry: stage == null ? GlyphLanguageCatalog.EntryType(e.Value) : "stage.interaction_" + stage))).ToArray();
+        var scopes = Platform.GlyphEvents.All.SelectMany(e =>
+            (e.Stages == null ? new[] { (string?)null } : e.Stages.Select(s => (string?)s.Name))
+            .Select(stage => (Name: e.Name, Event: e.EventType, Stage: stage, Entry: e.Entry(stage)))).ToArray();
 
         bool Available(GlyphLanguageSymbol symbol, GlyphEventType evt, string? stage, string? receiver) =>
             (symbol.Definition.RestrictToEventType == null || symbol.Definition.RestrictToEventType == evt) &&
             (symbol.Definition.ScriptCategory == null || symbol.Definition.ScriptCategory == evt.GetCategory()) &&
             (symbol.AllowedStages == null || symbol.AllowedStages.Contains(stage)) &&
-            (receiver == null || catalog.Registry.Get(stage == null ? GlyphLanguageCatalog.EntryType(evt) : "stage.interaction_" + stage)!
-                .OutputPins.Any(p => p.DataType != GlyphDataType.Exec && p.Id == GlyphLanguageAliases.ContextPin(receiver, evt)));
+            (receiver == null || catalog.Registry.Get(Platform.GlyphEvents.Get(evt).Entry(stage))!
+                .OutputPins.Any(p => p.DataType != GlyphDataType.Exec && p.Id == catalog.ContextPin(receiver, Platform.GlyphEvents.Get(evt).Entry(stage))));
 
         GlyphFunctionMetadataDto Function(GlyphLanguageSymbol symbol, string name, string? receiver) => new(
             name, symbol.Name, symbol.Definition.Description, symbol.ReturnType.Name, symbol.Strategy.ToString(),
@@ -48,18 +52,18 @@ public static class GlyphLanguageMetadata
                 .Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray());
 
         var functions = catalog.Symbols.Select(s => Function(s, s.Name, null))
-            .Concat(GlyphLanguageAliases.Calls.Select(a => Function(catalog.Find(a.Target)!, a.Name, a.ImplicitArgument)))
+            .Concat(catalog.CallAliases.Select(a => Function(catalog.Find(a.Target)!, a.Name, a.ImplicitArgument)))
             .OrderBy(f => f.Name, StringComparer.Ordinal).ToArray();
         var contexts = scopes.Select(scope =>
         {
             var fields = catalog.Registry.Get(scope.Entry)!.OutputPins.Where(p => p.DataType != GlyphDataType.Exec)
-                .SelectMany(pin => GlyphLanguageAliases.ContextNames(pin.Id, scope.Event).Select(name =>
+                .SelectMany(pin => (catalog.Registry.Get(scope.Entry)!.ContextSchema?.Names(pin.Id) ?? new[] { pin.Id, "context." + pin.Id, "chaos." + pin.Id }).Select(name =>
                 {
-                    string? setter = GlyphLanguageAliases.Setters.GetValueOrDefault(name);
+                    string? setter = catalog.Setters.GetValueOrDefault(name);
                     if (setter != null && !Available(catalog.Find(setter)!, scope.Event, scope.Stage, null)) setter = null;
                     return new GlyphFieldMetadataDto(name, GlyphTypeSymbol.From(pin.DataType).Name, pin.Name, pin.Id, setter);
                 })).ToList();
-            foreach (var alias in GlyphLanguageAliases.Properties)
+            foreach (var alias in catalog.PropertyAliases)
             {
                 var symbol = catalog.Find(alias.Target)!;
                 if (Available(symbol, scope.Event, scope.Stage, alias.ImplicitArgument))
@@ -81,9 +85,18 @@ public static class GlyphLanguageMetadata
                     .Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray());
         }).ToArray();
         return new(GlyphLanguageVersion.Current, functions,
-            GlyphLanguageCatalog.Events.Select(e => new GlyphEventMetadataDto(e.Key, e.Value.ToString(), e.Value.GetCategory().ToString(),
-                e.Value == GlyphEventType.InteractionPipeline ? GlyphLanguageAliases.Stages : [])).ToArray(), contexts,
-            [new(GlyphLanguageAliases.MetadataName, GlyphLanguageAliases.MetadataGetter, GlyphLanguageAliases.MetadataSetter)],
-            receiverMethods);
+            Platform.GlyphEvents.All.Select(e => new GlyphEventMetadataDto(e.Name, e.EventType.ToString(), e.Category.ToString(),
+                e.Stages?.Select(s => s.Name).ToArray() ?? [])).ToArray(), contexts,
+            catalog.Indexers.Select(i => new GlyphIndexerMetadataDto(i.Name, i.Getter, i.Setter)).ToArray(),
+            receiverMethods)
+        {
+            WritableState = catalog.Setters.Select(pair =>
+            {
+                var setter = catalog.Find(pair.Value)!;
+                return new GlyphWritableStateMetadataDto(pair.Key, GlyphTypeSymbol.From(setter.Parameters.Single().DataType).Name,
+                    pair.Value, scopes.Where(s => Available(setter, s.Event, s.Stage, null))
+                        .Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray());
+            }).OrderBy(s => s.Name, StringComparer.Ordinal).ToArray()
+        };
     }
 }

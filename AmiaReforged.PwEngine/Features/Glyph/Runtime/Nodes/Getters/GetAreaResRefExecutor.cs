@@ -1,11 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Returns the area ResRef from the encounter context.
 /// </summary>
-public class GetAreaResRefExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetAreaResRefExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.area_resref";
     public string TypeId => NodeTypeId;

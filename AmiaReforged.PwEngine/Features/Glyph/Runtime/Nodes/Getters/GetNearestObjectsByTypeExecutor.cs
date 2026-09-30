@@ -1,6 +1,8 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using Anvil.API;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
@@ -16,7 +18,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// number of objects found.
 /// </para>
 /// </summary>
-public class GetNearestObjectsByTypeExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetNearestObjectsByTypeExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.nearest_objects_by_type";
 

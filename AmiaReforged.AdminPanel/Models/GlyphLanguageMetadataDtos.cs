@@ -3,7 +3,12 @@ namespace AmiaReforged.AdminPanel.Models;
 public sealed record GlyphLanguageMetadataDto(int LanguageVersion, IReadOnlyList<GlyphFunctionMetadataDto> Functions,
     IReadOnlyList<GlyphEventMetadataDto> Events, IReadOnlyList<GlyphContextMetadataDto> Contexts,
     IReadOnlyList<GlyphIndexerMetadataDto> Indexers,
-    IReadOnlyList<GlyphReceiverMethodMetadataDto> ReceiverMethods);
+    IReadOnlyList<GlyphReceiverMethodMetadataDto> ReceiverMethods)
+{
+    public IReadOnlyList<GlyphWritableStateMetadataDto> WritableState { get; init; } = [];
+}
+public sealed record GlyphWritableStateMetadataDto(string Name, string Type, string Setter,
+    IReadOnlyList<GlyphAvailabilityDto> AvailableIn);
 public sealed record GlyphParameterMetadataDto(string Name, string DisplayName, string Type, bool Required, string? DefaultValue);
 public sealed record GlyphAvailabilityDto(string Event, string? Stage);
 public sealed record GlyphFunctionMetadataDto(string Name, string CanonicalName, string Description, string ReturnType,

@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Language.Binding;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
@@ -8,7 +10,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// on the result. Outputs the raw roll and total for downstream use.
 /// Uses the NWN engine's skill rank system.
 /// </summary>
-public class SkillCheckExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class SkillCheckExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "interaction.skill_check";
 
@@ -19,9 +22,9 @@ public class SkillCheckExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? creatureValue = await resolveInput("creature");
-        object? skillValue = await resolveInput("skill");
-        object? dcValue = await resolveInput("dc");
+        object? creatureValue = await resolveInput(Inputs.Creature);
+        object? skillValue = await resolveInput(Inputs.Skill);
+        object? dcValue = await resolveInput(Inputs.Dc);
 
         uint creature = Convert.ToUInt32(creatureValue);
         string skillName = skillValue?.ToString() ?? "Lore";
@@ -89,9 +92,12 @@ public class SkillCheckExecutor : IGlyphNodeExecutor
         _ => -1
     };
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("skill_check", null, GlyphLoweringStrategy.PredicateBranch)
+        ],
         DisplayName = "Skill Check",
         Category = "Interactions",
         Description = "Performs a skill check (rank + d20 vs DC) and branches on the result. " +
@@ -100,20 +106,18 @@ public class SkillCheckExecutor : IGlyphNodeExecutor
         ColorClass = "node-flow",
         Archetype = GlyphNodeArchetype.FlowControl,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "skill", Name = "Skill", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input, DefaultValue = "Lore" },
-            new GlyphPin { Id = "dc", Name = "DC", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Input, DefaultValue = "15" }
+            Pins.In("creature", "Creature", GlyphDataType.NwObject),
+            Pins.In("skill", "Skill", GlyphDataType.String, "Lore"),
+            Pins.In("dc", "DC", GlyphDataType.Int, "15")
         ],
-        OutputPins =
+        ExecutionOutputs = [Pins.ExecOut("success", "Success"), Pins.ExecOut("failure", "Failure")],
+        Results =
         [
-            new GlyphPin { Id = "success", Name = "Success", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "failure", Name = "Failure", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "roll", Name = "Roll (d20)", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "total", Name = "Total", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "rank", Name = "Rank", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output }
+            Pins.Out("roll", "Roll (d20)", GlyphDataType.Int),
+            Pins.Out("total", "Total", GlyphDataType.Int),
+            Pins.Out("rank", "Rank", GlyphDataType.Int)
         ]
     };
 }

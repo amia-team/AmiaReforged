@@ -1,6 +1,8 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using Anvil.API;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
@@ -15,7 +17,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// use with the <see cref="Nodes.Flow.ForEachExecutor"/> node.
 /// </para>
 /// </summary>
-public class GetObjectsOfTypeInAreaExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetObjectsOfTypeInAreaExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.objects_of_type_in_area";
 

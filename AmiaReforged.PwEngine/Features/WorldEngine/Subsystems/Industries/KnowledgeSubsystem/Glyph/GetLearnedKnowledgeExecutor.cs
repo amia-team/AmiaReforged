@@ -1,12 +1,17 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem.Glyph;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
 /// Pure data node that returns all knowledge tags a character has learned across all industries.
 /// Outputs the count and a comma-separated list of tags.
 /// </summary>
-public class GetLearnedKnowledgeExecutor : IGlyphNodeExecutor
+[GlyphNode(Automatic = false)]
+public partial class GetLearnedKnowledgeExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "knowledge.get_learned";
 
@@ -22,9 +27,9 @@ public class GetLearnedKnowledgeExecutor : IGlyphNodeExecutor
 
         List<string> tags = [];
 
-        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.WorldEngine != null)
+        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.Knowledge != null)
         {
-            tags = context.WorldEngine.GetLearnedKnowledgeTags(charGuid);
+            tags = context.Knowledge.GetLearnedKnowledgeTags(charGuid);
         }
 
         return GlyphNodeResult.Data(new Dictionary<string, object?>

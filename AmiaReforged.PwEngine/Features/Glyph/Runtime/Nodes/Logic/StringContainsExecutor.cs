@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Logic;
 
 /// <summary>
@@ -11,7 +13,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Logic;
 /// within a single execution pass.
 /// </para>
 /// </summary>
-public sealed class StringContainsExecutor : GlyphPureNode
+[GlyphNode]
+public sealed partial class StringContainsExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "logic.string_contains";
 

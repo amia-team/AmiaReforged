@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 
 /// <summary>
 /// DoNothing node — a no-op terminal that explicitly ends an execution branch.
 /// Useful as a placeholder or to make graph intent clearer.
 /// </summary>
-public class DoNothingExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class DoNothingExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "flow.do_nothing";
 

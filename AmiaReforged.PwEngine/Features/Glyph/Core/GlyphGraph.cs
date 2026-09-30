@@ -56,18 +56,9 @@ public class GlyphGraph
     /// </summary>
     public GlyphNodeInstance? FindEntryNode()
     {
-        string expectedPrefix = EventType switch
-        {
-            GlyphEventType.BeforeGroupSpawn => "event.before_group_spawn",
-            GlyphEventType.AfterGroupSpawn => "event.after_group_spawn",
-            GlyphEventType.OnCreatureDeath => "event.on_creature_death",
-            GlyphEventType.OnCreatureSpawn => "event.on_creature_spawn",
-            GlyphEventType.OnBossSpawn => "event.on_boss_spawn",
-            GlyphEventType.OnTraitGranted => "event.on_trait_granted",
-            GlyphEventType.OnTraitRemoved => "event.on_trait_removed",
-            GlyphEventType.InteractionPipeline => "stage.interaction_attempted",
-            _ => string.Empty
-        };
+        var descriptor = Platform.GlyphEvents.All.FirstOrDefault(e => e.EventType == EventType);
+        if (descriptor == null) return null;
+        string expectedPrefix = descriptor.EntryTypeId ?? descriptor.Stages![0].EntryTypeId;
 
         return Nodes.FirstOrDefault(n => n.TypeId == expectedPrefix);
     }

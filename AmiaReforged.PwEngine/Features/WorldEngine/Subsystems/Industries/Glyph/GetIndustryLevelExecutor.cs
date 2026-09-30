@@ -1,4 +1,6 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Glyph;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
@@ -7,7 +9,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// Outputs the level name (e.g. "Expert"), the numeric ordinal, and whether the character
 /// is a member of that industry at all.
 /// </summary>
-public class GetIndustryLevelExecutor : IGlyphNodeExecutor
+[GlyphNode(Automatic = false)]
+public partial class GetIndustryLevelExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "industry.get_level";
 
@@ -18,8 +21,8 @@ public class GetIndustryLevelExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? charIdValue = await resolveInput("character_id");
-        object? tagValue = await resolveInput("industry_tag");
+        object? charIdValue = await resolveInput(Inputs.CharacterId);
+        object? tagValue = await resolveInput(Inputs.IndustryTag);
 
         string charIdStr = charIdValue?.ToString() ?? context.CharacterId ?? string.Empty;
         string industryTag = tagValue?.ToString() ?? string.Empty;
@@ -28,10 +31,10 @@ public class GetIndustryLevelExecutor : IGlyphNodeExecutor
         int levelValue = -1;
         bool isMember = false;
 
-        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.WorldEngine != null &&
+        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.Industries != null &&
             !string.IsNullOrEmpty(industryTag))
         {
-            var level = context.WorldEngine.GetIndustryLevel(charGuid, industryTag);
+            var level = context.Industries.GetIndustryLevel(charGuid, industryTag);
             if (level != null)
             {
                 isMember = true;
@@ -48,9 +51,12 @@ public class GetIndustryLevelExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("industry.level", "level_value", null)
+        ],
         DisplayName = "Get Industry Level",
         Category = "Industries",
         Description = "Returns the character's proficiency level in a specific industry. " +
@@ -58,16 +64,16 @@ public class GetIndustryLevelExecutor : IGlyphNodeExecutor
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "character_id", Name = "Character ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "industry_tag", Name = "Industry Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
+            Pins.In("character_id", "Character ID", GlyphDataType.String),
+            Pins.In("industry_tag", "Industry Tag", GlyphDataType.String),
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin { Id = "level", Name = "Level", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "level_value", Name = "Level Value", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "is_member", Name = "Is Member", DataType = GlyphDataType.Bool, Direction = GlyphPinDirection.Output },
+            Pins.Out("level", "Level", GlyphDataType.String),
+            Pins.Out("level_value", "Level Value", GlyphDataType.Int),
+            Pins.Out("is_member", "Is Member", GlyphDataType.Bool),
         ]
     };
 }

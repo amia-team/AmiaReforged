@@ -32,7 +32,7 @@ public sealed class GlyphIrValidator(IGlyphNodeDefinitionRegistry registry)
             if (def.IsSingleton && ir.Nodes.Count(n => n.TypeId == node.TypeId) > 1)
                 errors.Add(new("GLYPH4005", $"Duplicate singleton '{node.TypeId}'.", node.InstanceId));
         }
-        bool hasEntry = ir.EventType == GlyphEventType.InteractionPipeline
+        bool hasEntry = Platform.GlyphEvents.All.FirstOrDefault(e => e.EventType == ir.EventType)?.Stages != null
             ? definitions.Values.Any(d => d.Archetype == GlyphNodeArchetype.PipelineStage)
             : ir.FindEntryNode() != null;
         if (!hasEntry) errors.Add(new("GLYPH4006", "Missing event entry point."));

@@ -1,12 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Gets the armor class of a creature. Pure data node.
 /// </summary>
-public class GetCreatureACExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetCreatureACExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.creature_ac";
 
@@ -17,7 +19,7 @@ public class GetCreatureACExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? creatureValue = await resolveInput("creature");
+        object? creatureValue = await resolveInput(Inputs.Creature);
         uint creature = Convert.ToUInt32(creatureValue);
 
         int ac = creature != NWScript.OBJECT_INVALID
@@ -30,21 +32,24 @@ public class GetCreatureACExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("creature.ac", "ac", null, PropertyAliases: [new("creature.ac", "creature.ac", "creature")])
+        ],
         DisplayName = "Get Creature AC",
         Category = "Getters",
         Description = "Returns the current armor class of a creature.",
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input }
+            Pins.In("creature", "Creature", GlyphDataType.NwObject)
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin { Id = "ac", Name = "Armor Class", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output }
+            Pins.Out("ac", "Armor Class", GlyphDataType.Int)
         ]
     };
 }

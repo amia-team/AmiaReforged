@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
@@ -8,8 +10,17 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// Fires before precondition checks. Downstream nodes can inspect context and
 /// route to <c>interaction.fail</c> to block the interaction from starting.
 /// </summary>
-public class InteractionAttemptedStageExecutor : InteractionStageExecutorBase
+[GlyphNode]
+public partial class InteractionAttemptedStageExecutor : InteractionStageExecutorBase
 {
+    public static GlyphEventDescriptor Event { get; } = new("interaction", GlyphEventType.InteractionPipeline,
+        GlyphScriptCategory.Interaction, Stages: [
+            new("attempted", NodeTypeId),
+            new("started", InteractionStartedStageExecutor.NodeTypeId),
+            new("tick", InteractionTickStageExecutor.NodeTypeId),
+            new("completed", InteractionCompletedStageExecutor.NodeTypeId)
+        ], Capabilities: [typeof(InteractionGlyphContext), typeof(GlyphCharacterContext)]);
+
     public const string NodeTypeId = "stage.interaction_attempted";
 
     public override string TypeId => NodeTypeId;
@@ -19,26 +30,16 @@ public class InteractionAttemptedStageExecutor : InteractionStageExecutorBase
     protected override void AddStageContextPins(List<ContextPinDescriptor> pins)
     {
         pins.Add(new("target_mode", "Target Mode", GlyphDataType.String,
-            ctx => ctx.InteractionTargetMode ?? string.Empty));
+            ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionTargetMode ?? string.Empty : string.Empty));
         pins.Add(new("proficiency", "Proficiency", GlyphDataType.String,
-            ctx => ctx.InteractionProficiency ?? string.Empty));
+            ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionProficiency ?? string.Empty : string.Empty));
     }
 
-    protected override void AddStageOutputs(Dictionary<string, object?> outputs, GlyphExecutionContext context)
-    {
-        outputs["target_mode"] = context.InteractionTargetMode ?? string.Empty;
-        outputs["proficiency"] = context.InteractionProficiency ?? string.Empty;
-    }
-
-    protected override (string TypeId, string DisplayName, string Description, List<GlyphPin> ExtraOutputPins) CreateStageDefinition() =>
+    protected override (string TypeId, string DisplayName, string Description) CreateStageDefinition() =>
     (
         NodeTypeId,
         "1. Attempted",
         "First stage in the interaction pipeline. Fires when a character attempts to start " +
-        "an interaction, before precondition checks. Route to Fail Interaction to block it.",
-        [
-            new GlyphPin { Id = "target_mode", Name = "Target Mode", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "proficiency", Name = "Proficiency", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-        ]
+        "an interaction, before precondition checks. Route to Fail Interaction to block it."
     );
 }

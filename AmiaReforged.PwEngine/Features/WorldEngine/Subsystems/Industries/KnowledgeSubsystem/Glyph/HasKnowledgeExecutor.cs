@@ -1,4 +1,6 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem.Glyph;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
@@ -6,7 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// Pure data node that checks whether a character has learned a specific knowledge article.
 /// Returns a single boolean output.
 /// </summary>
-public class HasKnowledgeExecutor : IGlyphNodeExecutor
+[GlyphNode(Automatic = false)]
+public partial class HasKnowledgeExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "knowledge.has";
 
@@ -17,18 +20,18 @@ public class HasKnowledgeExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? charIdValue = await resolveInput("character_id");
-        object? tagValue = await resolveInput("knowledge_tag");
+        object? charIdValue = await resolveInput(Inputs.CharacterId);
+        object? tagValue = await resolveInput(Inputs.KnowledgeTag);
 
         string charIdStr = charIdValue?.ToString() ?? context.CharacterId ?? string.Empty;
         string knowledgeTag = tagValue?.ToString() ?? string.Empty;
 
         bool result = false;
 
-        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.WorldEngine != null &&
+        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.Knowledge != null &&
             !string.IsNullOrEmpty(knowledgeTag))
         {
-            result = context.WorldEngine.HasKnowledge(charGuid, knowledgeTag);
+            result = context.Knowledge.HasKnowledge(charGuid, knowledgeTag);
         }
 
         return GlyphNodeResult.Data(new Dictionary<string, object?>
@@ -37,23 +40,26 @@ public class HasKnowledgeExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("has_knowledge", "result", null, CallAliases: [new("player.has_knowledge", "has_knowledge", "context.character_id")])
+        ],
         DisplayName = "Has Knowledge",
         Category = "Industries",
         Description = "Returns true if the character has learned the specified knowledge article.",
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "character_id", Name = "Character ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "knowledge_tag", Name = "Knowledge Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
+            Pins.In("character_id", "Character ID", GlyphDataType.String),
+            Pins.In("knowledge_tag", "Knowledge Tag", GlyphDataType.String),
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin { Id = "result", Name = "Has Knowledge", DataType = GlyphDataType.Bool, Direction = GlyphPinDirection.Output },
+            Pins.Out("result", "Has Knowledge", GlyphDataType.Bool),
         ]
     };
 }

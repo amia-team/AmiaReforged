@@ -1,12 +1,13 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
 /// Base class for interaction pipeline stage executors. Encapsulates the shared
 /// passthrough-overridable input pattern and common output pins. Concrete stages
-/// override <see cref="AddStageOutputs"/> to append stage-specific context values
-/// and <see cref="CreateStageDefinition"/> to describe the node's type info and extra pins.
+/// declare stage-specific context values once
+/// and <see cref="CreateStageDefinition"/> to describe the node.
 /// <para>
 /// Pipeline stage nodes have <b>no exec_in pin</b> — they are independent entry points
 /// triggered by the runtime via <see cref="GlyphInterpreter.ExecuteStageAsync"/>.
@@ -31,21 +32,25 @@ public abstract class InteractionStageExecutorBase : IGlyphNodeExecutor, IContex
 
     public GlyphScriptCategory? SourceScriptCategory => GlyphScriptCategory.Interaction;
 
-    public List<ContextPinDescriptor> GetContextPins()
+    private GlyphContextSchema? _schema;
+    public GlyphContextSchema Schema => _schema ??= new(CreateContextPins());
+    public List<ContextPinDescriptor> GetContextPins() => Schema.Fields.ToList();
+
+    private List<ContextPinDescriptor> CreateContextPins()
     {
         // Common pins shared by all interaction stages
         List<ContextPinDescriptor> pins =
         [
             new("character_id", "Character ID", GlyphDataType.String,
-                ctx => ctx.CharacterId ?? string.Empty),
+                ctx => ctx.Get<GlyphCharacterContext>() is { } data ? data.CharacterId ?? string.Empty : string.Empty, AllowInputOverride: true),
             new("creature", "Creature", GlyphDataType.NwObject,
-                ctx => ctx.InteractionCreature),
+                ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionCreature : 0u, Aliases: ["player"], AllowInputOverride: true),
             new("interaction_tag", "Interaction Tag", GlyphDataType.String,
-                ctx => ctx.InteractionTag ?? string.Empty),
+                ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionTag ?? string.Empty : string.Empty, AllowInputOverride: true),
             new("target_id", "Target ID", GlyphDataType.String,
-                ctx => ctx.InteractionTargetId.ToString()),
+                ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionTargetId.ToString() : Guid.Empty.ToString(), AllowInputOverride: true),
             new("area_resref", "Area ResRef", GlyphDataType.String,
-                ctx => ctx.InteractionAreaResRef ?? string.Empty),
+                ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionAreaResRef ?? string.Empty : string.Empty),
         ];
 
         // Let subclasses append stage-specific context pins
@@ -64,22 +69,12 @@ public abstract class InteractionStageExecutorBase : IGlyphNodeExecutor, IContex
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        // Resolve passthrough-overridable inputs (wired value wins, else context)
-        object? charIn = await resolveInput("character_id");
-        object? creatureIn = await resolveInput("creature");
-        object? tagIn = await resolveInput("interaction_tag");
-        object? targetIn = await resolveInput("target_id");
-
-        Dictionary<string, object?> outputs = new()
+        Dictionary<string, object?> outputs = Schema.Read(context);
+        foreach (var field in Schema.Fields.Where(f => f.AllowInputOverride))
         {
-            ["character_id"] = charIn?.ToString() ?? context.CharacterId ?? string.Empty,
-            ["creature"] = creatureIn ?? context.InteractionCreature,
-            ["interaction_tag"] = tagIn?.ToString() ?? context.InteractionTag ?? string.Empty,
-            ["target_id"] = targetIn?.ToString() ?? context.InteractionTargetId.ToString(),
-            ["area_resref"] = context.InteractionAreaResRef ?? string.Empty,
-        };
-
-        AddStageOutputs(outputs, context);
+            object? value = await resolveInput(field.PinId);
+            if (value != null) outputs[field.PinId] = field.DataType == GlyphDataType.String ? value.ToString() : value;
+        }
 
         return new GlyphNodeResult
         {
@@ -88,37 +83,9 @@ public abstract class InteractionStageExecutorBase : IGlyphNodeExecutor, IContex
         };
     }
 
-    /// <summary>
-    /// Override to add stage-specific output values (e.g. session_id, progress, response_tag).
-    /// </summary>
-    protected abstract void AddStageOutputs(Dictionary<string, object?> outputs, GlyphExecutionContext context);
-
     public GlyphNodeDefinition CreateDefinition()
     {
-        (string typeId, string displayName, string description, List<GlyphPin> extraOutputPins) = CreateStageDefinition();
-
-        // Common data input pins (passthrough-overridable identity).
-        // No exec_in — stages are entry points triggered independently by the runtime.
-        List<GlyphPin> inputPins =
-        [
-            new GlyphPin { Id = "character_id", Name = "Character ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "interaction_tag", Name = "Interaction Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "target_id", Name = "Target ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
-        ];
-
-        // Common output pins shared by every stage
-        List<GlyphPin> outputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "character_id", Name = "Character ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "interaction_tag", Name = "Interaction Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "target_id", Name = "Target ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "area_resref", Name = "Area ResRef", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-        ];
-
-        outputPins.AddRange(extraOutputPins);
+        (string typeId, string displayName, string description) = CreateStageDefinition();
 
         return new GlyphNodeDefinition
         {
@@ -131,14 +98,15 @@ public abstract class InteractionStageExecutorBase : IGlyphNodeExecutor, IContex
             IsSingleton = true,
             RestrictToEventType = GlyphEventType.InteractionPipeline,
             ScriptCategory = GlyphScriptCategory.Interaction,
-            InputPins = inputPins,
-            OutputPins = outputPins,
+            InputPins = Schema.Fields.Where(f => f.AllowInputOverride)
+                .Select(f => Pins.In(f.PinId, f.DisplayName, f.DataType)).ToList(),
+            OutputPins = [Pins.ExecOut("exec_out", "Then"), .. Schema.CreateOutputPins()],
+            ContextSchema = Schema,
         };
     }
 
     /// <summary>
-    /// Override to provide the stage's TypeId, display name, description, and any extra output pins
-    /// beyond the shared set (exec_out, character_id, creature, interaction_tag, target_id, area_resref).
+    /// Override to provide the stage's TypeId, display name, description, metadata. Output pins are derived from the context schema.
     /// </summary>
-    protected abstract (string TypeId, string DisplayName, string Description, List<GlyphPin> ExtraOutputPins) CreateStageDefinition();
+    protected abstract (string TypeId, string DisplayName, string Description) CreateStageDefinition();
 }

@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Math;
 
 /// <summary>
 /// Compares two values (A and B) using a specified operator and outputs a boolean result.
 /// Supports ==, !=, &lt;, &gt;, &lt;=, &gt;= operators.
 /// </summary>
-public sealed class CompareExecutor : GlyphPureNode
+[GlyphNode]
+public sealed partial class CompareExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "math.compare";
     public override string TypeId => NodeTypeId;

@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 
 /// <summary>
@@ -12,7 +14,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 /// (equivalent to a dead-end).
 /// </para>
 /// </summary>
-public class BreakExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class BreakExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "flow.break";
 

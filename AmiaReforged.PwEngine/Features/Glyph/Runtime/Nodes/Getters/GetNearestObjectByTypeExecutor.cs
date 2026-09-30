@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using Anvil.API;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
@@ -15,7 +16,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// <see cref="GetNearestObjectsByTypeExecutor"/>, which returns a list.
 /// </para>
 /// </summary>
-public class GetNearestObjectByTypeExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetNearestObjectByTypeExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.nearest_object_by_type";
 
@@ -26,7 +28,7 @@ public class GetNearestObjectByTypeExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? typeValue = await resolveInput("type");
+        object? typeValue = await resolveInput(Inputs.Type);
         string type = typeValue?.ToString() ?? string.Empty;
 
         // Validate the curated type before touching Anvil so an unknown type is cheap,
@@ -36,7 +38,7 @@ public class GetNearestObjectByTypeExecutor : IGlyphNodeExecutor
             return InvalidResult();
         }
 
-        uint originId = ConvertId(await resolveInput("origin"));
+        uint originId = ConvertId(await resolveInput(Inputs.Origin));
 
         // Guard: NWN uses 0x7F000000 as OBJECT_INVALID; treat 0 the same way.
         if (originId == 0 || originId == NWScript.OBJECT_INVALID)
@@ -65,9 +67,12 @@ public class GetNearestObjectByTypeExecutor : IGlyphNodeExecutor
         ["object"] = NWScript.OBJECT_INVALID
     });
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("Object.nearest_object_by_type", "object", null, ReceiverMethods: ["get_nearest_object_by_type"])
+        ],
         DisplayName = "Get Nearest Object By Type",
         Category = "Getters",
         Description = "Returns the nearest game object of a curated type from an origin. " +
@@ -76,26 +81,14 @@ public class GetNearestObjectByTypeExecutor : IGlyphNodeExecutor
                       "invalid, the type is unsupported, or no match exists.",
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin
-            {
-                Id = "origin", Name = "Origin", DataType = GlyphDataType.NwObject,
-                Direction = GlyphPinDirection.Input
-            },
-            new GlyphPin
-            {
-                Id = "type", Name = "Object Type", DataType = GlyphDataType.String,
-                Direction = GlyphPinDirection.Input
-            }
+            Pins.In("origin", "Origin", GlyphDataType.NwObject),
+            Pins.In("type", "Object Type", GlyphDataType.String)
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin
-            {
-                Id = "object", Name = "Object", DataType = GlyphDataType.NwObject,
-                Direction = GlyphPinDirection.Output
-            }
+            Pins.Out("object", "Object", GlyphDataType.NwObject)
         ]
     };
 }

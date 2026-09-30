@@ -1,13 +1,16 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Gets an ability score and modifier for a creature. Takes a string input for the ability
 /// (STR, DEX, CON, INT, WIS, CHA). Pure data node.
 /// </summary>
-public class GetCreatureAbilityScoreExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetCreatureAbilityScoreExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.creature_ability_score";
 

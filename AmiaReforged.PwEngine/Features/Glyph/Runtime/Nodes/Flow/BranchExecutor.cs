@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 
 /// <summary>
 /// Branch node — the Glyph equivalent of an if/else statement.
 /// Evaluates a boolean condition input and follows either the True or False Exec output.
 /// </summary>
-public sealed class BranchExecutor : GlyphNodeBase
+[GlyphNode]
+public sealed partial class BranchExecutor : GlyphNodeBase
 {
     public const string NodeTypeId = "flow.branch";
 

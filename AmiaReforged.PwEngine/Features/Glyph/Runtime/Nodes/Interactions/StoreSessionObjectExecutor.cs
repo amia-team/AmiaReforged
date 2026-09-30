@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
@@ -10,7 +11,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// In the Attempted stage (where no session exists yet), the value is written to the context's
 /// local <see cref="GlyphExecutionContext.InteractionMetadata"/> dictionary instead.
 /// </summary>
-public class StoreSessionObjectExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class StoreSessionObjectExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "interaction.store_session_object";
 
@@ -21,8 +23,8 @@ public class StoreSessionObjectExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? keyValue = await resolveInput("key");
-        object? objectValue = await resolveInput("object");
+        object? keyValue = await resolveInput(Inputs.Key);
+        object? objectValue = await resolveInput(Inputs.Object);
 
         string key = keyValue?.ToString() ?? string.Empty;
 
@@ -70,9 +72,12 @@ public class StoreSessionObjectExecutor : IGlyphNodeExecutor
         };
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("store_session_object", AllowedStages: ["started", "tick", "completed"])
+        ],
         DisplayName = "Store Session Object",
         Category = "Interactions",
         Description = "Stores an NwObject (object ID) in the interaction session under a string key. " +
@@ -81,15 +86,10 @@ public class StoreSessionObjectExecutor : IGlyphNodeExecutor
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "key", Name = "Key", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "object", Name = "Object", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
+            Pins.In("key", "Key", GlyphDataType.String),
+            Pins.In("object", "Object", GlyphDataType.NwObject)
         ]
     };
 }

@@ -1,12 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
 /// <summary>
 /// Renames a creature by calling NWScript.SetName. Works in any encounter event.
 /// </summary>
-public class SetCreatureNameExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class SetCreatureNameExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "action.set_creature_name";
 
@@ -17,8 +19,8 @@ public class SetCreatureNameExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? creatureValue = await resolveInput("creature");
-        object? nameValue = await resolveInput("name");
+        object? creatureValue = await resolveInput(Inputs.Creature);
+        object? nameValue = await resolveInput(Inputs.Name);
 
         uint creature = Convert.ToUInt32(creatureValue);
         string name = nameValue?.ToString() ?? string.Empty;
@@ -31,23 +33,21 @@ public class SetCreatureNameExecutor : IGlyphNodeExecutor
         return GlyphNodeResult.Continue("exec_out");
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("set_name", null)
+        ],
         DisplayName = "Set Creature Name",
         Category = "Actions",
         Description = "Changes the display name of a creature.",
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "name", Name = "Name", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
+            Pins.In("creature", "Creature", GlyphDataType.NwObject),
+            Pins.In("name", "Name", GlyphDataType.String)
         ]
     };
 }

@@ -1,13 +1,16 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
 /// <summary>
 /// Applies a visual/mechanical NWN effect to a creature.
 /// Supports common effect types used in encounter design.
 /// </summary>
-public class ApplyEffectExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class ApplyEffectExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "action.apply_effect";
 

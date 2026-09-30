@@ -1,5 +1,9 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Glyph;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
@@ -7,7 +11,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// Outputs the total count, a comma-separated list of industry tags,
 /// and the first industry's tag and proficiency level for convenience.
 /// </summary>
-public class GetIndustryMembershipsExecutor : IGlyphNodeExecutor
+[GlyphNode(Automatic = false)]
+public partial class GetIndustryMembershipsExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "industry.get_memberships";
 
@@ -23,9 +28,9 @@ public class GetIndustryMembershipsExecutor : IGlyphNodeExecutor
 
         List<IndustryMembershipInfo> memberships = [];
 
-        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.WorldEngine != null)
+        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.Industries != null)
         {
-            memberships = context.WorldEngine.GetIndustryMemberships(charGuid);
+            memberships = context.Industries.GetIndustryMemberships(charGuid);
         }
 
         string tags = string.Join(",", memberships.Select(m => m.Tag));

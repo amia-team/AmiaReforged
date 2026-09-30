@@ -1,12 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Gets the current HP of a creature. Pure data node — no execution flow.
 /// </summary>
-public sealed class GetCreatureHPExecutor : GlyphPureNode
+[GlyphNode]
+public sealed partial class GetCreatureHPExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "getter.creature_hp";
 
@@ -14,7 +16,7 @@ public sealed class GetCreatureHPExecutor : GlyphPureNode
 
     protected override async Task<Dictionary<string, object?>> RunPureAsync(GlyphNodeContext cx)
     {
-        uint creature = await cx.InObject("creature");
+        uint creature = await cx.InObject(Inputs.Creature);
 
         int hp = creature != NWScript.OBJECT_INVALID
             ? NWScript.GetCurrentHitPoints(creature)
@@ -31,18 +33,22 @@ public sealed class GetCreatureHPExecutor : GlyphPureNode
         };
     }
 
-    public override GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("creature.hp", "current_hp", null, PropertyAliases: [new("creature.hp", "creature.hp", "creature")]),
+            new("creature.max_hp", "max_hp", null, PropertyAliases: [new("creature.max_hp", "creature.max_hp", "creature")])
+        ],
         DisplayName = "Get Creature HP",
         Category = "Getters",
         Description = "Returns the current and maximum hit points of a creature.",
         ColorClass = "node-getter",
-        InputPins =
+        Parameters =
         [
             Pins.InObject("creature", "Creature"),
         ],
-        OutputPins =
+        Results =
         [
             Pins.Out("current_hp", "Current HP", GlyphDataType.Int),
             Pins.Out("max_hp", "Max HP", GlyphDataType.Int),

@@ -1,12 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using Anvil.API;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Returns the list of party member object IDs in the encounter area.
 /// </summary>
-public class GetPartyMembersExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetPartyMembersExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.party_members";
     public string TypeId => NodeTypeId;
@@ -35,19 +37,22 @@ public class GetPartyMembersExecutor : IGlyphNodeExecutor
         }));
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("party.members", "members", null, PropertyAliases: [new("party.members", "party.members", null)])
+        ],
         DisplayName = "Get Party Members",
         Category = "Getters",
         Description = "Returns a list of player character object IDs in the encounter area, and their count.",
         ColorClass = "node-getter",
         ScriptCategory = GlyphScriptCategory.Encounter,
-        InputPins = [],
-        OutputPins =
+        Parameters = [],
+        Results =
         [
-            new GlyphPin { Id = "members", Name = "Members", DataType = GlyphDataType.List, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "count", Name = "Count", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output }
+            Pins.Out("members", "Members", GlyphDataType.List),
+            Pins.Out("count", "Count", GlyphDataType.Int)
         ]
     };
 }

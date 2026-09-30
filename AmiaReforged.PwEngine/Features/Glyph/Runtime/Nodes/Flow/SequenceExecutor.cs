@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 
 /// <summary>
@@ -12,7 +14,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 /// runs all connected branches in order.
 /// </para>
 /// </summary>
-public class SequenceExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class SequenceExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "flow.sequence";
 

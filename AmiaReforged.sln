@@ -25,6 +25,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.AdminPanel", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.AdminPanel.Tests", "AmiaReforged.AdminPanel.Tests\AmiaReforged.AdminPanel.Tests.csproj", "{E251D7D6-544B-4C8B-A9E1-10C06D85D22C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Glyph.Generators", "tools\Glyph.Generators\Glyph.Generators.csproj", "{C99EB69B-31A8-4A50-B45D-A9B72B025A63}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Glyph.Generators.Tests", "tools\Glyph.Generators.Tests\Glyph.Generators.Tests.csproj", "{B4E7FD12-C27D-407E-9319-690DA27D09D7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Glyph.Docs", "tools\Glyph.Docs\Glyph.Docs.csproj", "{52AAAC6A-F5B9-48DD-8E4C-E50B225574D0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Glyph.Cli", "tools\Glyph.Cli\Glyph.Cli.csproj", "{BCBC4302-E8BB-4154-8AB4-C214E12E3B0E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,5 +89,27 @@ Global
 		{E251D7D6-544B-4C8B-A9E1-10C06D85D22C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E251D7D6-544B-4C8B-A9E1-10C06D85D22C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E251D7D6-544B-4C8B-A9E1-10C06D85D22C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C99EB69B-31A8-4A50-B45D-A9B72B025A63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C99EB69B-31A8-4A50-B45D-A9B72B025A63}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C99EB69B-31A8-4A50-B45D-A9B72B025A63}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C99EB69B-31A8-4A50-B45D-A9B72B025A63}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4E7FD12-C27D-407E-9319-690DA27D09D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4E7FD12-C27D-407E-9319-690DA27D09D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4E7FD12-C27D-407E-9319-690DA27D09D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4E7FD12-C27D-407E-9319-690DA27D09D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52AAAC6A-F5B9-48DD-8E4C-E50B225574D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52AAAC6A-F5B9-48DD-8E4C-E50B225574D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52AAAC6A-F5B9-48DD-8E4C-E50B225574D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52AAAC6A-F5B9-48DD-8E4C-E50B225574D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCBC4302-E8BB-4154-8AB4-C214E12E3B0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCBC4302-E8BB-4154-8AB4-C214E12E3B0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCBC4302-E8BB-4154-8AB4-C214E12E3B0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCBC4302-E8BB-4154-8AB4-C214E12E3B0E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C99EB69B-31A8-4A50-B45D-A9B72B025A63} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
+		{B4E7FD12-C27D-407E-9319-690DA27D09D7} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
+		{52AAAC6A-F5B9-48DD-8E4C-E50B225574D0} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
+		{BCBC4302-E8BB-4154-8AB4-C214E12E3B0E} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

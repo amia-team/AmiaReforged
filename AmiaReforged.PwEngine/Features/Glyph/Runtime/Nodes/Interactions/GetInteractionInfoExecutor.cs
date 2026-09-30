@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
 /// Pure data node that exposes the current interaction context as output pins.
 /// Available in all Interaction event types. Reads from <see cref="GlyphExecutionContext"/>.
 /// </summary>
-public class GetInteractionInfoExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetInteractionInfoExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "interaction.get_info";
 

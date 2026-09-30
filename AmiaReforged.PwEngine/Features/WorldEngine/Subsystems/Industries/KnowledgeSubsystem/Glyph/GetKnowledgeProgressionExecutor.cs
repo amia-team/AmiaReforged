@@ -1,12 +1,17 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.KnowledgeSubsystem.Glyph;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
 /// Pure data node that returns a character's knowledge point progression snapshot.
 /// Outputs total KP, economy-earned KP, level-up KP, and accumulated progression points.
 /// </summary>
-public class GetKnowledgeProgressionExecutor : IGlyphNodeExecutor
+[GlyphNode(Automatic = false)]
+public partial class GetKnowledgeProgressionExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "knowledge.get_progression";
 
@@ -25,9 +30,9 @@ public class GetKnowledgeProgressionExecutor : IGlyphNodeExecutor
         int levelUpKp = 0;
         int accumulated = 0;
 
-        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.WorldEngine != null)
+        if (Guid.TryParse(charIdStr, out Guid charGuid) && context.Knowledge != null)
         {
-            KnowledgeProgressionInfo info = context.WorldEngine.GetKnowledgeProgression(charGuid);
+            KnowledgeProgressionInfo info = context.Knowledge.GetKnowledgeProgression(charGuid);
             totalKp = info.TotalKp;
             economyKp = info.EconomyKp;
             levelUpKp = info.LevelUpKp;

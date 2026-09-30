@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
@@ -7,7 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 /// Modifies the spawn count for the current group. Only effective during
 /// <see cref="GlyphEventType.BeforeGroupSpawn"/> graph execution.
 /// </summary>
-public class ModifySpawnCountExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class ModifySpawnCountExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "action.modify_spawn_count";
 
@@ -18,7 +20,7 @@ public class ModifySpawnCountExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? newCountValue = await resolveInput("new_count");
+        object? newCountValue = await resolveInput(Inputs.NewCount);
         int newCount = Convert.ToInt32(newCountValue);
 
         // Clamp to a reasonable range
@@ -27,9 +29,12 @@ public class ModifySpawnCountExecutor : IGlyphNodeExecutor
         return GlyphNodeResult.Continue("exec_out");
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("spawn.modify_count", null)
+        ],
         DisplayName = "Modify Spawn Count",
         Category = "Actions",
         Description = "Changes the number of creatures that will spawn for this group. " +
@@ -37,14 +42,9 @@ public class ModifySpawnCountExecutor : IGlyphNodeExecutor
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
         RestrictToEventType = GlyphEventType.BeforeGroupSpawn,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "new_count", Name = "New Count", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Input, DefaultValue = "1" }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
+            Pins.In("new_count", "New Count", GlyphDataType.Int, "1")
         ]
     };
 }

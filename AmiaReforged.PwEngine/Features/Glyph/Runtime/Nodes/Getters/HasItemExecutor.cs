@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
@@ -7,7 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// Pure function node that checks if a creature possesses an item with a given tag.
 /// Returns whether the item exists and how many matching items are found.
 /// </summary>
-public class HasItemExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class HasItemExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.has_item";
 
@@ -18,8 +20,8 @@ public class HasItemExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? creatureValue = await resolveInput("creature");
-        object? itemTagValue = await resolveInput("item_tag");
+        object? creatureValue = await resolveInput(Inputs.Creature);
+        object? itemTagValue = await resolveInput(Inputs.ItemTag);
 
         uint creature = Convert.ToUInt32(creatureValue);
         string itemTag = itemTagValue?.ToString() ?? string.Empty;
@@ -49,9 +51,12 @@ public class HasItemExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("has_item", "has_item", null, CallAliases: [new("player.has_item", "has_item", "player")])
+        ],
         DisplayName = "Has Item",
         Category = "Getters",
         Description = "Checks if a creature has an item with the specified tag in their inventory. " +
@@ -59,15 +64,15 @@ public class HasItemExecutor : IGlyphNodeExecutor
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "item_tag", Name = "Item Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input }
+            Pins.In("creature", "Creature", GlyphDataType.NwObject),
+            Pins.In("item_tag", "Item Tag", GlyphDataType.String)
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin { Id = "has_item", Name = "Has Item", DataType = GlyphDataType.Bool, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "count", Name = "Count", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output }
+            Pins.Out("has_item", "Has Item", GlyphDataType.Bool),
+            Pins.Out("count", "Count", GlyphDataType.Int)
         ]
     };
 }

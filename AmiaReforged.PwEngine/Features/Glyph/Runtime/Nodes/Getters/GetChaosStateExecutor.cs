@@ -1,11 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Returns all four chaos state axes (Danger, Corruption, Density, Mutation) from the encounter context.
 /// </summary>
-public class GetChaosStateExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetChaosStateExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.chaos_state";
     public string TypeId => NodeTypeId;

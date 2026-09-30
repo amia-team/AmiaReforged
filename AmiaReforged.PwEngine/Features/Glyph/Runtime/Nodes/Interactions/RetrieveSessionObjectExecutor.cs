@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
@@ -10,7 +11,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// Falls back to the context's <see cref="GlyphExecutionContext.InteractionMetadata"/> when
 /// no session is available (e.g., the Attempted stage).
 /// </summary>
-public class RetrieveSessionObjectExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class RetrieveSessionObjectExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "interaction.retrieve_session_object";
 
@@ -24,7 +26,7 @@ public class RetrieveSessionObjectExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? keyValue = await resolveInput("key");
+        object? keyValue = await resolveInput(Inputs.Key);
         string key = keyValue?.ToString() ?? string.Empty;
 
         bool exists = false;
@@ -49,9 +51,12 @@ public class RetrieveSessionObjectExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("session_object", "object", AllowedStages: ["started", "tick", "completed"])
+        ],
         DisplayName = "Retrieve Session Object",
         Category = "Interactions",
         Description = "Retrieves an NwObject (object ID) previously stored in the interaction session " +
@@ -59,14 +64,14 @@ public class RetrieveSessionObjectExecutor : IGlyphNodeExecutor
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "key", Name = "Key", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input }
+            Pins.In("key", "Key", GlyphDataType.String)
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin { Id = "object", Name = "Object", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "exists", Name = "Exists", DataType = GlyphDataType.Bool, Direction = GlyphPinDirection.Output }
+            Pins.Out("object", "Object", GlyphDataType.NwObject),
+            Pins.Out("exists", "Exists", GlyphDataType.Bool)
         ]
     };
 }

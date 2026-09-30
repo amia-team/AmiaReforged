@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 
 /// <summary>
@@ -8,7 +10,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
 /// Fires when all required rounds finish, before the data-driven response system.
 /// Route to <c>interaction.fail</c> to cancel the session at completion time.
 /// </summary>
-public class InteractionCompletedStageExecutor : InteractionStageExecutorBase
+[GlyphNode]
+public partial class InteractionCompletedStageExecutor : InteractionStageExecutorBase
 {
     public const string NodeTypeId = "stage.interaction_completed";
 
@@ -19,30 +22,18 @@ public class InteractionCompletedStageExecutor : InteractionStageExecutorBase
     protected override void AddStageContextPins(List<ContextPinDescriptor> pins)
     {
         pins.Add(new("session_id", "Session ID", GlyphDataType.String,
-            ctx => ctx.InteractionSessionId.ToString()));
+            ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionSessionId.ToString() : Guid.Empty.ToString()));
         pins.Add(new("proficiency", "Proficiency", GlyphDataType.String,
-            ctx => ctx.InteractionProficiency ?? string.Empty));
+            ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionProficiency ?? string.Empty : string.Empty));
         pins.Add(new("response_tag", "Response Tag", GlyphDataType.String,
-            ctx => ctx.InteractionResponseTag ?? string.Empty));
+            ctx => ctx.Get<InteractionGlyphContext>() is { } data ? data.InteractionResponseTag ?? string.Empty : string.Empty));
     }
 
-    protected override void AddStageOutputs(Dictionary<string, object?> outputs, GlyphExecutionContext context)
-    {
-        outputs["session_id"] = context.InteractionSessionId.ToString();
-        outputs["proficiency"] = context.InteractionProficiency ?? string.Empty;
-        outputs["response_tag"] = context.InteractionResponseTag ?? string.Empty;
-    }
-
-    protected override (string TypeId, string DisplayName, string Description, List<GlyphPin> ExtraOutputPins) CreateStageDefinition() =>
+    protected override (string TypeId, string DisplayName, string Description) CreateStageDefinition() =>
     (
         NodeTypeId,
         "4. Completed",
         "Final stage in the interaction pipeline. Fires when all rounds finish, " +
-        "before the data-driven response system. Route to Fail Interaction to cancel.",
-        [
-            new GlyphPin { Id = "session_id", Name = "Session ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "proficiency", Name = "Proficiency", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "response_tag", Name = "Response Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-        ]
+        "before the data-driven response system. Route to Fail Interaction to cancel."
     );
 }

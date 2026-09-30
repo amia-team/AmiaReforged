@@ -1,55 +1,25 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Events;
 
-/// <summary>
-/// Entry-point node for <see cref="GlyphEventType.OnTraitGranted"/> graphs.
-/// Exposes the character ID, trait tag, and target creature as output pins.
-/// </summary>
-public class OnTraitGrantedEventExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class OnTraitGrantedEventExecutor : GlyphEventNode
 {
     public const string NodeTypeId = "event.on_trait_granted";
-
-    public string TypeId => NodeTypeId;
-
-    public Task<GlyphNodeResult> ExecuteAsync(
-        GlyphNodeInstance node,
-        GlyphExecutionContext context,
-        Func<string, Task<object?>> resolveInput)
-    {
-        Dictionary<string, object?> outputs = new Dictionary<string, object?>
-        {
-            ["character_id"] = context.CharacterId ?? string.Empty,
-            ["trait_tag"] = context.TraitTag ?? string.Empty,
-            ["target_creature"] = context.TargetCreature
-        };
-
-        return Task.FromResult(new GlyphNodeResult
-        {
-            NextExecPinId = "exec_out",
-            OutputValues = outputs
-        });
-    }
-
-    public GlyphNodeDefinition CreateDefinition() => new()
-    {
-        TypeId = NodeTypeId,
-        DisplayName = "On Trait Granted",
-        Category = "Events",
-        Description = "Entry point for scripts that run when a trait is granted to a character. " +
-                      "Provides the character ID, trait tag, and target creature reference.",
-        ColorClass = "node-event",
-        Archetype = GlyphNodeArchetype.EventEntry,
-        IsSingleton = true,
-        RestrictToEventType = GlyphEventType.OnTraitGranted,
-        ScriptCategory = GlyphScriptCategory.Trait,
-        InputPins = [],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "character_id", Name = "Character ID", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "trait_tag", Name = "Trait Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "target_creature", Name = "Target Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Output }
-        ]
-    };
+    public static GlyphEventDescriptor Event { get; } = new("trait.on_granted", GlyphEventType.OnTraitGranted,
+        GlyphScriptCategory.Trait, NodeTypeId, Capabilities: [typeof(TraitGlyphContext), typeof(GlyphCharacterContext)]);
+    public static GlyphContextSchema Context { get; } = new([
+        new("character_id", "Character ID", GlyphDataType.String,
+            ctx => ctx.Get<GlyphCharacterContext>() is { } data ? data.CharacterId ?? string.Empty : string.Empty),
+        new("trait_tag", "Trait Tag", GlyphDataType.String,
+            ctx => ctx.Get<TraitGlyphContext>() is { } data ? data.TraitTag ?? string.Empty : string.Empty),
+        new("target_creature", "Target Creature", GlyphDataType.NwObject,
+            ctx => ctx.Get<TraitGlyphContext>() is { } data ? data.TargetCreature : 0u, Aliases: ["creature"]),
+    ]);
+    protected override GlyphEventDescriptor EventContract => Event;
+    public override GlyphContextSchema Schema => Context;
+    public override string SourceDisplayName => "On Trait Granted";
+    protected override string Description => "Entry point for scripts that run when a trait is granted to a character. " +
+                      "Provides the character ID, trait tag, and target creature reference.";
 }

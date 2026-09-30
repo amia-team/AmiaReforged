@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
@@ -7,7 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 /// Action node that plays a visual effect (VFX) on a target creature or object.
 /// Supports both instant and duration-based effects using NWN VFX constants.
 /// </summary>
-public class PlayVfxExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class PlayVfxExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "action.play_vfx";
 
@@ -18,9 +20,9 @@ public class PlayVfxExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? targetValue = await resolveInput("target");
-        object? vfxIdValue = await resolveInput("vfx_id");
-        object? durationValue = await resolveInput("duration");
+        object? targetValue = await resolveInput(Inputs.Target);
+        object? vfxIdValue = await resolveInput(Inputs.VfxId);
+        object? durationValue = await resolveInput(Inputs.Duration);
 
         uint target = Convert.ToUInt32(targetValue);
         int vfxId = Convert.ToInt32(vfxIdValue);
@@ -49,9 +51,12 @@ public class PlayVfxExecutor : IGlyphNodeExecutor
         return GlyphNodeResult.Continue("exec_out");
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("play_vfx", null)
+        ],
         DisplayName = "Play VFX",
         Category = "Actions",
         Description = "Plays a visual effect on a target. Use NWN VFX constant IDs. " +
@@ -60,16 +65,11 @@ public class PlayVfxExecutor : IGlyphNodeExecutor
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
         ScriptCategory = GlyphScriptCategory.Interaction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "target", Name = "Target", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input },
-            new GlyphPin { Id = "vfx_id", Name = "VFX ID", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Input, DefaultValue = "287" },
-            new GlyphPin { Id = "duration", Name = "Duration (sec)", DataType = GlyphDataType.Float, Direction = GlyphPinDirection.Input, DefaultValue = "0" }
-        ],
-        OutputPins =
-        [
-            new GlyphPin { Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec, Direction = GlyphPinDirection.Output }
+            Pins.In("target", "Target", GlyphDataType.NwObject),
+            Pins.In("vfx_id", "VFX ID", GlyphDataType.Int, "287"),
+            Pins.In("duration", "Duration (sec)", GlyphDataType.Float, "0")
         ]
     };
 }

@@ -1,11 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Returns the current NWN game time as total hours (a float).
 /// </summary>
-public class GetTimeOfDayExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetTimeOfDayExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.time_of_day";
     public string TypeId => NodeTypeId;

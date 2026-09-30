@@ -1,12 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Gets the display name (and original name) of a creature. Pure data node.
 /// </summary>
-public class GetCreatureNameExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetCreatureNameExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.creature_name";
 
@@ -17,7 +19,7 @@ public class GetCreatureNameExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? creatureValue = await resolveInput("creature");
+        object? creatureValue = await resolveInput(Inputs.Creature);
         uint creature = Convert.ToUInt32(creatureValue);
 
         string name = creature != NWScript.OBJECT_INVALID
@@ -35,22 +37,25 @@ public class GetCreatureNameExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("creature.name", "name", null, PropertyAliases: [new("creature.name", "creature.name", "creature")])
+        ],
         DisplayName = "Get Creature Name",
         Category = "Getters",
         Description = "Returns the current display name and original blueprint name of a creature.",
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "creature", Name = "Creature", DataType = GlyphDataType.NwObject, Direction = GlyphPinDirection.Input }
+            Pins.In("creature", "Creature", GlyphDataType.NwObject)
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin { Id = "name", Name = "Name", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
-            new GlyphPin { Id = "original_name", Name = "Original Name", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Output }
+            Pins.Out("name", "Name", GlyphDataType.String),
+            Pins.Out("original_name", "Original Name", GlyphDataType.String)
         ]
     };
 }

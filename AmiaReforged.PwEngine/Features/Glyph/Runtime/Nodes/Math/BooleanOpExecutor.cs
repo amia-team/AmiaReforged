@@ -1,11 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Math;
 
 /// <summary>
 /// Performs a boolean logic operation (AND, OR, XOR) on two boolean inputs.
 /// </summary>
-public sealed class BooleanOpExecutor : GlyphPureNode
+[GlyphNode]
+public sealed partial class BooleanOpExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "math.boolean_op";
     public override string TypeId => NodeTypeId;

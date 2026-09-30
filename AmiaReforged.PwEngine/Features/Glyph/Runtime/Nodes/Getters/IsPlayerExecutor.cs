@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
@@ -8,7 +9,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// <c>NWScript.GetIsPC</c> semantic. Pure query node — no execution flow and no side effects.
 /// Returns <c>false</c> for invalid or unresolvable objects.
 /// </summary>
-public class IsPlayerExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class IsPlayerExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.is_player";
 
@@ -19,7 +21,7 @@ public class IsPlayerExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? objectValue = await resolveInput("object");
+        object? objectValue = await resolveInput(Inputs.Object);
         uint objectId = ConvertId(objectValue);
 
         bool isPlayer = objectId != 0 && objectId != NWScript.OBJECT_INVALID
@@ -34,30 +36,25 @@ public class IsPlayerExecutor : IGlyphNodeExecutor
 
     private static uint ConvertId(object? value) => value is null ? 0u : Convert.ToUInt32(value);
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("Object.is_player", "result", null, ReceiverMethods: ["is_player"])
+        ],
         DisplayName = "Is Player",
         Category = "Getters",
         Description = "Returns true when the object is a player character (NWScript.GetIsPC). " +
                       "Returns false for invalid or unresolvable objects.",
         ColorClass = "node-getter",
         Archetype = GlyphNodeArchetype.PureFunction,
-        InputPins =
+        Parameters =
         [
-            new GlyphPin
-            {
-                Id = "object", Name = "Object", DataType = GlyphDataType.NwObject,
-                Direction = GlyphPinDirection.Input
-            }
+            Pins.In("object", "Object", GlyphDataType.NwObject)
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin
-            {
-                Id = "result", Name = "Result", DataType = GlyphDataType.Bool,
-                Direction = GlyphPinDirection.Output
-            }
+            Pins.Out("result", "Result", GlyphDataType.Bool)
         ]
     };
 }

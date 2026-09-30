@@ -45,6 +45,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="../tools/Glyph.Generators/Glyph.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
         <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj" />
         <ProjectReference Include="..\AmiaReforged.Races\AmiaReforged.Races.csproj" />
     </ItemGroup>

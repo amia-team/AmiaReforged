@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
@@ -7,7 +9,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// Reads directly from the context — no creature input needed. Pure data node.
 /// Only meaningful during encounter events (BeforeGroupSpawn, AfterGroupSpawn, OnCreatureSpawn).
 /// </summary>
-public class GetSpawnGroupInfoExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetSpawnGroupInfoExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.spawn_group_info";
 

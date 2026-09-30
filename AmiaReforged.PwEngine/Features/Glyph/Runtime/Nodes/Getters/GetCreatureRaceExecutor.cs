@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
 /// Gets the racial type of a creature as both an integer ID and display string. Pure data node.
 /// </summary>
-public class GetCreatureRaceExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetCreatureRaceExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.creature_race";
 

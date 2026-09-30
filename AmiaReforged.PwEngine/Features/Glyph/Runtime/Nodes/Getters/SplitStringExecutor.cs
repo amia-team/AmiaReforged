@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
@@ -8,7 +10,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// with the <see cref="Nodes.Flow.ForEachExecutor"/> node.
 /// Empty entries are removed and parts are trimmed.
 /// </summary>
-public class SplitStringExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class SplitStringExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.split_string";
 

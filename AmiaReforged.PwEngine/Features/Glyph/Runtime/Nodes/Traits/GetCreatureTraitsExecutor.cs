@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Traits;
 
 /// <summary>
 /// Returns all trait tags for the current character.
 /// Reads from the "character_traits" variable populated by the trait hook service.
 /// </summary>
-public class GetCreatureTraitsExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetCreatureTraitsExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "trait.get_creature_traits";
     public string TypeId => NodeTypeId;

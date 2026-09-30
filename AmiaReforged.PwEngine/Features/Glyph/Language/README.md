@@ -3,6 +3,9 @@
 Glyph source is the only authored program representation. The compiler emits the existing
 Glyph IR and uses the existing interpreter and executors. There is no second runtime.
 
+See [the extension guide](../EXTENDING.md) for capability development and the generated
+[API reference](API_REFERENCE.md) for registered functions, events, aliases and context.
+
 ## Author and activate
 
 Open the World Engine Glyph editor, create a script, and edit the declaration and body.
@@ -100,7 +103,7 @@ numeric (the existing comparison executor uses its existing equality tolerance).
 where corresponding context exists. `creature.hp`, `.max_hp`, `.name`, `.ac` call registered
 getters with the current creature. `party.members` returns an object list.
 
-The callable vocabulary is intentionally curated in `GlyphLanguageCatalog`. Examples include
+The callable vocabulary is intentionally curated by executor-local descriptors and projected into `GlyphLanguageCatalog`. Examples include
 `heal`, `damage`, `distance`, `random`, `floating_text`, `message`, `play_vfx`, `set_name`,
 `spawn.modify_count`, `spawn.cancel`, `spawn.skip_bonuses`, `spawn.skip_mutations`,
 `has_trait`, `has_item`, `has_knowledge`, `industry.is_member`, `industry.level`,
@@ -198,7 +201,7 @@ or `player.is_player(player)`). Named remaining parameters are still allowed:
 `player.get_nearest_object_by_type(type: "door")`.
 
 `receiver.method(args...)` does **not** expose arbitrary .NET, Anvil, or `NwGameObject` members.
-Only the Glyph receiver methods registered in `GlyphLanguageCatalog` exist (currently
+Only the Glyph receiver methods declared by intrinsic descriptors exist (currently
 `get_nearest_object_by_type`, `is_player`, and `get_distance`). Reflection, CLR/Anvil member lookup, duck typing,
 and runtime string-based dispatch are unavailable. For example `player.Destroy()`, `player.Area`,
 and `player.GetObjectVariable(...)` remain uncallable. Adding a future curated Object member is a

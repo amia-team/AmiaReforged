@@ -1,6 +1,8 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using NWN.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 
 /// <summary>
@@ -8,7 +10,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// Unlike <see cref="GetCreatureResRefExecutor"/> which is creature-specific, this works
 /// with any object type (placeables, doors, items, etc.).
 /// </summary>
-public class GetObjectResRefExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class GetObjectResRefExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "getter.object_resref";
 

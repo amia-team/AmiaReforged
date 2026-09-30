@@ -1,4 +1,6 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Glyph;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 
@@ -21,7 +23,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
 /// The scripter decides what to do with the failure branch.
 /// </para>
 /// </summary>
-public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
+[GlyphNode(Automatic = false)]
+public partial class SpawnResourceNodeExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "action.spawn_resource_node";
 
@@ -32,7 +35,7 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        object? triggerValue = await resolveInput("trigger");
+        object? triggerValue = await resolveInput(Inputs.Trigger);
         uint triggerHandle = Convert.ToUInt32(triggerValue ?? 0);
 
         // Read configurable messages from property overrides (or use defaults)
@@ -57,9 +60,9 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
             ["spawn_z"] = 0f,
         };
 
-        if (context.WorldEngine != null)
+        if (context.ResourceNodes != null)
         {
-            SpawnResourceNodeOutcome outcome = context.WorldEngine.SpawnResourceNode(triggerHandle);
+            SpawnResourceNodeOutcome outcome = context.ResourceNodes.SpawnResourceNode(triggerHandle);
 
             if (outcome.Success && outcome.Result != null)
             {
@@ -91,9 +94,12 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
         };
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("spawn_resource_node", null)
+        ],
         DisplayName = "Spawn Resource Node",
         Category = "Actions",
         Description = "Spawns a single resource node inside a worldengine_node_region trigger, pulling " +
@@ -117,76 +123,22 @@ public class SpawnResourceNodeExecutor : IGlyphNodeExecutor
                 DefaultValue = "There are no more resources of this type to be found here.",
             },
         ],
-        InputPins =
+        Parameters =
         [
-            new GlyphPin
-            {
-                Id = "exec_in", Name = "Execute", DataType = GlyphDataType.Exec,
-                Direction = GlyphPinDirection.Input,
-            },
-            new GlyphPin
-            {
-                Id = "trigger", Name = "Trigger", DataType = GlyphDataType.NwObject,
-                Direction = GlyphPinDirection.Input,
-            },
+            Pins.In("trigger", "Trigger", GlyphDataType.NwObject),
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin
-            {
-                Id = "exec_out", Name = "Then", DataType = GlyphDataType.Exec,
-                Direction = GlyphPinDirection.Output,
-            },
-            new GlyphPin
-            {
-                Id = "success", Name = "Success", DataType = GlyphDataType.Bool,
-                Direction = GlyphPinDirection.Output,
-            },
-            new GlyphPin
-            {
-                Id = "message", Name = "Message", DataType = GlyphDataType.String,
-                Direction = GlyphPinDirection.Output,
-            },
-            new GlyphPin
-            {
-                Id = "node_id", Name = "Node ID", DataType = GlyphDataType.String,
-                Direction = GlyphPinDirection.Output,
-            },
-            new GlyphPin
-            {
-                Id = "node_name", Name = "Node Name", DataType = GlyphDataType.String,
-                Direction = GlyphPinDirection.Output,
-            },
-            new GlyphPin
-            {
-                Id = "definition_tag", Name = "Definition Tag", DataType = GlyphDataType.String,
-                Direction = GlyphPinDirection.Output,
-            },
-            new GlyphPin
-            {
-                Id = "quality", Name = "Quality", DataType = GlyphDataType.String,
-                Direction = GlyphPinDirection.Output,
-            },
-            new GlyphPin
-            {
-                Id = "uses", Name = "Uses", DataType = GlyphDataType.Int,
-                Direction = GlyphPinDirection.Output,
-            },
-            new GlyphPin
-            {
-                Id = "spawn_x", Name = "Spawn X", DataType = GlyphDataType.Float,
-                Direction = GlyphPinDirection.Output,
-            },
-            new GlyphPin
-            {
-                Id = "spawn_y", Name = "Spawn Y", DataType = GlyphDataType.Float,
-                Direction = GlyphPinDirection.Output,
-            },
-            new GlyphPin
-            {
-                Id = "spawn_z", Name = "Spawn Z", DataType = GlyphDataType.Float,
-                Direction = GlyphPinDirection.Output,
-            },
+            Pins.Out("success", "Success", GlyphDataType.Bool),
+            Pins.Out("message", "Message", GlyphDataType.String),
+            Pins.Out("node_id", "Node ID", GlyphDataType.String),
+            Pins.Out("node_name", "Node Name", GlyphDataType.String),
+            Pins.Out("definition_tag", "Definition Tag", GlyphDataType.String),
+            Pins.Out("quality", "Quality", GlyphDataType.String),
+            Pins.Out("uses", "Uses", GlyphDataType.Int),
+            Pins.Out("spawn_x", "Spawn X", GlyphDataType.Float),
+            Pins.Out("spawn_y", "Spawn Y", GlyphDataType.Float),
+            Pins.Out("spawn_z", "Spawn Z", GlyphDataType.Float),
         ],
     };
 }

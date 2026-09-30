@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 
 /// <summary>
@@ -17,7 +19,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 /// </list>
 /// </para>
 /// </summary>
-public class ForEachExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class ForEachExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "flow.for_each";
 

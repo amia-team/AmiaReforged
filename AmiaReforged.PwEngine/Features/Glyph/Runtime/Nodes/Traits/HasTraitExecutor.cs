@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Traits;
 
@@ -6,7 +7,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Traits;
 /// Checks whether a creature/character has a specific trait.
 /// Reads the trait tag from the graph variable store (populated by the trait hook).
 /// </summary>
-public class HasTraitExecutor : IGlyphNodeExecutor
+[GlyphNode]
+public partial class HasTraitExecutor : IGlyphNodeExecutor
 {
     public const string NodeTypeId = "trait.has_trait";
     public string TypeId => NodeTypeId;
@@ -14,7 +16,7 @@ public class HasTraitExecutor : IGlyphNodeExecutor
     public async Task<GlyphNodeResult> ExecuteAsync(
         GlyphNodeInstance node, GlyphExecutionContext context, Func<string, Task<object?>> resolveInput)
     {
-        object? tagVal = await resolveInput("trait_tag");
+        object? tagVal = await resolveInput(Inputs.TraitTag);
         string traitTag = tagVal?.ToString() ?? string.Empty;
 
         // Check the graph variable store for character traits
@@ -32,20 +34,23 @@ public class HasTraitExecutor : IGlyphNodeExecutor
         });
     }
 
-    public GlyphNodeDefinition CreateDefinition() => new()
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
         TypeId = NodeTypeId,
+        Exports = [
+            new("has_trait", "has_trait", null)
+        ],
         DisplayName = "Has Trait",
         Category = "Traits",
         Description = "Checks if the target character has a specific trait. Returns true/false.",
         ColorClass = "node-getter",
-        InputPins =
+        Parameters =
         [
-            new GlyphPin { Id = "trait_tag", Name = "Trait Tag", DataType = GlyphDataType.String, Direction = GlyphPinDirection.Input, DefaultValue = "" }
+            Pins.In("trait_tag", "Trait Tag", GlyphDataType.String, "")
         ],
-        OutputPins =
+        Results =
         [
-            new GlyphPin { Id = "has_trait", Name = "Has Trait", DataType = GlyphDataType.Bool, Direction = GlyphPinDirection.Output }
+            Pins.Out("has_trait", "Has Trait", GlyphDataType.Bool)
         ]
     };
 }

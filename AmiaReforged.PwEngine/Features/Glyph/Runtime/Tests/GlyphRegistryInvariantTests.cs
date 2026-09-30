@@ -64,6 +64,10 @@ public class GlyphRegistryInvariantTests
         definitions.Should().NotBeEmpty();
         definitions.Select(d => d.TypeId).Should().OnlyHaveUniqueItems();
 
+        foreach (IGlyphNodeExecutor executor in AllExecutors())
+            registry.Get(executor.TypeId).Should().NotBeNull(
+                $"production executor '{executor.TypeId}' must have generated or module registration");
+
         foreach (GlyphNodeDefinition definition in definitions)
         {
             registry.Get(definition.TypeId).Should().NotBeNull(

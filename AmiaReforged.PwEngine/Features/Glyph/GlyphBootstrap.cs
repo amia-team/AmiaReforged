@@ -1,15 +1,6 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
-using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Actions;
-using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Constants;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Context;
-using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Events;
-using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
-using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
-using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Interactions;
-using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Logic;
-using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Math;
-using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Traits;
 using Anvil.Services;
 using NLog;
 
@@ -34,22 +25,20 @@ public class GlyphBootstrap
     public Language.Compilation.GlyphCompiler Compiler { get; }
     public Runtime.Programs.GlyphRuntimeRegistry Programs { get; } = new();
 
-    public GlyphBootstrap(IGlyphNodeDefinitionRegistry registry)
+    public GlyphBootstrap(IGlyphNodeDefinitionRegistry registry, IEnumerable<Platform.IGlyphModule>? modules = null)
     {
         Log.Info("Bootstrapping Glyph source scripting system...");
 
-        // Create all built-in node executors — single authoritative list
-        List<IGlyphNodeExecutor> executors = CreateExecutors();
-
-        // Generate context getter nodes from providers
-        List<IGlyphNodeExecutor> contextGetters = CreateContextGetters(executors);
-        executors.AddRange(contextGetters);
+        // Generated stateless modules and normally injected service-backed modules share registration.
+        List<IGlyphNodeExecutor> executors = Platform.GlyphGeneratedRegistry.CreateExecutors(modules);
 
         // Auto-register definitions from each executor (eliminates the old dual-list)
         foreach (IGlyphNodeExecutor executor in executors)
         {
             registry.Register(executor.CreateDefinition());
         }
+
+        Platform.GlyphFeatureVerifier.Verify(registry, executors);
 
         // Create the interpreter
         Interpreter = new GlyphInterpreter(registry, executors);
@@ -58,7 +47,7 @@ public class GlyphBootstrap
 
         Log.Info("Glyph bootstrap complete. {DefCount} definitions registered, {ExecCount} executors loaded " +
                  "(including {CtxCount} context getters).",
-            registry.GetAll().Count, executors.Count, contextGetters.Count);
+            registry.GetAll().Count, executors.Count, executors.Count(e => e is ContextGetterExecutor));
     }
 
     public void RestorePublished(Persistence.GlyphDefinition definition)
@@ -68,140 +57,5 @@ public class GlyphBootstrap
         catch (Exception ex) { Log.Error(ex, "Unable to restore Glyph definition {Id}; active executable retained.", definition.Id); }
     }
 
-    internal static List<IGlyphNodeExecutor> CreateExecutors() =>
-    [
-        // Events
-        new BeforeGroupSpawnEventExecutor(),
-        new AfterGroupSpawnEventExecutor(),
-        new OnCreatureDeathEventExecutor(),
-        new OnCreatureSpawnEventExecutor(),
-        new OnBossSpawnEventExecutor(),
-        new OnTraitGrantedEventExecutor(),
-        new OnTraitRemovedEventExecutor(),
-
-        // Flow
-        new BranchExecutor(),
-        new ForEachExecutor(),
-        new SequenceExecutor(),
-        new DoNothingExecutor(),
-        new BreakExecutor(),
-
-        // Actions
-        new ApplyEffectExecutor(),
-        new ModifySpawnCountExecutor(),
-        new CancelSpawnExecutor(),
-        new SendFloatingTextExecutor(),
-        new SetLocalVariableExecutor(),
-        new DespawnCreatureExecutor(),
-        new SkipBonusesExecutor(),
-        new SkipMutationsExecutor(),
-        new SetCreatureNameExecutor(),
-        new HealCreatureExecutor(),
-        new DamageCreatureExecutor(),
-        new SpawnResourceNodeExecutor(),
-
-        // Constants
-        new StringConstantExecutor(),
-        new IntConstantExecutor(),
-        new FloatConstantExecutor(),
-        new BoolConstantExecutor(),
-
-        // Getters
-        new GetCreatureHPExecutor(),
-        new GetPartySizeExecutor(),
-        new GetChaosStateExecutor(),
-        new GetTimeOfDayExecutor(),
-        new GetRandomIntExecutor(),
-        new GetAreaResRefExecutor(),
-        new GetRegionInfoExecutor(),
-        new GetCreatureLevelExecutor(),
-        new GetPartyMembersExecutor(),
-        new GetLocalVariableExecutor(),
-        new GetCreatureResRefExecutor(),
-        new GetCreatureNameExecutor(),
-        new GetCreatureACExecutor(),
-        new GetCreatureAbilityScoreExecutor(),
-        new GetCreatureRaceExecutor(),
-        new GetSpawnGroupInfoExecutor(),
-        new GetTriggeringPlayerExecutor(),
-        new GetNearestObjectsByTypeExecutor(),
-        new GetNearestObjectByTypeExecutor(),
-        new IsPlayerExecutor(),
-        new GetObjectsOfTypeInAreaExecutor(),
-        new IsResourceNodeTypeExecutor(),
-        new GetTagExecutor(),
-        new GetObjectResRefExecutor(),
-        new GetDistanceBetweenExecutor(),
-        new SplitStringExecutor(),
-
-        // Math / Logic
-        new CompareExecutor(),
-        new MathOpExecutor(),
-        new BooleanOpExecutor(),
-        new NotExecutor(),
-        new StringContainsExecutor(),
-
-        // Traits
-        new HasTraitExecutor(),
-        new GetCreatureTraitsExecutor(),
-
-        // Interaction pipeline stages
-        new InteractionAttemptedStageExecutor(),
-        new InteractionStartedStageExecutor(),
-        new InteractionTickStageExecutor(),
-        new InteractionCompletedStageExecutor(),
-        new FailInteractionExecutor(),
-        new GetInteractionInfoExecutor(),
-        new SuppressEventExecutor(),
-        new SetProgressExecutor(),
-        new SetRequiredRoundsExecutor(),
-        new SetStatusExecutor(),
-        new SetMetadataExecutor(),
-        new GetMetadataExecutor(),
-        new StoreSessionObjectExecutor(),
-        new RetrieveSessionObjectExecutor(),
-        new SkillCheckExecutor(),
-        new PlayVfxExecutor(),
-        new SendMessageExecutor(),
-        new HasItemExecutor(),
-
-        // Industries & Knowledge
-        new GetIndustryMembershipsExecutor(),
-        new GetIndustryLevelExecutor(),
-        new IsIndustryMemberExecutor(),
-        new HasKnowledgeExecutor(),
-        new HasUnlockedInteractionExecutor(),
-        new GetKnowledgeProgressionExecutor(),
-        new GetLearnedKnowledgeExecutor()
-    ];
-
-    /// <summary>
-    /// Iterates executors that implement <see cref="IContextNodeProvider"/> and creates
-    /// a <see cref="ContextGetterExecutor"/> for each of their context pins.
-    /// </summary>
-    private static List<IGlyphNodeExecutor> CreateContextGetters(List<IGlyphNodeExecutor> executors)
-    {
-        List<IGlyphNodeExecutor> contextGetters = [];
-
-        foreach (IGlyphNodeExecutor executor in executors)
-        {
-            if (executor is not IContextNodeProvider provider) continue;
-
-            List<ContextPinDescriptor> pins = provider.GetContextPins();
-            foreach (ContextPinDescriptor pin in pins)
-            {
-                contextGetters.Add(new ContextGetterExecutor(
-                    provider.SourceTypeId,
-                    provider.SourceDisplayName,
-                    pin,
-                    provider.SourceEventType,
-                    provider.SourceScriptCategory));
-            }
-
-            Log.Info("  Context provider '{Source}': {Count} getter(s)",
-                provider.SourceDisplayName, pins.Count);
-        }
-
-        return contextGetters;
-    }
+    internal static List<IGlyphNodeExecutor> CreateExecutors() => Platform.GlyphGeneratedRegistry.CreateExecutors();
 }

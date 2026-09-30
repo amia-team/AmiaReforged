@@ -1,3 +1,5 @@
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Core;
 
 /// <summary>
@@ -11,6 +13,9 @@ public class GlyphNodeDefinition
     /// Unique type identifier for this node kind. Dot-separated by category.
     /// Convention: "category.name" (e.g., "flow.branch", "action.apply_effect", "event.before_group_spawn").
     /// </summary>
+    public IReadOnlyList<GlyphIntrinsicExport> Intrinsics { get; init; } = [];
+    public GlyphContextSchema? ContextSchema { get; init; }
+
     public required string TypeId { get; init; }
 
     /// <summary>

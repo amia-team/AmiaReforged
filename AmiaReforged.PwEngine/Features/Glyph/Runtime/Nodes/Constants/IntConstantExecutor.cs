@@ -1,11 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Constants;
 
 /// <summary>
 /// Outputs a constant integer value configured via PropertyOverrides.
 /// </summary>
-public sealed class IntConstantExecutor : GlyphPureNode
+[GlyphNode]
+public sealed partial class IntConstantExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "constant.int";
     public override string TypeId => NodeTypeId;

@@ -32,7 +32,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
 
         List<BoundStage> stages = [];
 
-        if (_event == GlyphEventType.InteractionPipeline)
+        if (Platform.GlyphEvents.Get(_event).Stages is { } eventStages)
         {
             HashSet<string> seen = [];
 
@@ -47,14 +47,20 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
                 if (!seen.Add(stage.Name))
                     Error("GLYPH2006", $"Duplicate stage '{stage.Name}'.", stage.Span);
 
+                var stageDescriptor = eventStages.FirstOrDefault(s => s.Name == stage.Name);
+                if (stageDescriptor == null)
+                {
+                    Error("GLYPH3003", $"Unknown stage '{stage.Name}' for '{syntax.Event}'.", stage.Span);
+                    continue;
+                }
                 _stage = stage.Name;
-                _entry = "stage.interaction_" + stage.Name;
+                _entry = stageDescriptor.EntryTypeId;
                 stages.Add(new(_entry, Block(stage.Body), stage.Span));
             }
 
-            foreach (string name in GlyphLanguageAliases.Stages)
+            foreach (string name in eventStages.Select(s => s.Name))
                 if (!seen.Contains(name))
-                    stages.Add(new("stage.interaction_" + name, new([], syntax.Span), syntax.Span));
+                    stages.Add(new(Platform.GlyphEvents.Get(_event).Entry(name), new([], syntax.Span), syntax.Span));
         }
         else
         {
@@ -341,7 +347,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
     private BoundStatement? Assignment(AssignmentStatementSyntax assignment)
     {
         string? name = Path(assignment.Target);
-        string? setter = name == null ? null : GlyphLanguageAliases.Setters.GetValueOrDefault(name);
+        string? setter = name == null ? null : catalog.Setters.GetValueOrDefault(name);
 
         List<ArgumentSyntax> args = [];
         ExpressionSyntax value = assignment.Value;
@@ -351,10 +357,10 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
 
         if (assignment.Target is IndexExpressionSyntax
             {
-                Receiver: NameExpressionSyntax { Name: GlyphLanguageAliases.MetadataName }
-            } index)
+                Receiver: NameExpressionSyntax indexerName
+            } index && catalog.Indexers.FirstOrDefault(i => i.Name == indexerName.Name) is { } indexer)
         {
-            setter = GlyphLanguageAliases.MetadataSetter;
+            setter = indexer.Setter;
             args.Add(new(null, index.Index, index.Span));
         }
 
@@ -439,10 +445,10 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
 
             case IndexExpressionSyntax
             {
-                Receiver: NameExpressionSyntax { Name: GlyphLanguageAliases.MetadataName }
-            } index:
+                Receiver: NameExpressionSyntax indexerName
+            } index when catalog.Indexers.FirstOrDefault(i => i.Name == indexerName.Name) is { } indexer:
                 return Call(new(
-                    new NameExpressionSyntax(GlyphLanguageAliases.MetadataGetter, index.Span),
+                    new NameExpressionSyntax(indexer.Getter, index.Span),
                     [new(null, index.Index, index.Span)],
                     index.Span));
         }
@@ -455,7 +461,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
                 if (scope.TryGetValue(path, out BoundExpression? local))
                     return local;
 
-            var property = GlyphLanguageAliases.Properties.FirstOrDefault(a => a.Name == path);
+            var property = catalog.PropertyAliases.FirstOrDefault(a => a.Name == path);
             if (property != null)
             {
                 return Call(new(
@@ -466,7 +472,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
                     syntax.Span));
             }
 
-            string pin = GlyphLanguageAliases.ContextPin(path, _event);
+            string pin = catalog.ContextPin(path, _entry);
             GlyphPin? context = catalog.Registry.Get(_entry)?.OutputPins
                 .FirstOrDefault(p => p.Id == pin && p.DataType != GlyphDataType.Exec);
 
@@ -578,7 +584,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
 
         List<ArgumentSyntax> arguments = syntax.Arguments.ToList();
 
-        var alias = GlyphLanguageAliases.Calls.FirstOrDefault(a => a.Name == name);
+        var alias = catalog.CallAliases.FirstOrDefault(a => a.Name == name);
         if (alias != null)
         {
             name = alias.Target;

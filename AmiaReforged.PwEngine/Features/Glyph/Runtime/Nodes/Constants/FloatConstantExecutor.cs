@@ -1,11 +1,14 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 
+using AmiaReforged.PwEngine.Features.Glyph.Platform;
+
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Constants;
 
 /// <summary>
 /// Outputs a constant floating-point value configured via PropertyOverrides.
 /// </summary>
-public sealed class FloatConstantExecutor : GlyphPureNode
+[GlyphNode]
+public sealed partial class FloatConstantExecutor : GlyphPureNode
 {
     public const string NodeTypeId = "constant.float";
     public override string TypeId => NodeTypeId;
