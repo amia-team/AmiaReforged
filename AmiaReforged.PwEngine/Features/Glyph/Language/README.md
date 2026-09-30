@@ -57,6 +57,28 @@ Supported declarations:
 
 Statements are calls, `let`, `if/else`, `foreach name in expression`, `break`, and supported
 interaction assignments. Semicolons are optional. Line comments begin with `//`.
+
+### Global prelude constants
+
+A `global.glyph` prelude may declare `const` values alongside `fn`, `struct` and `type`.
+Each constant is resolved at compile time into an immutable, statically typed value of kind
+Bool, Int, Float or String. Only a literal of one of those kinds, or a reference to another
+constant, is permitted as an initializer. References resolve on demand, so acyclic references
+resolve in any order; a reference that loops back onto a constant still being resolved (a
+self- or mutual cycle) is rejected, as is any runtime- or context-dependent
+initializer (member access, invocation, arithmetic, etc.), a missing initializer, a
+self- or cross reference that cannot resolve (a cycle), or a reference to an unknown constant is
+rejected with a structured diagnostic (`GLYPH2009` unsupported/missing initializer,
+`GLYPH2012` cyclic/self-referential, `GLYPH2013` unknown constant). The resolved values live
+only in the compiler-side environment; ordinary event programs do not consume them until later
+work wires the global environment into binding.
+
+```glyph
+const OBJECT_TRIGGER = "trigger"
+const OBJECT_DOOR = "door"
+const OBJECT_PLACEABLE = "placeable"
+const OBJECT_CREATURE = "creature"
+```
 Strings support `\n`, `\r`, `\t`, `\"`, `\\`. Literals are Bool, Int, Float and String.
 Numeric operators are `+ - * / % == != < <= > >=`; Boolean operators are `! && ||`.
 Parentheses control precedence. Arguments may be positional followed by named arguments

@@ -17,6 +17,11 @@ public sealed class GlyphGlobalEnvironment
     public ImmutableDictionary<string, AdtDeclarationSyntax> Adts { get; }
     public ImmutableDictionary<string, GlyphDeclarationSyntax> ByName { get; }
 
+    // Constant names mapped to their fully resolved, statically typed values. This is resolved
+    // compile-time data produced from <see cref="Constants"/>; it carries no runtime graph or
+    // executor, so keeping it here does not leak runtime state into normal Glyph binding.
+    public ImmutableDictionary<string, GlyphConstantValue> ResolvedConstants { get; }
+
     private readonly List<GlyphDiagnostic> _diagnostics;
 
     private GlyphGlobalEnvironment(
@@ -25,6 +30,7 @@ public sealed class GlyphGlobalEnvironment
         ImmutableDictionary<string, StructDeclarationSyntax> structs,
         ImmutableDictionary<string, AdtDeclarationSyntax> adts,
         ImmutableDictionary<string, GlyphDeclarationSyntax> byName,
+        ImmutableDictionary<string, GlyphConstantValue> resolvedConstants,
         List<GlyphDiagnostic> diagnostics)
     {
         Constants = constants;
@@ -32,6 +38,7 @@ public sealed class GlyphGlobalEnvironment
         Structs = structs;
         Adts = adts;
         ByName = byName;
+        ResolvedConstants = resolvedConstants;
         _diagnostics = diagnostics;
     }
 
@@ -41,6 +48,7 @@ public sealed class GlyphGlobalEnvironment
         ImmutableDictionary<string, StructDeclarationSyntax>.Empty,
         ImmutableDictionary<string, AdtDeclarationSyntax>.Empty,
         ImmutableDictionary<string, GlyphDeclarationSyntax>.Empty,
+        ImmutableDictionary<string, GlyphConstantValue>.Empty,
         []);
 
     // Builds the environment from any mix of prelude declarations. Because constant, function,
@@ -99,12 +107,15 @@ public sealed class GlyphGlobalEnvironment
             }
         }
 
+        var resolvedConstants = ResolveConstants(constants, diagnostics);
+
         return new GlyphGlobalEnvironment(
             ToImmutable(constants),
             ToImmutable(functions),
             ToImmutable(structs),
             ToImmutable(adts),
             ToImmutable(allByName),
+            ToImmutableValues(resolvedConstants),
             diagnostics);
     }
 
@@ -114,7 +125,178 @@ public sealed class GlyphGlobalEnvironment
             ? ImmutableDictionary<string, T>.Empty
             : ImmutableDictionary.CreateRange(Ordinal, source);
 
+    private static ImmutableDictionary<string, T> ToImmutableValues<T>(Dictionary<string, T> source) =>
+        source.Count == 0
+            ? ImmutableDictionary<string, T>.Empty
+            : ImmutableDictionary.CreateRange(Ordinal, source);
+
+    // Resolves every constant declaration to a statically typed value. Only literals (Bool, Int,
+    // Float, String) and references to other constants are permitted; anything else is rejected as
+    // a non-constant initializer. References are resolved on demand, so acyclic references resolve
+    // in any order; a reference that loops back onto a constant still being resolved (self- or
+    // mutual cycle) is reported as GLYPH2012 rather than silently accepted.
+    private static Dictionary<string, GlyphConstantValue> ResolveConstants(
+        Dictionary<string, ConstantDeclarationSyntax> constants,
+        List<GlyphDiagnostic> diagnostics)
+    {
+        var resolved = new Dictionary<string, GlyphConstantValue>(Ordinal);
+        var failed = new HashSet<string>(Ordinal);
+        var visiting = new HashSet<string>(Ordinal);
+
+        foreach (var entry in constants)
+            Resolve(entry.Key, constants, allNames: constants.Keys, resolved, failed, visiting, diagnostics);
+
+        return resolved;
+    }
+
+    private static GlyphConstantValue? Resolve(
+        string name,
+        Dictionary<string, ConstantDeclarationSyntax> constants,
+        IEnumerable<string> allNames,
+        Dictionary<string, GlyphConstantValue> resolved,
+        HashSet<string> failed,
+        HashSet<string> visiting,
+        List<GlyphDiagnostic> diagnostics)
+    {
+        if (resolved.TryGetValue(name, out GlyphConstantValue? existing)) return existing;
+        if (failed.Contains(name)) return null;
+
+        ConstantDeclarationSyntax declaration = constants[name];
+
+        if (!visiting.Add(name))
+        {
+            // Re-entering a constant still on the resolution stack means a self- or cross reference
+            // that cannot resolve without itself — a cycle.
+            diagnostics.Add(new("GLYPH2012",
+                $"Constant '{name}' is cyclic or self-referential.", declaration.Span));
+            failed.Add(name);
+            return null;
+        }
+
+        GlyphConstantValue? value = Evaluate(declaration.Initializer, name,
+            constants, allNames, resolved, failed, visiting, diagnostics);
+
+        visiting.Remove(name);
+
+        if (value is null)
+        {
+            failed.Add(name);
+            return null;
+        }
+
+        resolved[name] = value;
+        return value;
+    }
+
+    private static GlyphConstantValue? Evaluate(
+        ExpressionSyntax? initializer,
+        string currentName,
+        Dictionary<string, ConstantDeclarationSyntax> constants,
+        IEnumerable<string> allNames,
+        Dictionary<string, GlyphConstantValue> resolved,
+        HashSet<string> failed,
+        HashSet<string> visiting,
+        List<GlyphDiagnostic> diagnostics)
+    {
+        SourceSpan declarationSpan = constants[currentName].Span;
+
+        if (initializer is null)
+        {
+            diagnostics.Add(new("GLYPH2009",
+                $"Constant '{currentName}' is missing an initializer.", declarationSpan));
+            return null;
+        }
+
+        switch (initializer)
+        {
+            case LiteralExpressionSyntax literal:
+                if (TryKind(literal.Value, out GlyphConstantKind kind))
+                    return new(currentName, kind, literal.Value!, declarationSpan);
+                diagnostics.Add(new("GLYPH2009",
+                    $"Constant '{currentName}' has an unsupported literal type.", declarationSpan));
+                return null;
+
+            case NameExpressionSyntax reference:
+                return ResolveReference(reference.Name, currentName,
+                    constants, allNames, resolved, failed, visiting, diagnostics);
+
+            default:
+                diagnostics.Add(new("GLYPH2009",
+                    $"Constant '{currentName}' initializer must be a literal or a reference to a previously resolved constant.",
+                    declarationSpan));
+                return null;
+        }
+    }
+
+    private static GlyphConstantValue? ResolveReference(
+        string referenceName,
+        string currentName,
+        Dictionary<string, ConstantDeclarationSyntax> constants,
+        IEnumerable<string> allNames,
+        Dictionary<string, GlyphConstantValue> resolved,
+        HashSet<string> failed,
+        HashSet<string> visiting,
+        List<GlyphDiagnostic> diagnostics)
+    {
+        SourceSpan declarationSpan = constants[currentName].Span;
+
+        if (referenceName == currentName)
+        {
+            diagnostics.Add(new("GLYPH2012",
+                $"Constant '{currentName}' refers to itself.", declarationSpan));
+            return null;
+        }
+
+        if (resolved.TryGetValue(referenceName, out GlyphConstantValue? already)) return already;
+
+        // A reference to a constant that is still being resolved is a back reference onto the current
+        // stack — a real cycle. A forward reference to a constant not yet reached is resolved on
+        // demand and only becomes a cycle if the chain loops back to the current constant. A
+        // reference to a constant that failed earlier is treated as an unresolved dependency.
+        if (failed.Contains(referenceName))
+        {
+            diagnostics.Add(new("GLYPH2013",
+                $"Constant '{currentName}' references unresolved constant '{referenceName}'.", declarationSpan));
+            return null;
+        }
+
+        if (!allNames.Contains(referenceName))
+        {
+            diagnostics.Add(new("GLYPH2013",
+                $"Constant '{currentName}' references unknown constant '{referenceName}'.", declarationSpan));
+            return null;
+        }
+
+        // Defer to the shared resolver; it emits the cycle diagnostic if the reference truly cycles.
+        return Resolve(referenceName, constants, allNames, resolved, failed, visiting, diagnostics);
+    }
+
+    // Maps a boxed literal value produced by the lexer/parser to a constant kind. The lexer already
+    // rejects out-of-range numbers, so a bool/int/double/string is the only valid constant shape.
+    private static bool TryKind(object? value, out GlyphConstantKind kind)
+    {
+        switch (value)
+        {
+            case bool b:
+                kind = GlyphConstantKind.Bool;
+                return true;
+            case int i:
+                kind = GlyphConstantKind.Int;
+                return true;
+            case double d:
+                kind = GlyphConstantKind.Float;
+                return true;
+            case string s:
+                kind = GlyphConstantKind.String;
+                return true;
+            default:
+                kind = default;
+                return false;
+        }
+    }
+
     public ConstantDeclarationSyntax? GetConstant(string name) => Constants.GetValueOrDefault(name);
+    public GlyphConstantValue? GetResolvedConstant(string name) => ResolvedConstants.GetValueOrDefault(name);
     public FunctionDeclarationSyntax? GetFunction(string name) => Functions.GetValueOrDefault(name);
     public StructDeclarationSyntax? GetStruct(string name) => Structs.GetValueOrDefault(name);
     public AdtDeclarationSyntax? GetAdt(string name) => Adts.GetValueOrDefault(name);
