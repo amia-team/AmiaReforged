@@ -4,13 +4,18 @@ using AmiaReforged.PwEngine.Features.Glyph.Language.Syntax;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Language.Compilation;
 
+// Immutable, compiler-side view of the prelude: the constants, functions, structs and ADTs that
+// a global.glyph file declares. This type intentionally holds no runtime graph, executable, event
+// or stage state and is not wired into normal Glyph binding yet — that belongs to a later task.
 public sealed class GlyphGlobalEnvironment
 {
+    private static readonly StringComparer Ordinal = StringComparer.Ordinal;
+
     public ImmutableDictionary<string, ConstantDeclarationSyntax> Constants { get; }
     public ImmutableDictionary<string, FunctionDeclarationSyntax> Functions { get; }
     public ImmutableDictionary<string, StructDeclarationSyntax> Structs { get; }
     public ImmutableDictionary<string, AdtDeclarationSyntax> Adts { get; }
-    public ImmutableDictionary<string, GlobalDeclarationSyntax> ByName { get; }
+    public ImmutableDictionary<string, GlyphDeclarationSyntax> ByName { get; }
 
     private readonly List<GlyphDiagnostic> _diagnostics;
 
@@ -19,7 +24,7 @@ public sealed class GlyphGlobalEnvironment
         ImmutableDictionary<string, FunctionDeclarationSyntax> functions,
         ImmutableDictionary<string, StructDeclarationSyntax> structs,
         ImmutableDictionary<string, AdtDeclarationSyntax> adts,
-        ImmutableDictionary<string, GlobalDeclarationSyntax> byName,
+        ImmutableDictionary<string, GlyphDeclarationSyntax> byName,
         List<GlyphDiagnostic> diagnostics)
     {
         Constants = constants;
@@ -35,88 +40,58 @@ public sealed class GlyphGlobalEnvironment
         ImmutableDictionary<string, FunctionDeclarationSyntax>.Empty,
         ImmutableDictionary<string, StructDeclarationSyntax>.Empty,
         ImmutableDictionary<string, AdtDeclarationSyntax>.Empty,
-        ImmutableDictionary<string, GlobalDeclarationSyntax>.Empty,
+        ImmutableDictionary<string, GlyphDeclarationSyntax>.Empty,
         []);
 
+    // Builds the environment from any mix of prelude declarations. Because constant, function,
+    // struct and ADT declarations all share the GlyphDeclarationSyntax base, a single pass can
+    // place them into the right bucket and enforce one collision/lookup policy.
     public static GlyphGlobalEnvironment FromDeclarations(
-        IReadOnlyList<GlobalDeclarationSyntax> declarations,
+        IReadOnlyList<GlyphDeclarationSyntax> declarations,
         out List<GlyphDiagnostic> diagnostics)
     {
         diagnostics = [];
 
-        var constants = new Dictionary<string, ConstantDeclarationSyntax>(StringComparer.Ordinal);
-        var functions = new Dictionary<string, FunctionDeclarationSyntax>(StringComparer.Ordinal);
-        var structs = new Dictionary<string, StructDeclarationSyntax>(StringComparer.Ordinal);
-        var adts = new Dictionary<string, AdtDeclarationSyntax>(StringComparer.Ordinal);
-        var allByName = new Dictionary<string, GlobalDeclarationSyntax>(StringComparer.Ordinal);
+        var constants = new Dictionary<string, ConstantDeclarationSyntax>(Ordinal);
+        var functions = new Dictionary<string, FunctionDeclarationSyntax>(Ordinal);
+        var structs = new Dictionary<string, StructDeclarationSyntax>(Ordinal);
+        var adts = new Dictionary<string, AdtDeclarationSyntax>(Ordinal);
+        var allByName = new Dictionary<string, GlyphDeclarationSyntax>(Ordinal);
 
         foreach (var decl in declarations)
         {
-            // Constant
-            ConstantDeclarationSyntax? constDecl = decl as ConstantDeclarationSyntax;
-            if (constDecl != null)
+            // The first declaration for a name wins; later duplicates overwrite nothing here.
+            // Collision reporting is handled centrally below so each duplicate or cross-kind clash
+            // produces exactly one diagnostic rather than one per bucket.
+            switch (decl)
             {
-                if (constDecl.TypeName is not ("bool" or "int" or "float" or "string" or "void"))
-                {
-                    diagnostics.Add(new("GLYPH2001", $"Invalid constant type '{constDecl.TypeName}'.", constDecl.Span));
-                    continue;
-                }
+                case ConstantDeclarationSyntax constant:
+                    constants.TryAdd(constant.Name, constant);
+                    break;
 
-                if (constDecl.Value is not null)
-                {
-                    var value = (dynamic)constDecl.Value;
-                    if (constDecl.TypeName == "string" && value is not string)
-                    {
-                        diagnostics.Add(new("GLYPH2001", $"String constant must be a string literal.", constDecl.Span));
-                        continue;
-                    }
-                    if (constDecl.TypeName == "bool" && value is not bool)
-                    {
-                        diagnostics.Add(new("GLYPH2001", $"Bool constant must be a boolean literal.", constDecl.Span));
-                        continue;
-                    }
-                    if ((constDecl.TypeName == "int" || constDecl.TypeName == "float") && value is not (int or double))
-                    {
-                        diagnostics.Add(new("GLYPH2001", $"Numeric constant must be a number literal.", constDecl.Span));
-                        continue;
-                    }
-                }
+                case FunctionDeclarationSyntax function:
+                    functions.TryAdd(function.Name, function);
+                    break;
 
-                if (constants.ContainsKey(constDecl.Name))
-                {
-                    diagnostics.Add(new("GLYPH2006", $"Duplicate global constant '{constDecl.Name}'.", constDecl.Span));
-                }
-                else
-                {
-                    constants[constDecl.Name] = constDecl;
-                }
+                case StructDeclarationSyntax structure:
+                    structs.TryAdd(structure.Name, structure);
+                    break;
+
+                case AdtDeclarationSyntax adt:
+                    adts.TryAdd(adt.Name, adt);
+                    break;
             }
 
-            // Function
-            FunctionDeclarationSyntax? funcDecl = decl as FunctionDeclarationSyntax;
-            if (funcDecl != null)
+            if (allByName.TryGetValue(decl.Name, out GlyphDeclarationSyntax? existing))
             {
-                if (functions.ContainsKey(funcDecl.Name))
-                {
-                    diagnostics.Add(new("GLYPH2006", $"Duplicate global function '{funcDecl.Name}'.", funcDecl.Span));
-                }
-                else
-                {
-                    functions[funcDecl.Name] = funcDecl;
-                }
-            }
-
-            // Skip struct and ADT for now - type system doesn't support them yet
-            // They are stored in allByName for future use
-            if (decl.GetType() == typeof(StructDeclarationSyntax) || decl.GetType() == typeof(AdtDeclarationSyntax))
-            {
-                // Just skip these for now
-            }
-
-            if (allByName.ContainsKey(decl.Name))
-            {
-                var existing = allByName[decl.Name];
-                diagnostics.Add(new("GLYPH2010", $"Name collision between '{decl.Name}' ({decl.GetType().Name}) and '{existing.GetType().Name}'.", decl.Span));
+                // Same kind -> duplicate; different kind -> cross-kind collision.
+                string code = existing.GetType() == decl.GetType() ? "GLYPH2006" : "GLYPH2010";
+                diagnostics.Add(new(
+                    code,
+                    code == "GLYPH2006"
+                        ? $"Duplicate global declaration '{decl.Name}'."
+                        : $"Name collision between '{decl.Name}' ({existing.GetType().Name}) and '{decl.GetType().Name}'.",
+                    decl.Span));
             }
             else
             {
@@ -124,49 +99,25 @@ public sealed class GlyphGlobalEnvironment
             }
         }
 
-        var constantsImmutable = constants.Count == 0
-            ? ImmutableDictionary<string, ConstantDeclarationSyntax>.Empty
-            : ImmutableDictionary.CreateRange(constants);
-
-        var functionsImmutable = functions.Count == 0
-            ? ImmutableDictionary<string, FunctionDeclarationSyntax>.Empty
-            : ImmutableDictionary.CreateRange(functions);
-
-        var structsImmutable = structs.Count == 0
-            ? ImmutableDictionary<string, StructDeclarationSyntax>.Empty
-            : ImmutableDictionary.CreateRange(structs);
-
-        var adtsImmutable = adts.Count == 0
-            ? ImmutableDictionary<string, AdtDeclarationSyntax>.Empty
-            : ImmutableDictionary.CreateRange(adts);
-
-        var byNameImmutable = allByName.Count == 0
-            ? ImmutableDictionary<string, GlobalDeclarationSyntax>.Empty
-            : ImmutableDictionary.CreateRange(allByName);
-
         return new GlyphGlobalEnvironment(
-            constantsImmutable,
-            functionsImmutable,
-            structsImmutable,
-            adtsImmutable,
-            byNameImmutable,
+            ToImmutable(constants),
+            ToImmutable(functions),
+            ToImmutable(structs),
+            ToImmutable(adts),
+            ToImmutable(allByName),
             diagnostics);
     }
+
+    private static ImmutableDictionary<string, T> ToImmutable<T>(Dictionary<string, T> source)
+        where T : GlyphDeclarationSyntax =>
+        source.Count == 0
+            ? ImmutableDictionary<string, T>.Empty
+            : ImmutableDictionary.CreateRange(Ordinal, source);
 
     public ConstantDeclarationSyntax? GetConstant(string name) => Constants.GetValueOrDefault(name);
     public FunctionDeclarationSyntax? GetFunction(string name) => Functions.GetValueOrDefault(name);
     public StructDeclarationSyntax? GetStruct(string name) => Structs.GetValueOrDefault(name);
     public AdtDeclarationSyntax? GetAdt(string name) => Adts.GetValueOrDefault(name);
-    public GlobalDeclarationSyntax? GetDeclaration(string name) => ByName.GetValueOrDefault(name);
+    public GlyphDeclarationSyntax? GetDeclaration(string name) => ByName.GetValueOrDefault(name);
     public IReadOnlyList<GlyphDiagnostic> Diagnostics => _diagnostics.AsReadOnly();
-
-    public GlyphGlobalEnvironment(List<GlyphDiagnostic> diagnostics)
-    {
-        Constants = ImmutableDictionary<string, ConstantDeclarationSyntax>.Empty;
-        Functions = ImmutableDictionary<string, FunctionDeclarationSyntax>.Empty;
-        Structs = ImmutableDictionary<string, StructDeclarationSyntax>.Empty;
-        Adts = ImmutableDictionary<string, AdtDeclarationSyntax>.Empty;
-        ByName = ImmutableDictionary<string, GlobalDeclarationSyntax>.Empty;
-        _diagnostics = diagnostics;
-    }
 }

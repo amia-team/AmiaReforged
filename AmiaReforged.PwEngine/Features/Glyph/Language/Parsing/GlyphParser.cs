@@ -65,31 +65,24 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
             List<GlobalDeclarationSyntax> globalDeclarations = [];
             SourceSpan unitStart = Current.Span;
 
+            // Prelude declarations (const / fn) and type declarations (struct / ADT) may appear in
+            // any order before the optional event script. This is what lets a global.glyph file
+            // parse as a standalone unit without a `glyph name : event { ... }` body.
             while (At("const") || At("fn") || At("struct") || At("type"))
             {
                 if (Eat("const"))
                 {
                     string constName = Expect("identifier").Text;
-                    Expect(":");
-                    string typeName = Expect("identifier").Text;
-                    
-                    object? value = null;
-                    if (!Eat("="))
-                    {
-                        Diagnostics.Add(new("GLYPH1002", "Expected type or initializer after const name.", Current.Span));
-                    }
-                    else
-                    {
-                        value = Expression();
-                    }
-                    
-                    globalDeclarations.Add(new ConstantDeclarationSyntax(constName, typeName, value, Through(unitStart)));
+                    ExpressionSyntax? initializer = null;
+                    if (Eat("="))
+                        initializer = Expression();
+
+                    globalDeclarations.Add(new ConstantDeclarationSyntax(constName, initializer, Through(unitStart)));
                 }
                 else if (Eat("fn"))
                 {
                     string fnName = Expect("identifier").Text;
-                    
-                    // Parameters
+
                     Expect("(");
                     List<ParameterSyntax> parameters = [];
                     while (!At(")") && !At("eof"))
@@ -97,35 +90,21 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
                         SourceSpan paramStart = Current.Span;
                         string paramName = Expect("identifier").Text;
                         string? paramTypeName = null;
-                        
                         if (Eat(":"))
-                        {
                             paramTypeName = Expect("identifier").Text;
-                        }
-                        
+
                         parameters.Add(new(paramName, paramTypeName, Through(paramStart)));
-                        
+
                         if (!Eat(",") && !Eat(";")) break;
                     }
                     Expect(")");
-                    
-                    // Return type
-                    if (Eat("->"))
-                    {
-                        string returnType = Expect("identifier").Text;
-                        
-                        // Body
-                        if (Eat("="))
-                        {
-                            string bodyExpr = Expect("identifier").Text;
-                            globalDeclarations.Add(new FunctionDeclarationSyntax(fnName, parameters, returnType, bodyExpr, Through(unitStart)));
-                        }
-                    }
-                    else
-                    {
-                        Diagnostics.Add(new("GLYPH1003", "Expected return type or body for function.", Current.Span));
-                        globalDeclarations.Add(new FunctionDeclarationSyntax(fnName, parameters, "void", "", Through(unitStart)));
-                    }
+
+                    Expect(":");
+                    string returnType = Expect("identifier").Text;
+                    Expect("=");
+                    ExpressionSyntax bodyExpression = Expression();
+
+                    globalDeclarations.Add(new FunctionDeclarationSyntax(fnName, parameters, returnType, bodyExpression, Through(unitStart)));
                 }
                 else if (Eat("struct"))
                 {
@@ -152,19 +131,28 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
                     Expect("}");
                     declarations.Add(new AdtDeclarationSyntax(adtName, variants, Through(unitStart)));
                 }
-                
+
                 Eat(";");
             }
 
-            SourceSpan glyphStart = Expect("glyph").Span;
-            if (globalDeclarations.Count == 0 && declarations.Count == 0) unitStart = glyphStart;
+            // A normal event script follows the prelude/type declarations. When the `glyph`
+            // keyword is absent the source is a standalone prelude and no event body is parsed.
+            string name = "";
+            string evt = "";
+            BlockStatementSyntax body = new([], unitStart);
+            if (At("glyph"))
+            {
+                SourceSpan glyphStart = Expect("glyph").Span;
+                if (globalDeclarations.Count == 0 && declarations.Count == 0) unitStart = glyphStart;
 
-            string name = Expect("identifier").Text;
-            Expect(":");
-            string evt = Expect("identifier").Text;
-            while (Eat(".")) evt += "." + Expect("identifier").Text;
+                name = Expect("identifier").Text;
+                Expect(":");
+                evt = Expect("identifier").Text;
+                while (Eat(".")) evt += "." + Expect("identifier").Text;
 
-            BlockStatementSyntax body = Block();
+                body = Block();
+            }
+
             Expect("eof");
 
             return new(globalDeclarations, declarations, name, evt, body, Through(unitStart));
@@ -174,66 +162,6 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
             Diagnostics.Add(new("GLYPH1006", "Syntax nesting exceeds 128 levels.", Current.Span));
             return null;
         }
-    }
-
-    private TypeDeclarationSyntax? TryTypeDeclaration()
-    {
-        SourceSpan start = Current.Span;
-
-        if (Eat("struct"))
-        {
-            string name = Expect("identifier").Text;
-            IReadOnlyList<GlyphFieldDeclarationSyntax> fields = FieldBlock();
-            return new StructDeclarationSyntax(name, fields, Through(start));
-        }
-
-        Expect("type");
-        string adtName = Expect("identifier").Text;
-        Expect("{");
-
-        List<GlyphVariantDeclarationSyntax> variants = [];
-        while (!At("}") && !At("eof"))
-        {
-            SourceSpan variantStart = Current.Span;
-            string variantName = Expect("identifier").Text;
-            IReadOnlyList<GlyphFieldDeclarationSyntax> fields = FieldBlock();
-            variants.Add(new(variantName, fields, Through(variantStart)));
-            Eat(",");
-            Eat(";");
-        }
-
-        Expect("}");
-        return new AdtDeclarationSyntax(adtName, variants, Through(start));
-    }
-
-    private TypeDeclarationSyntax TypeDeclaration()
-    {
-        SourceSpan start = Current.Span;
-
-        if (Eat("struct"))
-        {
-            string name = Expect("identifier").Text;
-            IReadOnlyList<GlyphFieldDeclarationSyntax> fields = FieldBlock();
-            return new StructDeclarationSyntax(name, fields, Through(start));
-        }
-
-        Expect("type");
-        string adtName = Expect("identifier").Text;
-        Expect("{");
-
-        List<GlyphVariantDeclarationSyntax> variants = [];
-        while (!At("}") && !At("eof"))
-        {
-            SourceSpan variantStart = Current.Span;
-            string variantName = Expect("identifier").Text;
-            IReadOnlyList<GlyphFieldDeclarationSyntax> fields = FieldBlock();
-            variants.Add(new(variantName, fields, Through(variantStart)));
-            Eat(",");
-            Eat(";");
-        }
-
-        Expect("}");
-        return new AdtDeclarationSyntax(adtName, variants, Through(start));
     }
 
     private IReadOnlyList<GlyphFieldDeclarationSyntax> FieldBlock()

@@ -14,22 +14,26 @@ public sealed record GlyphCompilationUnitSyntax(
     BlockStatementSyntax Body,
     SourceSpan Span) : GlyphSyntax(Span);
 
-public abstract record GlobalDeclarationSyntax(string Name, SourceSpan Span) : GlyphSyntax(Span);
+// Common abstraction for every top-level declaration. Both prelude-style declarations
+// (constant / function) and type declarations (struct / ADT) derive from this so a single
+// lookup and collision policy can treat all four kinds without impossible sibling casts.
+public abstract record GlyphDeclarationSyntax(string Name, SourceSpan Span) : GlyphSyntax(Span);
+
+public abstract record GlobalDeclarationSyntax(string Name, SourceSpan Span) : GlyphDeclarationSyntax(Name, Span);
 
 public sealed record ConstantDeclarationSyntax(
     string Name,
-    string TypeName,
-    object? Value,
+    ExpressionSyntax? Initializer,
     SourceSpan Span) : GlobalDeclarationSyntax(Name, Span);
 
 public sealed record FunctionDeclarationSyntax(
     string Name,
     IReadOnlyList<ParameterSyntax> Parameters,
     string ReturnType,
-    string Body,
+    ExpressionSyntax Body,
     SourceSpan Span) : GlobalDeclarationSyntax(Name, Span);
 
-public abstract record TypeDeclarationSyntax(string Name, SourceSpan Span) : GlyphSyntax(Span);
+public abstract record TypeDeclarationSyntax(string Name, SourceSpan Span) : GlyphDeclarationSyntax(Name, Span);
 
 public sealed record StructDeclarationSyntax(
     string Name,

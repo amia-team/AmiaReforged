@@ -1,4 +1,4 @@
-@top Program { GlobalDeclaration* TypeDeclaration* kw<"glyph"> ProgramName ":" EventName Block }
+@top Program { GlobalDeclaration* TypeDeclaration* (kw<"glyph"> ProgramName ":" EventName Block)? }
 
 @precedence {
   member @left, call @left, unary @right,
@@ -11,10 +11,8 @@
 GlobalDeclaration { ConstantDeclaration | FunctionDeclaration }
 TypeDeclaration { StructDeclaration | AdtDeclaration }
 
-ConstantDeclaration { kw<"const"> ConstantName ":" TypeName ("=" expression)? ";" }
-FunctionDeclaration { kw<"fn"> FunctionName "(" Parameters? ")" ReturnType? "=" FunctionBody? ";" }
-ReturnType { Identifier }
-FunctionBody { Identifier }
+ConstantDeclaration { kw<"const"> ConstantName ("=" expression)? ";"? }
+FunctionDeclaration { kw<"fn"> FunctionName "(" Parameters ")" ":" TypeName "=" expression ";"? }
 Parameters { Parameter* }
 Parameter { ParameterName (":" TypeName)? ("," | ";")? }
 

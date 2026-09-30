@@ -1,11 +1,10 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
-using AmiaReforged.PwEngine.Features.Glyph.Language.Compilation;
 using AmiaReforged.PwEngine.Features.Glyph.Language.Diagnostics;
 using AmiaReforged.PwEngine.Features.Glyph.Language.Syntax;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Language.Binding;
 
-public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnvironment? globalEnvironment = null)
+public sealed class GlyphBinder(GlyphLanguageCatalog catalog)
 {
     public List<GlyphDiagnostic> Diagnostics { get; } = [];
 
@@ -17,7 +16,6 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
     private readonly Dictionary<string, GlyphTypeSymbol> _userTypes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, GlyphStructDefinition> _structs = new(StringComparer.Ordinal);
     private readonly Dictionary<string, GlyphAdtDefinition> _adts = new(StringComparer.Ordinal);
-    private readonly GlyphGlobalEnvironment? _globalEnvironment = globalEnvironment;
 
     private void Error(string code, string message, SourceSpan span) =>
         Diagnostics.Add(new(code, message, span));
@@ -145,13 +143,6 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
 
         if (_userTypes.TryGetValue(name, out GlyphTypeSymbol? user))
             return user;
-
-        // Global structs and ADTs are resolved but not fully integrated yet
-        if (_globalEnvironment is { Structs.Count: > 0 } or { Adts.Count: > 0 })
-        {
-            // Defer full struct/ADT support - return generic type for now
-            return new("Any", GlyphDataType.Exec);
-        }
 
         Error("GLYPH3002", $"Unknown type '{name}'.", span);
         return GlyphTypeSymbol.Error;
@@ -493,22 +484,6 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
                 return new BoundContext(_entry, pin, GlyphTypeSymbol.From(context.DataType), syntax.Span);
             }
 
-            // Check for global constant
-            if (_globalEnvironment?.Constants.TryGetValue(path, out var globalConstant) == true)
-            {
-                var value = (dynamic)globalConstant.Value;
-                return new BoundLiteral(
-                    value,
-                    globalConstant.TypeName switch
-                    {
-                        "Bool" => GlyphTypeSymbol.Bool,
-                        "Int" => GlyphTypeSymbol.Int,
-                        "Float" => GlyphTypeSymbol.Float,
-                        "String" => GlyphTypeSymbol.String,
-                        _ => GlyphTypeSymbol.Error
-                    },
-                    syntax.Span);
-            }
         }
 
         Error("GLYPH3002", $"Unknown name or unavailable context '{path ?? "expression"}'.", syntax.Span);
@@ -615,39 +590,11 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
 
         if (symbol == null)
         {
-            // Check for global function
-            if (_globalEnvironment?.Functions.TryGetValue(name, out var globalFunction) == true)
-            {
-                symbol = new GlyphLanguageSymbol(
-                    name,
-                    new GlyphNodeDefinition
-                    {
-                        TypeId = name,
-                        DisplayName = name,
-                        Category = "Global",
-                        InputPins = [],
-                        OutputPins = [new GlyphPin
-                        {
-                            Id = "return",
-                            Name = "return",
-                            DataType = GlyphDataType.Exec,
-                            Direction = GlyphPinDirection.Output,
-                            DefaultValue = null,
-                            AllowMultipleConnections = false
-                        }]
-                    },
-                    "return",
-                    GlyphLoweringStrategy.Value);
-            }
+            BoundExpression? receiverCall = TryResolveReceiverCall(syntax, arguments, allowAction, allowPredicate);
+            if (receiverCall != null) return receiverCall;
 
-            if (symbol == null)
-            {
-                BoundExpression? receiverCall = TryResolveReceiverCall(syntax, arguments, allowAction, allowPredicate);
-                if (receiverCall != null) return receiverCall;
-
-                Error("GLYPH2002", $"Unknown function '{name}'.", syntax.Span);
-                return new BoundError(syntax.Span);
-            }
+            Error("GLYPH2002", $"Unknown function '{name}'.", syntax.Span);
+            return new BoundError(syntax.Span);
         }
 
         CheckSymbolConstraints(symbol, name!, syntax.Span, allowAction, allowPredicate);

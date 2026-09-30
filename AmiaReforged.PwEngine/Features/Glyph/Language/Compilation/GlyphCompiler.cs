@@ -32,23 +32,8 @@ public sealed class GlyphCompiler(IGlyphNodeDefinitionRegistry registry)
         var syntax = parser.Parse();
         List<GlyphDiagnostic> diagnostics = [..lexer.Diagnostics, ..parser.Diagnostics];
         if (diagnostics.Count > 0 || syntax == null) return new(diagnostics.AsReadOnly(), syntax, null, null, hash);
-        
-        // Build global environment from declarations
-        GlyphGlobalEnvironment globalEnvironment;
-        parser.Diagnostics.Clear(); // Parser already handled global declarations
-        diagnostics = [..lexer.Diagnostics];
-        
-        if (syntax.GlobalDeclarations.Count > 0)
-        {
-            GlyphGlobalEnvironment.FromDeclarations(syntax.GlobalDeclarations, out diagnostics);
-            globalEnvironment = new GlyphGlobalEnvironment(diagnostics);
-        }
-        else
-        {
-            globalEnvironment = GlyphGlobalEnvironment.Empty;
-        }
-        
-        GlyphBinder binder = new(Catalog, globalEnvironment);
+
+        GlyphBinder binder = new(Catalog);
         BoundProgram? bound = binder.Bind(syntax);
         diagnostics.AddRange(binder.Diagnostics);
         if (diagnostics.Count > 0 || bound == null) return new(diagnostics.AsReadOnly(), syntax, bound, null, hash);
