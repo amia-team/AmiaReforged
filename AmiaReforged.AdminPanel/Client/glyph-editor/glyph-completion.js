@@ -490,20 +490,7 @@ export function glyphCompletions(metadata) {
 
       // Derive local binding types from their initializers now that
       // metadata is available.
-      const resolverScope = {
-        event: scope.event,
-        stage: scope.stage,
-        localsByName: new Map(
-          scope.locals.map((l) => [l.label, l]),
-        ),
-      };
-
-      for (const local of scope.locals) {
-        if (local.init) {
-          const type = expressionType(context.state, local.init, resolverScope, metadata);
-          local.type = local.range ? "Int" : local.elementOf ? /^List<(.+)>$/.exec(type || "")?.[1] ?? null : type;
-        }
-      }
+      resolveLocalTypes(context.state, scope, metadata);
 
       // Member completion owns its own replacement range.
       //
@@ -655,4 +642,41 @@ export function glyphCompletions(metadata) {
       options: [...unique.values()],
     };
   };
+}
+
+// Shared syntax/type lookup for completion and documentation. Unknown receivers remain unknown.
+function resolveLocalTypes(state, scope, metadata) {
+  for (const local of scope.locals) {
+    if (local.init) {
+      const type = expressionType(state, local.init, scope, metadata);
+      local.type = local.range ? "Int" : local.elementOf ? /^List<(.+)>$/.exec(type || "")?.[1] ?? null : type;
+    }
+  }
+}
+
+export function resolveFunctionAt(state, pos, metadata) {
+  if (!metadata) return null;
+  const scope = completionScope(state, pos);
+  if (scope.suppressed) return null;
+  let leaf = scope.tree.resolveInner(pos, -1);
+  for (let node = leaf; node; node = node.parent)
+    if (["LineComment", "String", "UnterminatedString"].includes(node.name)) return null;
+  resolveLocalTypes(state, scope, metadata);
+  for (let node = leaf; node; node = node.parent) {
+    if (!["VariableName", "MemberExpression"].includes(node.name) || pos < node.from || pos > node.to) continue;
+    const direct = functionByName(metadata, text(state, node));
+    if (direct) return { from: node.from, to: node.to, fn: direct, canonical: direct.canonicalName };
+    if (node.name === "MemberExpression") {
+      const property = node.getChild("PropertyName");
+      if (!property || pos < property.from || pos > property.to) continue;
+      const type = expressionType(state, memberReceiver(node), scope, metadata);
+      const member = receiverMethod(metadata, memberName(state, node), type);
+      if (member) {
+        const target = functionByName(metadata, member.canonicalName);
+        return { from: property.from, to: property.to,
+          fn: { ...target, ...member, name: `${member.receiverType}.${member.name}` }, canonical: member.canonicalName };
+      }
+    }
+  }
+  return null;
 }

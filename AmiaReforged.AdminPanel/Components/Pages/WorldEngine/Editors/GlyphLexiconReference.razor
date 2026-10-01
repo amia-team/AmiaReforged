@@ -1,0 +1,49 @@
+<section class="glyph-lexicon-reference" aria-label="Native NWScript documentation">
+    <h5>NWN Lexicon: @Article.Title</h5>
+    <p>Native NWScript reference, archived @Article.ArchiveDate. Use the Glyph signature and defaults above for Glyph code.</p>
+    @if (Function?.Backend == "NWScript.AssignCommand")
+    {
+        <p>Glyph requires an explicit <code>actor</code> and runs this native action through <code>AssignCommand</code>.</p>
+    }
+    else if (Function?.Backend?.Contains("adapter", StringComparison.OrdinalIgnoreCase) == true)
+    {
+        <p>This Glyph adapter can change native inputs or results. Its Glyph signature and binding description above define the exposed behavior.</p>
+    }
+    <details>
+        <summary>Native signature</summary>
+        <pre>@Article.NativeSignature</pre>
+    </details>
+    @foreach (var documentationSection in Article.Sections.Where(s => s.Title != "Overview" && !s.Title.StartsWith(Article.Title + "(", StringComparison.Ordinal)))
+    {
+        <details open="@(documentationSection.Title == "Description")">
+            <summary>@documentationSection.Title@(documentationSection.Title.Contains("Example", StringComparison.OrdinalIgnoreCase) ? " (NWScript)" : "")</summary>
+            @if (documentationSection.Title.Contains("Bug", StringComparison.OrdinalIgnoreCase))
+            {
+                <p>Historical notes from the @Article.ArchiveDate archive; these may differ from the current NWN release.</p>
+            }
+            @foreach (var block in documentationSection.Blocks)
+            {
+                @if (block.Kind == "code") { <pre>@block.Text</pre> }
+                else { <p>@block.Text</p> }
+            }
+        </details>
+    }
+    <p><a href="@Article.SourceUrl" target="_blank" rel="noopener noreferrer">Original Lexicon article</a> · revision @Article.Revision</p>
+    @foreach (var credit in Article.Credits) { <p>@credit</p> }
+    <details>
+        <summary>Editable original wiki source</summary>
+        <pre>@Article.OriginalSource</pre>
+    </details>
+    <details>
+        <summary>Attribution, history and license (@Pack.License)</summary>
+        <p>@Pack.Notice</p>
+        <p>@Pack.History</p>
+        <pre>@Pack.LicenseText</pre>
+    </details>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public GlyphFunctionDocumentationDto Article { get; set; } = null!;
+    [Parameter, EditorRequired] public GlyphDocumentationPackDto Pack { get; set; } = null!;
+    [Parameter] public GlyphFunctionMetadataDto? Function { get; set; }
+}

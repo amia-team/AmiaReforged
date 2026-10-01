@@ -46,6 +46,8 @@
 
     <ItemGroup>
         <AdditionalFiles Include="Features/Glyph/Nwn/*.nwnbindings" />
+        <EmbeddedResource Include="Features/Glyph/Documentation/Lexicon/lexicon.json" LogicalName="Glyph.Lexicon.json" />
+        <Content Include="Features/Glyph/Documentation/Lexicon/*" Link="GlyphDocumentation/Lexicon/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
         <ProjectReference Include="../tools/Glyph.Generators/Glyph.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
         <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj" />
         <ProjectReference Include="..\AmiaReforged.Races\AmiaReforged.Races.csproj" />

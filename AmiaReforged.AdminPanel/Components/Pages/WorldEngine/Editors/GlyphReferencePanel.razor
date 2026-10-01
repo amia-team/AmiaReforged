@@ -117,7 +117,7 @@
             if (!_attempted)
             {
                 _attempted = true;
-                var module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=6");
+                var module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=7");
                 if (_disposed) { if (module != null) await module.DisposeAsync(); return; }
                 _module = module;
                 if (_module == null) return;
@@ -129,7 +129,10 @@
                 _sentGeneration = _metadataGeneration;
                 await _module.InvokeVoidAsync("setReferenceSearch", _host, _callback, _metadataGeneration,
                     (_catalog?.Entries ?? []).Select(e => new { e.Tab, e.Name, e.SearchFields, e.AvailableIn,
-                        Deprecated = e.Member?.Deprecated ?? e.Function?.Deprecated }).ToArray(), Metadata?.Events.Select(e => e.Name).ToArray() ?? []);
+                        Deprecated = e.Member?.Deprecated ?? e.Function?.Deprecated,
+                        TooltipFunction = e.Function == null ? null : e.Function with { Name = e.Name,
+                            Parameters = e.Member?.Parameters ?? e.Function.Parameters, ReturnType = e.Member?.ReturnType ?? e.Function.ReturnType },
+                        Documentation = e.Documentation == null ? null : new { e.Documentation.Summary, e.Documentation.ArchiveDate, e.Documentation.Revision, e.Documentation.Parameters } }).ToArray(), Metadata?.Events.Select(e => e.Name).ToArray() ?? []);
             }
             if (!_disposed) await _module.InvokeVoidAsync("setReferenceSearchState", _host, _tab, _prioritizeContext, Context, _selected?.Name);
         }
@@ -162,6 +165,15 @@
         finally { _callback?.Dispose(); }
     }
 
+    public async Task OpenFunctionAsync(string canonicalName)
+    {
+        var entry = _catalog?.Entries.FirstOrDefault(e => e.Tab == "Functions" && e.Function?.CanonicalName == canonicalName);
+        if (entry == null || _disposed) return;
+        _tab = "Functions"; _selected = entry; _openGroup = entry.Group; _query = "";
+        if (_module != null) await _module.InvokeVoidAsync("clearReferenceSearch", _host);
+        await InvokeAsync(StateHasChanged);
+    }
+
     private List<GlyphReferenceEntry> Results() => (_catalog?.Entries ?? [])
         .Where(e => e.Tab == _tab).Select(e => (Entry: e, Rank: e.Rank(_query))).Where(e => e.Rank >= 0)
         .OrderBy(e => e.Rank)
@@ -171,7 +183,7 @@
 
     private RenderFragment Row(GlyphReferenceEntry entry, bool compact) => @<button type="button"
         class="glyph-reference-row @(entry.AvailableIn != null && Metadata != null && GlyphReferenceCatalog.Available(entry.AvailableIn, Context, Metadata) == false ? "glyph-reference-unavailable" : "")"
-        aria-pressed="@(ReferenceEquals(entry, _selected).ToString().ToLowerInvariant())" title="@entry.Name"
+        aria-pressed="@(ReferenceEquals(entry, _selected).ToString().ToLowerInvariant())" title="@entry.HoverText" data-reference-name="@entry.Name"
         @onclick="() => _selected = entry" @ondblclick="() => Insert(entry)">
         <code>@(compact && (entry.Name.StartsWith("nwn.", StringComparison.Ordinal) || entry.Constant != null || entry.Member != null) ? entry.Name[(entry.Name.LastIndexOf('.') + 1)..] : entry.Name)</code>
         @if (!string.IsNullOrEmpty(entry.Member?.Deprecated ?? entry.Function?.Deprecated)) { <small>Deprecated</small> }

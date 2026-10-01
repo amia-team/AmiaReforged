@@ -33,6 +33,9 @@ public record GlyphPin
     /// </summary>
     public string? DefaultValue { get; init; }
 
+    /// <summary>Original NWScript parameter name for documentation, when mapped explicitly.</summary>
+    public string? SourceParameter { get; init; }
+
     /// <summary>Element type for lists; absent on legacy pins means Object.</summary>
     public GlyphDataType? ElementType { get; init; }
 

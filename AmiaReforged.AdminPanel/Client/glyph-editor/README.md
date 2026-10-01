@@ -103,3 +103,35 @@ context events. `glyph-reference.test.mjs` covers browser-local search, ranking,
 bounded constants, keyboard controls and metadata generation replacement. The
 bUnit Glyph tests cover categories, details, search, availability, retry,
 endpoint switching, accessibility and reference-to-editor interop.
+
+## Function documentation
+
+Hover a function in source or a Functions/Members reference row to read its Glyph
+signature and documentation. NWScript bindings use the offline NWN Lexicon pack
+joined by native `Source`, including aliases and real typed members. Other standard
+functions use compiler-owned descriptions. Unknown calls, comments, strings and
+unresolved receiver types have no function hover. In source, F1 opens the full
+reference at the caret; Escape dismisses the tooltip. Reference rows show the same
+help when focused, with `aria-describedby`. Hover never inserts text or moves the
+CodeMirror selection. `Open full reference` opens the panel even if it was hidden.
+
+Full details retain native signature, parameter prose, examples, remarks, version,
+see-also sections, historical bug notes, attribution, revision, original wiki source
+and license. Native examples are labeled NWScript and are read-only documentation.
+Glyph's current compiler signature/defaults remain authoritative for calls and
+insertion, including explicit command actors and adapted returns. Content is
+rendered as escaped plain text and code, never imported HTML.
+
+The pack is GFDL 1.1 or later and remains separate from application licensing.
+See `tools/Glyph.Lexicon/README.md` for deterministic regeneration, coverage and
+preservation of editable originals and notices. The existing metadata request and
+cache carry the pack; hover and search do not fetch documentation from the network.
+Old servers that omit the optional `documentation` field still show their binding
+descriptions. Metadata replacement/null clears editor and row tooltips.
+
+`glyph-documentation.test.mjs` checks syntax/type resolution and the production
+bundle in Chromium: substantive native content, aliases, typed members, focus,
+selection/source preservation, F1, Escape, metadata replacement, both reference
+row renderers, viewport bounds and cleanup. bUnit tests verify real imported text,
+parameter mapping, command/adapter distinctions, escaping, missing-doc fallback,
+canonical navigation and opening a collapsed reference without recreating the editor.

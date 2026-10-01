@@ -12,7 +12,7 @@ public sealed record GlyphIntrinsicExport(string Name, string? OutputPin = null,
     IReadOnlyList<string>? ReceiverMethods = null, GlyphDataType ReceiverType = GlyphDataType.NwObject,
     IReadOnlyList<GlyphCallAlias>? CallAliases = null, IReadOnlyList<GlyphCallAlias>? PropertyAliases = null,
     string? WritableAs = null, GlyphIndexerDescriptor? Indexer = null,
-    GlyphReceiverPolicy ReceiverPolicy = GlyphReceiverPolicy.None);
+    GlyphReceiverPolicy ReceiverPolicy = GlyphReceiverPolicy.None, string? DocumentationSource = null);
 
 public sealed record GlyphIndexerDescriptor(string Name, string Getter, string Setter);
 

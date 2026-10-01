@@ -23,6 +23,7 @@
     [Parameter] public string DiagnosticSource { get; set; } = "";
     [Parameter] public EventCallback<GlyphCursorContextDto> CursorContextChanged { get; set; }
     [Parameter] public EventCallback<bool> ReadyChanged { get; set; }
+    [Parameter] public EventCallback<string> DocumentationRequested { get; set; }
     public bool CanInsert => _ready && !_disposed && !ReadOnly;
     private long _contextRevision;
     private GlyphLanguageMetadataDto? _sentMetadata;
@@ -45,7 +46,7 @@
             _attempted = true;
             try
             {
-                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=6");
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=7");
                 if (_disposed) { await ReleaseAsync(); return; }
                 _callback = DotNetObjectReference.Create(this);
                 await _module.InvokeVoidAsync("create", _host, _callback, _source, ReadOnly);
@@ -97,6 +98,13 @@
         if (_disposed || revision <= _contextRevision) return;
         _contextRevision = revision;
         await CursorContextChanged.InvokeAsync(context);
+    }
+
+    [JSInvokable]
+    public async Task OnDocumentationRequested(string canonicalName)
+    {
+        if (!_disposed && Metadata?.Functions.Any(f => f.CanonicalName == canonicalName) == true)
+            await DocumentationRequested.InvokeAsync(canonicalName);
     }
 
     public async Task InsertFunctionAsync(GlyphFunctionMetadataDto function)

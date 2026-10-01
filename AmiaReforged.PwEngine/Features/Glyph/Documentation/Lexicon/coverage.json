@@ -1,0 +1,35 @@
+{
+  "archiveDate": "2022-07-13",
+  "publishedMembers": 456,
+  "matched": 441,
+  "missing": [
+    "EffectBonusFeat",
+    "EffectEnemyAttackBonus",
+    "EffectForceWalk",
+    "EffectPacified",
+    "EffectTimeStopImmunity",
+    "GetAreaLightColor",
+    "GetAreaNoRestFlag",
+    "GetAttacksPerRound",
+    "GetEffectLinkId",
+    "GetMemorizedSpellId",
+    "GetMemorizedSpellReady",
+    "SetAreaNoRestFlag",
+    "SetEffectCreator",
+    "SetEffectSpellId",
+    "SetGender"
+  ],
+  "warnings": [
+    "ActionAttack: legacy encoding artifacts preserved; no speculative repair",
+    "ActionCastFakeSpellAtLocation: legacy encoding artifacts preserved; no speculative repair",
+    "CreateObject: legacy encoding artifacts preserved; no speculative repair",
+    "FloatingTextStrRefOnCreature: legacy encoding artifacts preserved; no speculative repair",
+    "FloatingTextStringOnCreature: legacy encoding artifacts preserved; no speculative repair",
+    "GetModuleName: legacy encoding artifacts preserved; no speculative repair",
+    "GetWeight: legacy encoding artifacts preserved; no speculative repair",
+    "Location: legacy encoding artifacts preserved; no speculative repair",
+    "MagicalEffect: legacy encoding artifacts preserved; no speculative repair",
+    "RestoreCameraFacing: legacy encoding artifacts preserved; no speculative repair",
+    "SetItemCharges: legacy encoding artifacts preserved; no speculative repair"
+  ]
+}

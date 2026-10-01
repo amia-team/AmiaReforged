@@ -9,12 +9,16 @@ public sealed record GlyphLanguageMetadataDto(int LanguageVersion, IReadOnlyList
     public IReadOnlyList<GlyphConstantDomainMetadataDto> ConstantDomains { get; init; } = [];
     public IReadOnlyList<string> Types { get; init; } = [];
     public string? NwnApiVersion { get; init; }
+    public GlyphDocumentationPackDto? Documentation { get; init; }
     public IReadOnlyList<GlyphWritableStateMetadataDto> WritableState { get; init; } = [];
 }
 public sealed record GlyphConstantDomainMetadataDto(string Name, IReadOnlyList<string> Types, int Count);
 public sealed record GlyphWritableStateMetadataDto(string Name, string Type, string Setter,
     IReadOnlyList<GlyphAvailabilityDto> AvailableIn);
-public sealed record GlyphParameterMetadataDto(string Name, string DisplayName, string Type, bool Required, string? DefaultValue);
+public sealed record GlyphParameterMetadataDto(string Name, string DisplayName, string Type, bool Required, string? DefaultValue)
+{
+    public string? SourceParameter { get; init; }
+}
 public sealed record GlyphAvailabilityDto(string Event, string? Stage);
 public sealed record GlyphFunctionMetadataDto(string Name, string CanonicalName, string Description, string ReturnType,
     string Kind, IReadOnlyList<GlyphParameterMetadataDto> Parameters, string? ImplicitArgument,
@@ -22,6 +26,7 @@ public sealed record GlyphFunctionMetadataDto(string Name, string CanonicalName,
     IReadOnlyList<GlyphAvailabilityDto> AvailableIn)
 {
     public string? Source { get; init; }
+    public string? DocumentationSource { get; init; }
     public string? Backend { get; init; }
     public string? Deprecated { get; init; }
     public string Category { get; init; } = "";

@@ -1,3 +1,4 @@
+import { documentationDom } from './glyph-documentation.js';
 // Browser-local search over a projection of compiler metadata supplied by Blazor.
 // Blazor owns categories/details; this module owns only the empty search-results subtree.
 const panels = new WeakMap();
@@ -18,6 +19,7 @@ function unavailable(entry, panel) {
         && !entry.availableIn.some(a => a.event === panel.context.event && (!panel.context.stage || a.stage === panel.context.stage));
 }
 function render(panel) {
+    hideDocumentation(panel);
     const query = panel.input.value;
     const searching = !!query.trim() && panel.entries.length > 0;
     panel.host.classList.toggle('glyph-reference--searching', searching);
@@ -32,7 +34,7 @@ function render(panel) {
     panel.results.append(count);
     for (const { entry } of matches.slice(0, panel.limit)) {
         const row = document.createElement('button');
-        row.type = 'button'; row.className = 'glyph-reference-row'; row.title = entry.name;
+        row.type = 'button'; row.className = 'glyph-reference-row'; row.title = entry.name; row.dataset.referenceName = entry.name;
         row.classList.toggle('glyph-reference-unavailable', !!unavailable(entry, panel));
         row.setAttribute('aria-pressed', String(panel.selected === entry.name));
         const name = document.createElement('code'); name.textContent = entry.name; row.append(name);
@@ -70,6 +72,7 @@ export function setReferenceSearch(host, callback, generation, entries, events) 
         panel.observer = new MutationObserver(() => { if (!host.isConnected) destroyReferenceSearch(host); });
         panel.observer.observe(document.body, { childList: true, subtree: true });
         panels.set(host, panel);
+        attachDocumentation(panel);
     }
     if (panel.generation > generation) return;
     Object.assign(panel, { callback, generation, entries, events, selected: null, limit: 80 });
@@ -81,11 +84,74 @@ export function setReferenceSearchState(host, tab, prioritize, context, selected
     const changed = panel.tab !== tab || panel.prioritize !== prioritize || JSON.stringify(panel.context) !== JSON.stringify(context);
     Object.assign(panel, { tab, prioritize, context, selected });
     if (changed) { panel.limit = 80; render(panel); }
-    else for (const row of panel.results.querySelectorAll('.glyph-reference-row')) row.setAttribute('aria-pressed', String(row.title === selected));
+    else for (const row of panel.results.querySelectorAll('.glyph-reference-row')) row.setAttribute('aria-pressed', String(row.dataset.referenceName === selected));
 }
 export function destroyReferenceSearch(host) {
     const panel = panels.get(host);
     if (!panel) return;
+    hideDocumentation(panel);
+    panel.host.removeEventListener('mouseover', panel.tooltipEnter);
+    panel.host.removeEventListener('focusin', panel.tooltipEnter);
+    panel.host.removeEventListener('mouseout', panel.tooltipLeave);
+    panel.host.removeEventListener('focusout', panel.tooltipLeave);
+    panel.host.removeEventListener('scroll', panel.tooltipScroll, true);
+    document.removeEventListener('keydown', panel.tooltipEscape);
     panel.input.removeEventListener('input', panel.listener); panel.observer.disconnect();
     panel.results.replaceChildren(); host.classList.remove('glyph-reference--searching'); panels.delete(host);
+}
+
+let tooltipId = 0;
+function hideDocumentation(panel) {
+    clearTimeout(panel.tooltipTimer);
+    panel.tooltip?.remove(); panel.tooltip = null;
+    if (panel.tooltipRow) {
+        panel.tooltipRow.removeAttribute('aria-describedby');
+        panel.tooltipRow.title = panel.tooltipTitle;
+        panel.tooltipRow = null;
+    }
+}
+function showDocumentation(panel, row) {
+    hideDocumentation(panel);
+    const entry = panel.entries.find(e => e.tab === panel.tab && e.name === row.dataset.referenceName);
+    if (!entry?.tooltipFunction || !row.isConnected) return;
+    const tooltip = documentationDom(entry.tooltipFunction, entry.documentation, () => {
+        panel.callback.invokeMethodAsync('OnReferenceSelected', entry.tab, entry.name, false, panel.generation).catch(() => {});
+        hideDocumentation(panel);
+    }, !!unavailable(entry, panel));
+    tooltip.classList.add('glyph-reference-tooltip'); tooltip.id = `glyph-documentation-${++tooltipId}`;
+    panel.tooltipRow = row; panel.tooltipTitle = row.title; row.removeAttribute('title');
+    row.setAttribute('aria-describedby', tooltip.id); panel.tooltip = tooltip;
+    document.body.append(tooltip);
+    const bounds = row.getBoundingClientRect(); const size = tooltip.getBoundingClientRect();
+    tooltip.style.left = `${Math.max(8, Math.min(innerWidth - size.width - 8, bounds.left - size.width - 8))}px`;
+    tooltip.style.top = `${Math.max(8, Math.min(innerHeight - size.height - 8, bounds.top))}px`;
+    tooltip.addEventListener('mouseenter', () => clearTimeout(panel.tooltipTimer));
+    tooltip.addEventListener('mouseleave', () => hideDocumentation(panel));
+}
+function attachDocumentation(panel) {
+    panel.tooltipEnter = event => {
+        const row = event.target.closest('.glyph-reference-row[data-reference-name]');
+        if (!row || !panel.host.contains(row)) return;
+        if (row === panel.tooltipRow) { clearTimeout(panel.tooltipTimer); return; }
+        hideDocumentation(panel);
+        panel.tooltipTimer = setTimeout(() => showDocumentation(panel, row), event.type === 'focusin' ? 0 : 300);
+    };
+    panel.tooltipLeave = event => {
+        if (panel.tooltip?.contains(event.relatedTarget) || panel.tooltipRow?.contains(event.relatedTarget)) return;
+        clearTimeout(panel.tooltipTimer);
+        panel.tooltipTimer = setTimeout(() => hideDocumentation(panel), 100);
+    };
+    panel.tooltipEscape = event => { if (event.key === 'Escape') hideDocumentation(panel); };
+    panel.host.addEventListener('mouseover', panel.tooltipEnter);
+    panel.host.addEventListener('focusin', panel.tooltipEnter);
+    panel.host.addEventListener('mouseout', panel.tooltipLeave);
+    panel.host.addEventListener('focusout', panel.tooltipLeave);
+    document.addEventListener('keydown', panel.tooltipEscape);
+    panel.tooltipScroll = () => hideDocumentation(panel);
+    panel.host.addEventListener('scroll', panel.tooltipScroll, true);
+}
+export function clearReferenceSearch(host) {
+    const panel = panels.get(host);
+    if (!panel) return;
+    panel.input.value = ''; render(panel);
 }

@@ -198,6 +198,21 @@ public class GlyphSourceEditorTests
         Assert.That(cut.Markup, Does.Not.Contain("NWScript.GetTag"));
     }
 
+
+    [Test] public async Task Documentation_opens_the_hidden_reference_without_recreating_or_changing_the_editor()
+    {
+        _handler.Metadata = GlyphReferencePanelTests.Metadata;
+        var cut = _context.RenderComponent<GlyphSourceEditor>(p => p.Add(c => c.DefinitionId, _id));
+        var editor = cut.FindComponent<GlyphCodeEditor>().Instance;
+        cut.FindAll("button").Single(b => b.TextContent == "Hide reference").Click();
+        Assert.That(cut.FindAll("aside"), Is.Empty);
+        await cut.InvokeAsync(() => editor.OnDocumentationRequested("nwn.get_tag"));
+        cut.WaitForAssertion(() => Assert.That(cut.Find(".glyph-reference-detail").TextContent, Does.Contain("NWScript.GetTag")));
+        Assert.That(cut.FindComponent<GlyphCodeEditor>().Instance, Is.SameAs(editor));
+        Assert.That(await cut.InvokeAsync(() => editor.CaptureAsync()), Is.EqualTo(_handler.Source));
+        Assert.That(_handler.Paths.Any(p => p.StartsWith("PUT") || p.EndsWith("/compile")), Is.False);
+    }
+
     private static HttpResponseMessage JsonResponse(object response) => new(HttpStatusCode.OK)
     { Content = new StringContent(JsonSerializer.Serialize(response), System.Text.Encoding.UTF8, "application/json") };
 

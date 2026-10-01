@@ -177,4 +177,13 @@ public sealed class NwnBindingGeneratorTests
         Assert.That(Text(Generate("public static string GetTag(uint oObject) => \"\";", manifest).Result),
             Is.EqualTo(Text(Generate("public static string GetTag(uint oObject) => \"\";", manifest).Result)));
     }
+    [Test] public void Documentation_parameter_provenance_uses_native_symbols_after_pin_renaming()
+    {
+        var fixture = Generate("public static int GetAbilityScore(uint oCreature, int nAbilityType, int nBaseAbilityScore = 0) => 0;",
+            Function("GetAbilityScore", "nwn.get_ability_score", rules: "nBaseAbilityScore:Bool:base_score"));
+        Valid(fixture);
+        Assert.That(Text(fixture.Result), Does.Contain("SourceParameter = \"oCreature\"")
+            .And.Contain("SourceParameter = \"nBaseAbilityScore\"").And.Contain("Pins.In(\"base_score\""));
+    }
+
 }

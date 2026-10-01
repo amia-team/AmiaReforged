@@ -12,11 +12,13 @@ public sealed class GlyphReferenceCatalog
                 Aliases = g.Where(f => f.Name != g.Key).Select(f => f.Name).Order(StringComparer.Ordinal).ToArray() }).ToArray();
         var worldCategories = functions.Where(f => f.Function.ScriptCategory != null)
             .Select(f => f.Function.Category).Where(c => !string.IsNullOrWhiteSpace(c)).ToHashSet(StringComparer.Ordinal);
+        GlyphFunctionDocumentationDto? Documentation(GlyphFunctionMetadataDto? function) =>
+            (function?.DocumentationSource ?? function?.Source) is { } source ? metadata.Documentation?.Functions.GetValueOrDefault(source) : null;
         Entries = functions.Select(f => new GlyphReferenceEntry("Functions", f.Function.Name,
-                Family(f.Function, worldCategories) + " / " + Category(f.Function), f.Function, null, null, f.Aliases))
+                Family(f.Function, worldCategories) + " / " + Category(f.Function), f.Function, null, null, f.Aliases, Documentation(f.Function)))
             .Concat(metadata.Constants.Select(c => new GlyphReferenceEntry("Constants", c.Name, c.Namespace, null, c, null, [])))
             .Concat(metadata.ReceiverMethods.Select(m => new GlyphReferenceEntry("Members", m.ReceiverType + "." + m.Name,
-                "Typed members / " + m.ReceiverType, functions.FirstOrDefault(f => f.Function.Name == m.CanonicalName)?.Function, null, m, [])))
+                "Typed members / " + m.ReceiverType, functions.FirstOrDefault(f => f.Function.Name == m.CanonicalName)?.Function, null, m, [], Documentation(functions.FirstOrDefault(f => f.Function.Name == m.CanonicalName)?.Function))))
             .Concat(metadata.Types.Select(t => new GlyphReferenceEntry("Types", t, "Glyph types", null, null, null, [])))
             .OrderBy(e => e.Name, StringComparer.Ordinal).ToArray();
     }
@@ -52,8 +54,13 @@ public sealed class GlyphReferenceCatalog
 }
 
 public sealed class GlyphReferenceEntry(string tab, string name, string group, GlyphFunctionMetadataDto? function,
-    GlyphConstantMetadataDto? constant, GlyphReceiverMethodMetadataDto? member, IReadOnlyList<string> aliases)
+    GlyphConstantMetadataDto? constant, GlyphReceiverMethodMetadataDto? member, IReadOnlyList<string> aliases,
+    GlyphFunctionDocumentationDto? documentation = null)
 {
+    public GlyphFunctionDocumentationDto? Documentation { get; } = documentation;
+    public string HoverText => Function == null ? Constant?.Description ?? Name
+        : GlyphReferenceCatalog.Signature(Name, Member?.Parameters ?? Function.Parameters, Member?.ReturnType ?? Function.ReturnType)
+          + "\n" + (Documentation?.Summary ?? Member?.Description ?? Function.Description);
     public string Tab { get; } = tab;
     public string Name { get; } = name;
     public string Group { get; } = group;
@@ -66,7 +73,7 @@ public sealed class GlyphReferenceEntry(string tab, string name, string group, G
     private readonly string _canonical = Normalize(name + " " + function?.CanonicalName + " " + function?.Source + " " + constant?.Source + " " + string.Join(" ", aliases));
     private readonly string _structural = Normalize(group + " " + constant?.Namespace + " " + constant?.Type + " " + member?.ReceiverType + " " +
         (member?.ReturnType ?? function?.ReturnType) + " " + string.Join(" ", (member?.Parameters ?? function?.Parameters ?? []).Select(p => p.Name + " " + p.Type)));
-    private readonly string _description = Normalize(member?.Description ?? function?.Description ?? constant?.Description ?? "");
+    private readonly string _description = Normalize((documentation?.Summary ?? "") + " " + (member?.Description ?? function?.Description ?? constant?.Description ?? ""));
 
     public string[] SearchFields => [_name, Normalize(Name), _canonical, _structural, _description];
 

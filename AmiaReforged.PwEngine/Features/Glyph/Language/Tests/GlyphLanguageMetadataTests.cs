@@ -104,4 +104,31 @@ public class GlyphLanguageMetadataTests
             }
         }
     }
+    [Test] public void Lexicon_documents_registered_sources_once_and_preserves_Glyph_contracts()
+    {
+        var pack = _metadata.Documentation!;
+        Assert.That(pack.License, Is.EqualTo("GFDL-1.1-or-later"));
+        Assert.That(pack.Functions.Keys, Is.SubsetOf(_metadata.Functions.Select(f => f.DocumentationSource ?? f.Source).OfType<string>().Distinct()));
+        Assert.That(pack.Functions.Count, Is.EqualTo(441));
+        Assert.That(_metadata.Functions.Single(f => f.Name == "nwn.get_max_hit_points").DocumentationSource, Is.EqualTo("NWScript.GetMaxHitPoints"));
+        var getTag = _metadata.Functions.Single(f => f.Name == "nwn.get_tag");
+        Assert.That(pack.Functions[getTag.Source!].Summary, Does.Contain("empty string"));
+        Assert.That(getTag.Parameters.Single().SourceParameter, Is.EqualTo("oObject"));
+        var score = _metadata.Functions.Single(f => f.Name == "nwn.get_ability_score");
+        Assert.That(score.Parameters.Single(p => p.SourceParameter == "nBaseAbilityScore").Type, Is.EqualTo("Bool"));
+        Assert.That(pack.Functions[score.Source!].Parameters.Any(p => p.Name == "nBaseAbilityScore"), Is.True);
+        var command = _metadata.Functions.Single(f => f.Name == "nwn.action_attack");
+        Assert.That(command.Parameters.First().Name, Is.EqualTo("actor"));
+        Assert.That(command.Parameters.First().SourceParameter, Is.Null);
+        Assert.That(pack.Functions[command.Source!].NativeSignature, Does.Not.Contain("actor"));
+        var effects = _metadata.Functions.Single(f => f.Name == "nwn.effects");
+        Assert.That(effects.ReturnType, Is.EqualTo("List<Effect>"));
+        Assert.That(pack.Functions[effects.Source!].NativeSignature.TrimStart(), Does.StartWith("effect"));
+        var aliases = _metadata.Functions.Where(f => f.Source == "NWScript.EffectHaste").ToArray();
+        Assert.That(aliases.Length, Is.GreaterThan(1));
+        Assert.That(aliases.All(f => pack.Functions.ContainsKey(f.Source!)), Is.True);
+        Assert.That(pack.Functions.ContainsKey("NWScript.EffectPacified"), Is.False);
+        Assert.That(pack.Functions[getTag.Source!].OriginalSource, Does.Contain("GetTag"));
+    }
+
 }

@@ -19,11 +19,11 @@
             <div class="glyph-source-code">
                 <GlyphCodeEditor @key="_documentVersion" @ref="_editor" InitialSource="@_source"
                                  SourceChanged="OnSourceChanged" ReadOnly="@_busy" Metadata="_metadata"
-                                 Diagnostics="_diagnostics" DiagnosticSource="@_diagnosticSource" CursorContextChanged="OnCursorContextChanged" ReadyChanged="ready => _editorReady = ready" />
+                                 Diagnostics="_diagnostics" DiagnosticSource="@_diagnosticSource" CursorContextChanged="OnCursorContextChanged" ReadyChanged="ready => _editorReady = ready" DocumentationRequested="OpenDocumentation" />
             </div>
             @if (_referenceOpen)
             {
-                <GlyphReferencePanel Metadata="_metadata" Context="_cursorContext" Unavailable="_metadataUnavailable" Loading="_metadataLoading"
+                <GlyphReferencePanel @ref="_reference" Metadata="_metadata" Context="_cursorContext" Unavailable="_metadataUnavailable" Loading="_metadataLoading"
                                      CanInsert="@(_editorReady && !_busy)" Retry="RetryMetadata"
                                      InsertFunction="InsertFunction" InsertConstant="InsertConstant" />
             }
@@ -86,6 +86,8 @@
     private bool _referenceOpen = true, _editorReady;
     private GlyphCursorContextDto? _cursorContext;
     private GlyphCodeEditor? _editor;
+    private GlyphReferencePanel? _reference;
+    private string? _pendingDocumentation;
     private int _documentVersion, _generation, _editRevision;
     private Guid? _id, _loadedParameter, _loadedEndpoint;
     private bool _initialized, _busy, _valid, _loading, _disposed, _metadataUnavailable, _metadataLoading;
@@ -104,7 +106,7 @@
         int generation = ++_generation;
         _initialized = true; _loadedParameter = DefinitionId; _id = DefinitionId;
         _loadedEndpoint = Api.SelectedEndpointId;
-        _documentVersion++; _editRevision = 0; _editor = null; _cursorContext = null; _editorReady = false;
+        _documentVersion++; _editRevision = 0; _editor = null; _cursorContext = null; _editorReady = false; _pendingDocumentation = null;
         _loading = true; _busy = true; _valid = false;
         _diagnostics = []; _versions = []; _traces = []; _metadata = null;
         _notice = null; _error = null; _metadataUnavailable = false;
@@ -268,4 +270,18 @@
     private Task FocusDiagnostic(GlyphDiagnosticDto diagnostic) =>
         _editor?.FocusDiagnosticAsync(_diagnosticSource, diagnostic.Span) ?? Task.CompletedTask;
     public void Dispose() { _disposed = true; _generation++; }
+    private async Task OpenDocumentation(string canonicalName)
+    {
+        _referenceOpen = true;
+        _pendingDocumentation = canonicalName;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_pendingDocumentation is not { } name || _reference == null) return;
+        _pendingDocumentation = null;
+        await _reference.OpenFunctionAsync(name);
+    }
+
 }

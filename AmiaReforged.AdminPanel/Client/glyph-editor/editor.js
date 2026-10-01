@@ -7,6 +7,7 @@ import { lintGutter, setDiagnostics, setDiagnosticsEffect } from '@codemirror/li
 import { glyphCompletions, completionScope, functionSnippet } from './glyph-completion.js';
 import { compilerDiagnostics, diagnosticRange } from './glyph-diagnostics.js';
 import { glyph } from './glyph-language.js';
+import { glyphDocumentation } from './glyph-documentation.js';
 
 const editors = new WeakMap();
 const theme = EditorView.theme({
@@ -36,12 +37,13 @@ export function create(host, callback, source, readOnly) {
     destroy(host);
     const editable = new Compartment();
     const completion = new Compartment();
-    const entry = { revision: 0, disposed: false, editable, completion, view: null, observer: null, context: null, contextRevision: 0 };
+    const documentation = new Compartment();
+    const entry = { revision: 0, disposed: false, editable, completion, documentation, callback, view: null, observer: null, context: null, contextRevision: 0 };
     try {
         entry.view = new EditorView({ parent: host, state: EditorState.create({
             doc: source,
             extensions: [
-                glyph(), lintGutter(),
+                glyph(), lintGutter(), documentation.of([]),
                 completion.of(autocompletion({ override: [glyphCompletions(null)] })),
                 EditorState.transactionExtender.of(transaction => transaction.docChanged
                     ? { effects: setDiagnosticsEffect.of([]) } : null),
@@ -105,9 +107,9 @@ export function setMetadata(host, metadata) {
     const entry = editors.get(host);
     if (!entry) return;
     closeCompletion(entry.view);
-    entry.view.dispatch({ effects: entry.completion.reconfigure(autocompletion({
+    entry.view.dispatch({ effects: [entry.completion.reconfigure(autocompletion({
         override: [glyphCompletions(metadata)]
-    })) });
+    })), entry.documentation.reconfigure(metadata ? glyphDocumentation(metadata, entry.callback) : [])] });
 }
 
 export function showDiagnostics(host, source, diagnostics) {
@@ -150,4 +152,4 @@ export function insertConstant(host, constant) {
     entry.view.focus();
 }
 
-export { setReferenceSearch, setReferenceSearchState, destroyReferenceSearch } from './glyph-reference.js';
+export { setReferenceSearch, setReferenceSearchState, destroyReferenceSearch, clearReferenceSearch } from './glyph-reference.js';

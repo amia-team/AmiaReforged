@@ -34,5 +34,6 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\AmiaReforged.AdminPanel\AmiaReforged.AdminPanel.csproj" />
+        <Content Include="../AmiaReforged.PwEngine/Features/Glyph/Documentation/Lexicon/lexicon.json" Link="Fixtures/lexicon.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 </Project>

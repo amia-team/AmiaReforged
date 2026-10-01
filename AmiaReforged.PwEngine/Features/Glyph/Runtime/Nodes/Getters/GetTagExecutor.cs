@@ -39,7 +39,7 @@ public partial class GetTagExecutor : IGlyphNodeExecutor
         Description = "NWScript GetTag with the established runtime pin contract.",
         Source = "NWScript.GetTag", Backend = "NWScript adapter",
         Archetype = GlyphNodeArchetype.PureFunction,
-        Parameters = [Pins.InObject("object", "Object")], Results = [Pins.Out("tag", "Tag", GlyphDataType.String)],
+        Parameters = [Pins.InObject("object", "Object") with { SourceParameter = "oObject" }], Results = [Pins.Out("tag", "Tag", GlyphDataType.String)],
         Exports = [new("nwn.get_tag", "tag")]
     };
 }

@@ -1,10 +1,15 @@
 @{ var member = Entry.Member; var function = Entry.Function;
    var parameters = member?.Parameters ?? function!.Parameters;
    var availability = Entry.AvailableIn!;
-   var deprecated = member?.Deprecated ?? function?.Deprecated; }
+   var deprecated = member?.Deprecated ?? function?.Deprecated;
+   var documentation = Entry.Documentation; }
 <h4>@Entry.Name</h4>
 <pre class="glyph-reference-signature">@GlyphReferenceCatalog.Signature(Entry.Name, parameters, member?.ReturnType ?? function!.ReturnType)</pre>
-<p>@(member?.Description ?? function!.Description)</p>
+<p>@(documentation?.Summary ?? member?.Description ?? function!.Description)</p>
+@if (documentation != null && function?.Backend?.Contains("adapter", StringComparison.OrdinalIgnoreCase) == true)
+{
+    <p>Glyph binding: @(member?.Description ?? function.Description)</p>
+}
 @if (!string.IsNullOrEmpty(deprecated))
 {
     <p class="glyph-reference-deprecated" role="status">Deprecated: @deprecated</p>
@@ -29,13 +34,27 @@
         @foreach (var parameter in parameters)
         {
             <dt><code>@parameter.Name</code>: @parameter.Type</dt>
-            <dd>@(parameter.Required ? "Required" : parameter.DefaultValue == null ? "Optional" : "Optional, default: " + parameter.DefaultValue)</dd>
+            <dd>@(parameter.Required ? "Required" : parameter.DefaultValue == null ? "Optional" : "Optional, default: " + parameter.DefaultValue)
+                @if (parameter.SourceParameter != null && documentation?.Parameters.FirstOrDefault(p => p.Name == parameter.SourceParameter) is { } native)
+                {
+                    <p>@native.Description</p>
+                }
+            </dd>
         }
     </dl>
 }
 @if (member != null)
 {
     <p>Typed member on @member.ReceiverType. Insert uses the canonical procedure with an explicit receiver.</p>
+}
+
+@if (documentation != null && Metadata.Documentation is { } pack)
+{
+    <GlyphLexiconReference Article="documentation" Pack="pack" Function="function" />
+}
+else if (function?.Source?.StartsWith("NWScript.", StringComparison.Ordinal) == true)
+{
+    <p>No Lexicon article is available for this binding in the 2022-07-13 archive.</p>
 }
 
 @code {

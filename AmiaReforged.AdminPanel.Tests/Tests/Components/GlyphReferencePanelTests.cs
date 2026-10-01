@@ -29,13 +29,13 @@ public class GlyphReferencePanelTests
     [SetUp] public void Setup()
     {
         _context = new();
-        _module = _context.JSInterop.SetupModule("./js/glyph-editor.js?v=6");
+        _module = _context.JSInterop.SetupModule("./js/glyph-editor.js?v=7");
         _module.Mode = JSRuntimeMode.Loose;
     }
     [TearDown] public void Cleanup() => _context.Dispose();
     private IRenderedComponent<GlyphReferencePanel> Render() => _context.RenderComponent<GlyphReferencePanel>(p => p.Add(c => c.Metadata, Metadata));
     private static void Search(IRenderedComponent<GlyphReferencePanel> cut, string text) => cut.Find("input[type=search]").Input(text);
-    private static string[] Names(IRenderedComponent<GlyphReferencePanel> cut) => cut.FindAll(".glyph-reference-row").Select(r => r.GetAttribute("title")!).ToArray();
+    private static string[] Names(IRenderedComponent<GlyphReferencePanel> cut) => cut.FindAll(".glyph-reference-row").Select(r => r.GetAttribute("data-reference-name")!).ToArray();
 
     [Test] public void Metadata_renders_categories_and_canonical_apis_without_duplicate_aliases()
     {
