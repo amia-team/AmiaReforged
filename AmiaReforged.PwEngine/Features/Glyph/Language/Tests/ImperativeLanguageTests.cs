@@ -232,7 +232,7 @@ public class ImperativeLanguageTests
             record(outer.request.amount)
             var result = Box.Present(request: outer.request)
             match result { Present { request } { record(request.amount) record_text(request.text) } }
-            """, prelude: "struct Request { amount: Int text: String } struct Outer { request: Request } type Box { Present { request: Request } }");
+            """, prelude: "struct Request { amount: Int, text: String, } struct Outer { request: Request, } type Box { Present { request: Request, }, }");
         Assert.That(_probe.Values, Is.EqualTo(new[] { 3, 3, 3, 3, 3 }));
         Assert.That(_probe.Texts, Is.EqualTo(new[] { "stored" }));
     }
@@ -254,7 +254,7 @@ public class ImperativeLanguageTests
         var reader = graph.Nodes.First(n => n.TypeId == "local.read_aggregate");
         reader.PropertyOverrides["nominal"] = "OtherResult";
         Assert.That(new GlyphIrValidator(_registry).Validate(graph).Any(d => d.Code == "GLYPH4010"), Is.True);
-        var bad = _runtime.Compiler.Compile(ResultType + "struct Other { n: Int }" + Script("let result = identity_result(Other(n: 1))"));
+        var bad = _runtime.Compiler.Compile(ResultType + "struct Other { n: Int, }" + Script("let result = identity_result(Other(n: 1))"));
         Assert.That(bad.Diagnostics.Any(d => d.Code == "GLYPH2004"), Is.True);
     }
 
@@ -281,7 +281,7 @@ public class ImperativeLanguageTests
         Assert.That(_probe.Values, Is.EqualTo(new[] { 1, 2, 3, 4, 5, 6 }));
     }
 
-    private const string ResultType = "type TestResult { Found { number: Int text: String target: Object } Missing { reason: String } }";
+    private const string ResultType = "type TestResult { Found { number: Int, text: String, target: Object, }, Missing { reason: String, }, }";
 
     [Test]
     public async Task dynamic_adt_from_runtime_function_passes_through_let_and_var()
@@ -312,7 +312,7 @@ public class ImperativeLanguageTests
             match result { Found { number, text } { record(number) record_text(text) } Missing {} {} }
             result = TestResult.Missing(reason: "changed")
             match result { Found {} {} _ { record(7) } }
-            """, prelude: ResultType + "\nstruct Request { amount: Int text: String }\nfn wrap(request: Request): TestResult = TestResult.Found(number: request.amount, text: request.text, target: OBJECT.INVALID)");
+            """, prelude: ResultType + "\nstruct Request { amount: Int, text: String, }\nfn wrap(request: Request): TestResult = TestResult.Found(number: request.amount, text: request.text, target: OBJECT.INVALID)");
         Assert.That(_probe.Calls, Is.EqualTo(1));
         Assert.That(_probe.Values, Is.EqualTo(new[] { 1, 1, 7 }));
         Assert.That(_probe.Texts, Is.EqualTo(new[] { "saved" }));
@@ -345,7 +345,7 @@ public class ImperativeLanguageTests
     [Test]
     public void nominal_aggregate_types_cannot_be_assigned_to_each_other()
     {
-        var result = _runtime.Compiler.Compile("struct A { n: Int } struct B { n: Int }" + Script("var a = A(n: 1) a = B(n: 2)"));
+        var result = _runtime.Compiler.Compile("struct A { n: Int, } struct B { n: Int, }" + Script("var a = A(n: 1) a = B(n: 2)"));
         Assert.That(result.Diagnostics.Any(d => d.Code == "GLYPH2004"), Is.True);
     }
 

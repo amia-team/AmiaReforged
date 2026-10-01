@@ -6,8 +6,8 @@ import { glyph, glyphLanguage } from './glyph-language.js';
 import { glyphCompletions, functionSnippet, resolveFunctionAt } from './glyph-completion.js';
 
 const source = `
-struct Box<T> { value: T }
-type Result<T, E> { Ok { value: T } Err { error: E } }
+struct Box<T> { value: T, }
+type Result<T, E> { Ok { value: T, }, Err { error: E, }, }
 fn wrap<T>(value: T): Option<T> = Option<T>.Some(value: value)
 impl<T> Box<T> { fn get(self): T = self.value }
 glyph g : interaction { completed {

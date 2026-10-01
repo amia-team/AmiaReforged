@@ -16,7 +16,7 @@ const metadata = { ...standard, modules: ['helpers'], functions: [...standard.fu
 function complete(source) { const s = state(source); return glyphCompletions(metadata)(new CompletionContext(s, source.length, true)); }
 
 test('modules, visibility, imports and qualified types parse without recovery', () => {
-  assert.deepEqual(errors('mod helpers { using other const SECRET = "x" fn hidden(actor: Object): Object = actor pub fn target(actor: Object): Object = hidden(actor) pub struct Item { actor: Object } pub type Result { Found { item: other.Item } Missing {} } }'), []);
+  assert.deepEqual(errors('mod helpers { using other const SECRET = "x" fn hidden(actor: Object): Object = actor pub fn target(actor: Object): Object = hidden(actor) pub struct Item { actor: Object, } pub type Result { Found { item: other.Item, }, Missing {}, } }'), []);
   assert.deepEqual(errors('using helpers glyph t : interaction { attempted { let result = helpers.Result.Missing() match result { helpers.Result.Found { item } {} helpers.Result.Missing {} {} } } }'), []);
 });
 test('using offers published module names and qualified calls replace only the member', () => {

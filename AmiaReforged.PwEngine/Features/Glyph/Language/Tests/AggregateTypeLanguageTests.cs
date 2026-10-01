@@ -28,9 +28,9 @@ public class AggregateTypeLanguageTests
     {
         Compile("""
             struct HarvestRequest {
-                resource: String
-                amount: Int
-                harvester: Object
+                resource: String,
+                amount: Int,
+                harvester: Object,
             }
 
             glyph harvest : interaction {
@@ -52,11 +52,11 @@ public class AggregateTypeLanguageTests
     {
         Compile("""
             struct Outer {
-                inner: Inner
+                inner: Inner,
             }
 
             struct Inner {
-                value: String
+                value: String,
             }
 
             glyph nested : interaction {
@@ -73,7 +73,7 @@ public class AggregateTypeLanguageTests
     {
         Compile("""
             struct Target {
-                object: Object
+                object: Object,
             }
 
             glyph receiver : interaction {
@@ -94,13 +94,13 @@ public class AggregateTypeLanguageTests
         GlyphExecutable executable = Compile("""
             type SearchResult {
                 Found {
-                    target: Object
-                    text: String
-                }
+                    target: Object,
+                    text: String,
+                },
 
                 Missing {
-                    reason: String
-                }
+                    reason: String,
+                },
             }
 
             glyph search : interaction {
@@ -136,11 +136,11 @@ public class AggregateTypeLanguageTests
         Compile("""
             type Result {
                 Found {
-                    target: Object
-                }
+                    target: Object,
+                },
 
                 Missing {
-                }
+                },
             }
 
             glyph search : interaction {
@@ -162,23 +162,23 @@ public class AggregateTypeLanguageTests
     }
 
     [TestCase("""
-        struct Request { amount: Int }
+        struct Request { amount: Int, }
         glyph t : interaction { tick { let x = Request() } }
         """, "GLYPH2003")]
     [TestCase("""
-        struct Request { amount: Int }
+        struct Request { amount: Int, }
         glyph t : interaction { tick { let x = Request(amount: 1, nope: 2) } }
         """, "GLYPH2003")]
     [TestCase("""
-        struct Request { amount: Int }
+        struct Request { amount: Int, }
         glyph t : interaction { tick { let x = Request(amount: "wrong") } }
         """, "GLYPH2004")]
     [TestCase("""
-        struct Request { amount: Int }
+        struct Request { amount: Int, }
         glyph t : interaction { tick { let x = Request(amount: 1); message(player, x.nope) } }
         """, "GLYPH3002")]
     [TestCase("""
-        type Result { Found { target: Object } Missing { reason: String } }
+        type Result { Found { target: Object, }, Missing { reason: String, }, }
         glyph t : interaction {
             tick {
                 let x = Result.Found(target: player)
@@ -189,7 +189,7 @@ public class AggregateTypeLanguageTests
         }
         """, "GLYPH2010")]
     [TestCase("""
-        type Result { Found { target: Object } Missing { reason: String } }
+        type Result { Found { target: Object, }, Missing { reason: String, }, }
         glyph t : interaction {
             tick {
                 let x = Result.Found(target: player)
@@ -201,7 +201,7 @@ public class AggregateTypeLanguageTests
         }
         """, "GLYPH2010")]
     [TestCase("""
-        type Result { Found { target: Object } }
+        type Result { Found { target: Object, }, }
         glyph t : interaction {
             tick {
                 let x = Result.Nope()

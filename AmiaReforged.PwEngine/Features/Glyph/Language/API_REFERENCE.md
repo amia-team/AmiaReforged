@@ -251,10 +251,14 @@ through eager `var` storage or a runtime function result; distinct aggregate typ
 assigned to one another. ADT dispatch inspects the actual runtime variant, and requested
 fields are bound using their declared types. Constructors support dynamic field values.
 
+Commas are required between struct fields, between fields in an ADT variant, and between
+ADT variants. A trailing comma before `}` is optional. Whitespace and semicolons do not
+separate these declarations.
+
 ```glyph
 type Result {
-    Found { target: Object }
-    Missing { reason: String }
+    Found { target: Object, },
+    Missing { reason: String, },
 }
 
 glyph lookup : interaction {
@@ -476,12 +480,12 @@ including function signatures, context availability, and module revision origins
 ```glyph
 mod prospect_types {
     pub struct Prospect {
-        target: Object
+        target: Object,
     }
 
     pub type Result {
-        Found { prospect: Prospect }
-        Missing { reason: String }
+        Found { prospect: Prospect, },
+        Missing { reason: String, },
     }
 
     pub fn found(actor: Object): Result = Result.Found(Prospect(actor))
@@ -633,8 +637,8 @@ Collection types can appear in function parameters and return types, struct fiel
 payloads:
 
 ```glyph
-struct Scores { values: Dictionary<String, Int> }
-type Lookup { Found { values: List<Object> } Missing {} }
+struct Scores { values: Dictionary<String, Int>, }
+type Lookup { Found { values: List<Object>, }, Missing {}, }
 fn add(values: List<Int>, value: Int): List<Int> = values.append(value)
 ```
 
@@ -668,14 +672,14 @@ An impl block belongs to a struct or ADT declared in the same source module. The
 Methods cannot assign to `self` or its fields. Return a new aggregate to express an update:
 
 ```glyph
-struct Item { name: String }
+struct Item { name: String, }
 impl Item {
     fn description(self): String = self.name
     fn renamed(self, name: String): Self = Item(name: name)
     fn create(name: String): Self = Item(name: name)
 }
 
-type Result { Found { target: Object } Missing { reason: String } }
+type Result { Found { target: Object, }, Missing { reason: String, }, }
 impl Result {
     fn is_found(self): Bool {
         match self {
@@ -696,7 +700,7 @@ Within modules, methods are private by default. Export a type and individual mem
 
 ```glyph
 mod items {
-    pub struct Item { name: String }
+    pub struct Item { name: String, }
     impl Item { pub fn description(self): String = self.name }
 }
 ```
@@ -715,8 +719,8 @@ explicit arguments when inference is ambiguous (including functions without valu
 Nested applications retain nominal type identity: `Box<Int>` and `Box<String>` are distinct types.
 
 ```glyph
-struct Box<T> { value: T }
-type Result<T, E> { Ok { value: T } Err { error: E } }
+struct Box<T> { value: T, }
+type Result<T, E> { Ok { value: T, }, Err { error: E, }, }
 fn identity<T>(value: T): T = value
 impl<T> Box<T> {
     fn get(self): T = self.value
@@ -727,7 +731,7 @@ impl<T> Box<T> {
 // let empty = Option<Box<Int>>.None()
 ```
 
-`Option<T>` is built in. It has two variants: `Some { value: T }` and `None {}`.
+`Option<T>` is built in. Its declaration is `type Option<T> { Some { value: T, }, None {}, }`.
 Use `Option<Object>.Some(value: object)` or `Option<Object>.None()` to construct a value,
 and `match` to access the payload. Matches must handle both variants or end with a wildcard.
 An option cannot be passed to an API expecting its payload type without extracting that payload.

@@ -149,8 +149,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
                         string variantName = Expect("identifier").Text;
                         IReadOnlyList<GlyphFieldDeclarationSyntax> fields = FieldBlock();
                         variants.Add(new(variantName, fields, Through(variantStart)));
-                        Eat(",");
-                        Eat(";");
+                        DeclarationSeparator("ADT variants");
                     }
 
                     Expect("}");
@@ -289,12 +288,23 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
             string typeName = TypeName();
             fields.Add(new(fieldName, typeName, Through(fieldStart)));
 
-            Eat(",");
-            Eat(";");
+            DeclarationSeparator("fields");
         }
 
         Expect("}");
         return fields;
+    }
+
+    private void DeclarationSeparator(string items)
+    {
+        if (Eat(",")) return;
+        if (At(";"))
+        {
+            Diagnostics.Add(new("GLYPH1014", $"Use ',' instead of ';' between {items}.", Current.Span));
+            Take();
+        }
+        else if (!At("}") && !At("eof"))
+            Diagnostics.Add(new("GLYPH1014", $"Expected ',' between {items}.", Current.Span));
     }
 
     private BlockStatementSyntax Block()

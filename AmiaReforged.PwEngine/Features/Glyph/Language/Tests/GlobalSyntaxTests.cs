@@ -40,7 +40,7 @@ public class GlobalSyntaxTests
     [Test]
     public void Struct_parses_as_standalone_prelude()
     {
-        const string source = "struct Result { target: Object }";
+        const string source = "struct Result { target: Object, }";
         var (lex, parse, unit) = Compile(source);
 
         Assert.That(lex, Is.Empty);
@@ -54,7 +54,7 @@ public class GlobalSyntaxTests
     [Test]
     public void Adt_parses_as_standalone_prelude()
     {
-        const string source = "type LookupResult { Found { target: Object } }";
+        const string source = "type LookupResult { Found { target: Object, }, }";
         var (lex, parse, unit) = Compile(source);
 
         Assert.That(lex, Is.Empty);
@@ -103,7 +103,7 @@ public class GlobalSyntaxTests
         const string source =
             "const OBJECT_TRIGGER = \"trigger\";\n" +
             "fn nearest(origin: Object, kind: String): Object = nwn.nearest_object_by_kind(origin, kind);\n" +
-            "struct Result { target: Object }\n" +
+            "struct Result { target: Object, }\n" +
             "glyph test : interaction { tick {} }";
         var (lex, parse, unit) = Compile(source);
 

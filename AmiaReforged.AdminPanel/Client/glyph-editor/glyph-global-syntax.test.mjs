@@ -19,12 +19,12 @@ function nodes(tree, name) {
 test('standalone global declarations parse with zero errors', () => {
     const sources = [
         'const OBJECT_DOOR = "door"',
-        'struct Result { target: Object }',
-        'type LookupResult { Found { target: Object } }',
+        'struct Result { target: Object, }',
+        'type LookupResult { Found { target: Object, }, }',
         'fn nearest(origin: Object, kind: String): Object = nwn.nearest_object_by_kind(origin, kind)',
         'const OBJECT_TRIGGER = "trigger";\n' +
             'fn nearest(o: Object, k: String): Object = Object;\n' +
-            'struct Result { target: Object }',
+            'struct Result { target: Object, }',
     ];
     for (const source of sources) {
         assert.deepEqual(errors(parse(source)), [], source);
@@ -34,8 +34,8 @@ test('standalone global declarations parse with zero errors', () => {
 test('prelude declarations keep their declaration node shapes', () => {
     assert.equal(nodes(parse('const OBJECT_DOOR = "door"'), 'ConstantDeclaration').length, 1);
     assert.equal(nodes(parse('fn nearest(o: Object): Object = o'), 'FunctionDeclaration').length, 1);
-    assert.equal(nodes(parse('struct Result { target: Object }'), 'StructDeclaration').length, 1);
-    assert.equal(nodes(parse('type LookupResult { Found { target: Object } }'), 'AdtDeclaration').length, 1);
+    assert.equal(nodes(parse('struct Result { target: Object, }'), 'StructDeclaration').length, 1);
+    assert.equal(nodes(parse('type LookupResult { Found { target: Object, }, }'), 'AdtDeclaration').length, 1);
 });
 
 test('const initializer and function body parse as full expressions', () => {

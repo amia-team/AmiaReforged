@@ -25,10 +25,10 @@ ImplDeclaration { kw<"impl"> TypeParameters? TypeName "{" (FunctionDeclaration |
 PublicMethod { kw<"pub"> FunctionDeclaration }
 
 StructDeclaration { kw<"struct"> TypeName FieldBlock }
-AdtDeclaration { kw<"type"> TypeName "{" (VariantDeclaration | ";" | ",")* "}" }
+AdtDeclaration { kw<"type"> TypeName "{" (VariantDeclaration ("," VariantDeclaration)* ","?)? "}" }
 VariantDeclaration { VariantName FieldBlock }
-FieldBlock { "{" FieldDeclaration* "}" }
-FieldDeclaration { FieldName ":" TypeName ("," | ";")? }
+FieldBlock { "{" (FieldDeclaration ("," FieldDeclaration)* ","?)? "}" }
+FieldDeclaration { FieldName ":" TypeName }
 ConstantName { Identifier ("." Identifier)* }
 FunctionName { Identifier }
 ParameterName { Identifier }

@@ -3360,4 +3360,4 @@ const WEATHER.SNOW: Int = 2
 const WEATHER.USE_AREA_SETTINGS: Int = -1
 
 // Glyph 5 optional values
-type Option<T> { Some { value: T } None {} }
+type Option<T> { Some { value: T, }, None {}, }

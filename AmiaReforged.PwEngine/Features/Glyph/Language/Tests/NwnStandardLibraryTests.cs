@@ -99,7 +99,7 @@ public sealed class NwnStandardLibraryTests
             const HASTE_KIND = EFFECT_TYPE.HASTE
             const Local.ONE : Int = 1
             fn get_kind(effect_value: Effect): Int = nwn.get_effect_type(effect_value)
-            struct Holder { actor: Object }
+            struct Holder { actor: Object, }
             glyph globals : interaction { completed {
                 let holder = Holder(player)
                 if get_kind(effect.haste()) == HASTE_KIND { nwn.set_local_int(holder.actor, "one", Local.ONE) }

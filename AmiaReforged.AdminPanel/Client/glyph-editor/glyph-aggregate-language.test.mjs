@@ -34,21 +34,49 @@ function highlights(source) {
     return result;
 }
 
+test('declaration commas are required between fields and variants; trailing commas are optional', () => {
+    for (const source of [
+        'struct Pair { first: Int, second: String }',
+        'struct Pair { first: Int, second: String, }',
+        'type Result { Found { value: Int, label: String }, Missing {} }',
+        'type Result { Found { value: Int, label: String, }, Missing {}, }',
+        'struct Empty {} type Result { Missing {} }',
+        'struct Pair { first: Int, // comment\n second: String, }',
+    ]) {
+        assert.deepEqual(errors(parse(source)), [], source);
+    }
+
+    for (const source of [
+        'struct Pair { first: Int second: String }',
+        'struct Pair { first: Int\n second: String }',
+        'struct Pair { first: Int; second: String }',
+        'struct Pair { first: Int; }',
+        'type Result { Found { value: Int label: String }, Missing {} }',
+        'type Result { Found { value: Int; label: String }, Missing {} }',
+        'type Result { Found {} Missing {} }',
+        'type Result { Found {}\n Missing {} }',
+        'type Result { Found {}; Missing {} }',
+        'type Result { Found {}; }',
+    ]) {
+        assert.ok(errors(parse(source)).length > 0, source);
+    }
+});
+
 test('struct and ADT declarations parse with exhaustive match syntax', () => {
     const source = `
 struct Request {
-    target: Object
-    text: String
+    target: Object,
+    text: String,
 }
 
 type Result {
     Found {
-        request: Request
-    }
+        request: Request,
+    },
 
     Missing {
-        reason: String
-    }
+        reason: String,
+    },
 }
 
 glyph aggregate_test : interaction {
@@ -80,8 +108,8 @@ glyph aggregate_test : interaction {
 
 test('aggregate keywords and names receive useful highlighting', () => {
     const source = `
-struct Request { target: Object }
-type Result { Found { request: Request } }
+struct Request { target: Object, }
+type Result { Found { request: Request, }, }
 
 glyph g : interaction {
     tick {

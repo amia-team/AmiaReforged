@@ -8,12 +8,12 @@ import { glyphCompletions, resolveFunctionAt } from './glyph-completion.js';
 
 const source = `
 mod items {
-  pub struct Item { names: List<String>, scores: Dictionary<String, Int> }
+  pub struct Item { names: List<String>, scores: Dictionary<String, Int>, }
   impl Item {
     pub fn description(self): String = self.names[0]
     fn create(): Self { return Item(names: ["a", "b"], scores: Dictionary<String, Int>()) }
   }
-  pub type Outcome { Found { values: List<Object> } Missing {} }
+  pub type Outcome { Found { values: List<Object>, }, Missing {}, }
   impl Outcome { pub fn found(self): Bool { match self { Found { values } { return true } Missing {} { return false } } } }
 }`;
 test('Glyph 4 collections and impl parse and highlight', () => {

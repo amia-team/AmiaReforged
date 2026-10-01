@@ -13,7 +13,7 @@ function parse(source) {
 
 test('imperative control flow, range boundaries, compound assignments and match patterns parse', () => {
     const tree = parse(`
-        type Result { Found { target: Object } Missing { reason: String } }
+        type Result { Found { target: Object, }, Missing { reason: String, }, }
         glyph imperative : interaction { completed {
             var i = 0
             var distance = 1.5

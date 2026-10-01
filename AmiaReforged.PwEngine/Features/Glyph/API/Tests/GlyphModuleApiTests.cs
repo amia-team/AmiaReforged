@@ -118,7 +118,7 @@ public sealed class GlyphModuleApiTests
     }
     [Test] public async Task Metadata_filters_private_declarations_and_keeps_origin_and_availability()
     {
-        var helper = Draft("helpers", "const SECRET = \"secret\" fn hidden(): String = SECRET pub fn text(): String = hidden() pub struct Item { actor: Object }"); await Publish(helper);
+        var helper = Draft("helpers", "const SECRET = \"secret\" fn hidden(): String = SECRET pub fn text(): String = hidden() pub struct Item { actor: Object, }"); await Publish(helper);
         var metadata = GlyphModuleMetadata.Create(_runtime.Compiler, "using helpers glyph t : interaction {}");
         Assert.That(metadata.Functions.Select(f => f.Name), Does.Contain("text").And.Contain("helpers.text").And.Not.Contain("hidden").And.Not.Contain("helpers.hidden"));
         Assert.That(metadata.Constants, Is.Empty);

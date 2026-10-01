@@ -86,8 +86,8 @@ public class CollectionAndImplTests
             let result = Outcome.Values(values: add(holder.values))
             match result { Values { values } { record(values.count()) } Missing {} {} }
             """, """
-            struct Holder { values: List<Int>, scores: Dictionary<String, Int> }
-            type Outcome { Values { values: List<Int> } Missing {} }
+            struct Holder { values: List<Int>, scores: Dictionary<String, Int>, }
+            type Outcome { Values { values: List<Int>, }, Missing {}, }
             fn add(values: List<Int>): List<Int> { return values.append(4) }
             """));
         Assert.That(_probe.Values, Is.EqualTo(new[] { 3, 7, 3 }));
@@ -95,13 +95,13 @@ public class CollectionAndImplTests
     [Test] public async Task struct_and_adt_methods_support_self_associated_functions_and_chaining()
     {
         await Run(Script("let item = Item.create(4) record(item.amount()) record(item.increased(3).amount()) record(item.amount()) let result = Outcome.Found(value: 8) record(result.value_or(0)) record(Outcome.Missing().value_or(2))", """
-            struct Item { value: Int }
+            struct Item { value: Int, }
             impl Item {
                 fn amount(self): Int = self.value
                 fn increased(self, delta: Int): Self { return Item(value: self.value + delta) }
                 fn create(value: Int): Self = Item(value: value)
             }
-            type Outcome { Found { value: Int } Missing {} }
+            type Outcome { Found { value: Int, }, Missing {}, }
             impl Outcome {
                 fn value_or(self, fallback: Int): Int {
                     match self { Found { value } { return value } Missing {} { return fallback } }
@@ -112,7 +112,7 @@ public class CollectionAndImplTests
     }
     [Test] public async Task expression_methods_evaluate_receiver_and_unused_arguments_once()
     {
-        await Run(Script("record(query_item().doubled(next()))", "struct Item { value: Int } impl Item { fn doubled(self, unused: Int): Int = self.value + self.value }"));
+        await Run(Script("record(query_item().doubled(next()))", "struct Item { value: Int, } impl Item { fn doubled(self, unused: Int): Int = self.value + self.value }"));
         Assert.That(_probe.ItemReads, Is.EqualTo(1));
         Assert.That(_probe.Calls, Is.EqualTo(1));
         Assert.That(_probe.Values, Is.EqualTo(new[] { 8 }));
@@ -120,7 +120,7 @@ public class CollectionAndImplTests
     [Test] public async Task method_results_support_field_access_and_capture_once()
     {
         await Run(Script("let value = query_item().increased(2).value record(value) record(value)",
-            "struct Item { value: Int } impl Item { fn increased(self, amount: Int): Self = Item(value: self.value + amount) }"));
+            "struct Item { value: Int, } impl Item { fn increased(self, amount: Int): Self = Item(value: self.value + amount) }"));
         Assert.That(_probe.ItemReads, Is.EqualTo(1));
         Assert.That(_probe.Values, Is.EqualTo(new[] { 6, 6 }));
     }
@@ -141,9 +141,9 @@ public class CollectionAndImplTests
         => Assert.That(_runtime.Compiler.Compile(Script(body)).Success, Is.False);
     [TestCase("impl Unknown {}")]
     [TestCase("impl Unknown { fn f(self): Int = 1 }")]
-    [TestCase("struct Item { value: Int } impl Item { fn value(self): Int = 1 }")]
+    [TestCase("struct Item { value: Int, } impl Item { fn value(self): Int = 1 }")]
     [TestCase("struct Item {} impl Item { fn f(self): Void { self = Item() } }")]
-    [TestCase("struct Item { value: Int } impl Item { fn f(self): Void { self.value = 3 } }")]
+    [TestCase("struct Item { value: Int, } impl Item { fn f(self): Void { self.value = 3 } }")]
     [TestCase("struct Item {} impl Item { fn f(self): Int = self.f() }")]
     public void invalid_methods_produce_diagnostics(string prelude)
         => Assert.That(_runtime.Compiler.Compile(Script("", prelude)).Success, Is.False);
@@ -174,7 +174,7 @@ public class CollectionAndImplTests
     }
     [TestCase(1)][TestCase(2)][TestCase(3)] public void older_versions_keep_collection_names_as_identifiers_and_types(int version)
     {
-        var result = _runtime.Compiler.Compile(Script("var Dictionary = 1 if Dictionary < 2 { let item = List(value: 4) record(item.value) }", "struct List { value: Int }"), new(LanguageVersion: version));
+        var result = _runtime.Compiler.Compile(Script("var Dictionary = 1 if Dictionary < 2 { let item = List(value: 4) record(item.value) }", "struct List { value: Int, }"), new(LanguageVersion: version));
         Assert.That(result.Diagnostics, Is.Empty);
         if (version >= 2)
         {
@@ -186,7 +186,7 @@ public class CollectionAndImplTests
     {
         var revision = GlyphModuleRevision.Create("items", """
             mod items {
-                pub struct Item { value: Int }
+                pub struct Item { value: Int, }
                 impl Item { pub fn amount(self): Int = self.hidden() fn hidden(self): Int = self.value }
                 pub fn create(value: Int): Item = Item(value: value)
             }

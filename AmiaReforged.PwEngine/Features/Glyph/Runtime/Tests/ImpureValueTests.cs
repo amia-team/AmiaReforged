@@ -70,7 +70,7 @@ public sealed class ImpureValueTests
     }
     [Test] public async Task Aggregates_capture_impure_fields_at_the_let_even_when_unused()
     {
-        var (calls, _) = await Run("let unused = Holder(test.create()) let holder = Holder(test.create()) test.consume(holder.actor) test.consume(holder.actor)", "struct Holder { actor: Object }");
+        var (calls, _) = await Run("let unused = Holder(test.create()) let holder = Holder(test.create()) test.consume(holder.actor) test.consume(holder.actor)", "struct Holder { actor: Object, }");
         Assert.That(calls, Is.EqualTo(new[] { "test.create", "test.create", "consume:2", "consume:2" }));
     }
     [Test] public async Task Scalar_equality_compares_strings_bools_and_object_handles()

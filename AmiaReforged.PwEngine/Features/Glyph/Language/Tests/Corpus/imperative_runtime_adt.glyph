@@ -1,7 +1,7 @@
-struct Request { actor: Object amount: Int }
+struct Request { actor: Object, amount: Int, }
 type Result {
-    Found { target: Object }
-    Missing { reason: String }
+    Found { target: Object, },
+    Missing { reason: String, },
 }
 fn found(request: Request): Result = Result.Found(target: request.actor)
 

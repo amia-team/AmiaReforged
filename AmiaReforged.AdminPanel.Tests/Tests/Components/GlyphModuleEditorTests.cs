@@ -86,7 +86,7 @@ public sealed class GlyphModuleEditorTests
         var source = _context.RenderComponent<GlyphSourceEditor>(p => p.Add(c => c.DefinitionId, _handler.Module.Id));
         foreach (string code in new[] {
             "// type Option<T> {}\nconst TEXT = \"fn identity<T>(value: T): T = value\" glyph t : interaction {}",
-            "struct Box<T> { value: T } glyph t : interaction {}",
+            "struct Box<T> { value: T, } glyph t : interaction {}",
             "glyph t : interaction { completed { let target = Option<Object>.None() } }" })
         {
             source.Find("textarea").Input(code);

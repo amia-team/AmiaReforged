@@ -78,8 +78,8 @@ public sealed class GlyphModuleTests
     }
     [Test] public void Public_structs_ADTs_and_qualified_type_signatures_keep_nominal_identity()
     {
-        var a = Module("a", "pub struct Item { actor: Object } pub type Result { Found { item: Item } Missing {} } pub fn wrap(actor: Object): Result = Result.Found(Item(actor))");
-        var b = Module("b", "pub struct Item { actor: Object }");
+        var a = Module("a", "pub struct Item { actor: Object, } pub type Result { Found { item: Item, }, Missing {}, } pub fn wrap(actor: Object): Result = Result.Found(Item(actor))");
+        var b = Module("b", "pub struct Item { actor: Object, }");
         Install(a, b);
         var validation = _runtime.Compiler.CompileModule(a);
         Assert.That(validation.Success, Is.True, string.Join("\n", validation.Diagnostics));
@@ -88,7 +88,7 @@ public sealed class GlyphModuleTests
     }
     [Test] public void Public_APIs_cannot_expose_private_types()
     {
-        var revision = Module("a", "struct Hidden { actor: Object } pub fn leak(actor: Object): Hidden = Hidden(actor)");
+        var revision = Module("a", "struct Hidden { actor: Object, } pub fn leak(actor: Object): Hidden = Hidden(actor)");
         Assert.That(_runtime.Compiler.CompileModule(revision).Diagnostics.Any(d => d.Code == "GLYPH2026"), Is.True);
     }
     [Test] public void Publication_validates_unused_functions_and_rejects_recursion()
@@ -170,7 +170,7 @@ public sealed class GlyphModuleTests
         Install(module);
         Valid(Compile("using helpers", "let tag = nwn.get_tag(context.creature) if context.creature == OBJECT.INVALID { fail helpers.nwn() }"));
         Assert.That(_runtime.Compiler.CompileModule(module).Success, Is.True);
-        Assert.That(_runtime.Compiler.CompileModule(Module("helpers", "pub struct Object { actor: Int }")).Diagnostics.Any(d => d.Code == "GLYPH2006"), Is.True);
+        Assert.That(_runtime.Compiler.CompileModule(Module("helpers", "pub struct Object { actor: Int, }")).Diagnostics.Any(d => d.Code == "GLYPH2006"), Is.True);
     }
 
 }

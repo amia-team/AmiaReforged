@@ -1,4 +1,4 @@
-struct Counts { values: List<Int> }
+struct Counts { values: List<Int>, }
 impl Counts {
     fn sum(self): Int {
         var total = 0
@@ -9,7 +9,7 @@ impl Counts {
     fn empty(): Self = Counts(values: List<Int>())
 }
 
-type Total { Found { value: Int } Missing {} }
+type Total { Found { value: Int, }, Missing {}, }
 impl Total {
     fn value_or(self, fallback: Int): Int {
         match self {

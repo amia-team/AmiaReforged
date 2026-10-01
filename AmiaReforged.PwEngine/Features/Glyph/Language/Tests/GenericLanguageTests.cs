@@ -51,7 +51,7 @@ public class GenericLanguageTests
             match absent { Some { value } { record(value.value) } None {} { record(2) } }
             absent = Option<Box<Int>>.Some(value: box)
             match absent { Option<Box<Int>>.Some { value } { record(value.value) } Option<Box<Int>>.None {} {} }
-            """, "struct Box<T> { value: T } type Result<T, E> { Ok { value: T } Err { error: E } }");
+            """, "struct Box<T> { value: T, } type Result<T, E> { Ok { value: T, }, Err { error: E, }, }");
         Assert.That(_probe.Values, Is.EqualTo(new[] { 7, 2, 7 }));
     }
 
@@ -64,7 +64,7 @@ public class GenericLanguageTests
             record(pair.left) record(pair.right)
             match wrap(identity("text")) { Some { value } { if value == "text" { record(9) } } None {} {} }
             """, """
-            struct Pair<T> { left: T right: T }
+            struct Pair<T> { left: T, right: T, }
             fn identity<T>(value: T): T = value
             fn make_pair<T>(left: T, right: T): Pair<T> = Pair<T>(left: left, right: right)
             fn wrap<T>(value: T): Option<T> { return Option<T>.Some(value: identity(value)) }
@@ -101,7 +101,7 @@ public class GenericLanguageTests
             let replacement = box.replace<String>("new")
             if replacement.get() == "new" { record(7) }
             """, """
-            struct Box<T> { value: T }
+            struct Box<T> { value: T, }
             impl<T> Box<T> {
                 fn create(value: T): Self = Box<T>(value: value)
                 fn get(self): T = self.value
@@ -116,7 +116,7 @@ public class GenericLanguageTests
     [Test] public async Task generic_inference_handles_nested_nominal_arguments()
     {
         await Run("let box = Box<Option<Int>>(value: Option<Int>.Some(value: 12)) match extract(box) { Some { value } { record(value) } None {} {} }", """
-            struct Box<T> { value: T }
+            struct Box<T> { value: T, }
             fn extract<T>(box: Box<Option<T>>): Option<T> = box.value
             """);
         Assert.That(_probe.Values, Is.EqualTo(new[] { 12 }));
@@ -141,15 +141,15 @@ public class GenericLanguageTests
         Assert.That(_probe.Values, Is.EqualTo(new[] { 2, 5 }));
     }
 
-    [TestCase("struct Box<T> { value: T }", "let x = Box<Int, String>(value: 1)", "GLYPH2004")]
-    [TestCase("struct Box<T> { value: T }", "let x = Box(value: 1)", "GLYPH2004")]
-    [TestCase("struct Box<T> { value: T }", "let x = Box<Int>(value: \"wrong\")", "GLYPH2004")]
-    [TestCase("struct Box<T> { value: T }", "var x = Box<Int>(value: 1) x = Box<String>(value: \"wrong\")", "GLYPH2004")]
-    [TestCase("struct Box<T> { value: T } impl Box<Int> {}", "", "GLYPH2031")]
-    [TestCase("struct Box<T> { value: T } impl<T> Box<T, Int> {}", "", "GLYPH2004")]
-    [TestCase("struct Box<T, T> { value: T }", "", "GLYPH2006")]
-    [TestCase("struct Box<Int> { value: Int }", "", "GLYPH2006")]
-    [TestCase("struct Box<T> { value: Unknown }", "", "GLYPH3002")]
+    [TestCase("struct Box<T> { value: T, }", "let x = Box<Int, String>(value: 1)", "GLYPH2004")]
+    [TestCase("struct Box<T> { value: T, }", "let x = Box(value: 1)", "GLYPH2004")]
+    [TestCase("struct Box<T> { value: T, }", "let x = Box<Int>(value: \"wrong\")", "GLYPH2004")]
+    [TestCase("struct Box<T> { value: T, }", "var x = Box<Int>(value: 1) x = Box<String>(value: \"wrong\")", "GLYPH2004")]
+    [TestCase("struct Box<T> { value: T, } impl Box<Int> {}", "", "GLYPH2031")]
+    [TestCase("struct Box<T> { value: T, } impl<T> Box<T, Int> {}", "", "GLYPH2004")]
+    [TestCase("struct Box<T, T> { value: T, }", "", "GLYPH2006")]
+    [TestCase("struct Box<Int> { value: Int, }", "", "GLYPH2006")]
+    [TestCase("struct Box<T> { value: Unknown, }", "", "GLYPH3002")]
     [TestCase("", "let x = Option<Void>.None()", "GLYPH2004")]
     [TestCase("", "let x = Int<String>()", "GLYPH2002")]
     [TestCase("", "let x = Option<Int>.Missing()", "GLYPH2010")]
@@ -162,7 +162,7 @@ public class GenericLanguageTests
     [TestCase("fn identity<T>(value: T): T = 3", "", "GLYPH2004")]
     [TestCase("fn broken<T>(value: T): T = missing(value)", "", "GLYPH2002")]
     [TestCase("fn cycle<T>(value: T): T = cycle(value)", "", "GLYPH2012")]
-    [TestCase("type Expanding<T> { Next { value: Expanding<Option<T>> } }", "", "GLYPH1007")]
+    [TestCase("type Expanding<T> { Next { value: Expanding<Option<T>>, }, }", "", "GLYPH1007")]
     public void invalid_generics_report_diagnostics(string prelude, string body, string code)
     {
         var result = _runtime.Compiler.Compile(Script(body, prelude));
@@ -173,15 +173,15 @@ public class GenericLanguageTests
     [TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)]
     public void older_versions_keep_option_names_and_reject_generic_declarations(int version)
     {
-        Assert.That(_runtime.Compiler.Compile(Script("var x = Option(value: 3) record(x.value)", "struct Option { value: Int }"), new(LanguageVersion: version)).Success, Is.True);
-        Assert.That(_runtime.Compiler.Compile(Script("", "struct Box<T> { value: T }"), new(LanguageVersion: version)).Diagnostics.Any(d => d.Code == "GLYPH1013"), Is.True);
+        Assert.That(_runtime.Compiler.Compile(Script("var x = Option(value: 3) record(x.value)", "struct Option { value: Int, }"), new(LanguageVersion: version)).Success, Is.True);
+        Assert.That(_runtime.Compiler.Compile(Script("", "struct Box<T> { value: T, }"), new(LanguageVersion: version)).Diagnostics.Any(d => d.Code == "GLYPH1013"), Is.True);
     }
 
     [Test] public async Task imported_generic_types_and_functions_resolve_their_lexical_module()
     {
         var module = GlyphModuleRevision.Create("boxes", """
             mod boxes {
-                pub struct Box<T> { value: T }
+                pub struct Box<T> { value: T, }
                 pub fn wrap<T>(value: T): Box<Option<T>> = Box<Option<T>>(value: Option<T>.Some(value: value))
                 impl<T> Box<T> { pub fn get(self): T = self.value }
             }
@@ -211,7 +211,7 @@ public class GenericLanguageTests
 
     [Test] public void generic_metadata_preserves_template_parameters_and_nominal_names()
     {
-        var metadata = GlyphModuleMetadata.Create(_runtime.Compiler, Script("", "struct Box<T> { value: T } fn wrap<T>(value: T): Box<Option<T>> = Box<Option<T>>(value: Option<T>.Some(value: value))"));
+        var metadata = GlyphModuleMetadata.Create(_runtime.Compiler, Script("", "struct Box<T> { value: T, } fn wrap<T>(value: T): Box<Option<T>> = Box<Option<T>>(value: Option<T>.Some(value: value))"));
         Assert.That(metadata.Diagnostics, Is.Empty, string.Join("\n", metadata.Diagnostics));
         Assert.That(metadata.Types, Does.Contain("Box<T>"));
         Assert.That(metadata.Aggregates.Single(a => a.Name == "Box").TypeParameters, Is.EqualTo(new[] { "T" }));

@@ -1,5 +1,5 @@
 // Glyph 5: generic types, inferred function arguments, and optional NWN objects.
-struct Box<T> { value: T }
+struct Box<T> { value: T, }
 fn identity<T>(value: T): T = value
 impl<T> Box<T> { fn get(self): T = self.value }
 
