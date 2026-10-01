@@ -3,16 +3,31 @@
 @inject GlyphApiService Api
 @implements IDisposable
 
-<div class="glyph-source-editor" style="padding:12px;overflow:auto">
+<div class="glyph-source-editor">
+    <div class="glyph-source-toolbar">
+        <span>Glyph source</span>
+        <button type="button" class="btn btn-sm btn-secondary" aria-expanded="@_referenceOpen.ToString().ToLowerInvariant()" aria-controls="glyph-reference"
+                @onclick="() => _referenceOpen = !_referenceOpen">@(_referenceOpen ? "Hide reference" : "Show reference")</button>
+    </div>
     @if (_loading)
     {
         <p role="status">Loading Glyph source…</p>
     }
     else
     {
-        <GlyphCodeEditor @key="_documentVersion" @ref="_editor" InitialSource="@_source"
-                         SourceChanged="OnSourceChanged" ReadOnly="@_busy" Metadata="_metadata"
-                         Diagnostics="_diagnostics" DiagnosticSource="@_diagnosticSource" />
+        <div class="glyph-source-workspace @(_referenceOpen ? "" : "glyph-source-workspace--solo")">
+            <div class="glyph-source-code">
+                <GlyphCodeEditor @key="_documentVersion" @ref="_editor" InitialSource="@_source"
+                                 SourceChanged="OnSourceChanged" ReadOnly="@_busy" Metadata="_metadata"
+                                 Diagnostics="_diagnostics" DiagnosticSource="@_diagnosticSource" CursorContextChanged="OnCursorContextChanged" ReadyChanged="ready => _editorReady = ready" />
+            </div>
+            @if (_referenceOpen)
+            {
+                <GlyphReferencePanel Metadata="_metadata" Context="_cursorContext" Unavailable="_metadataUnavailable" Loading="_metadataLoading"
+                                     CanInsert="@(_editorReady && !_busy)" Retry="RetryMetadata"
+                                     InsertFunction="InsertFunction" InsertConstant="InsertConstant" />
+            }
+        </div>
     }
     @if (_metadataUnavailable)
     {
@@ -20,7 +35,7 @@
             <button class="btn btn-sm btn-link" @onclick="RetryMetadata" disabled="@_metadataLoading">Retry suggestions</button>
         </p>
     }
-    <div class="d-flex gap-2 my-2">
+    <div class="d-flex flex-wrap gap-2 my-2">
         <button class="btn btn-secondary" disabled="@_busy" @onclick="Validate">Compile / validate</button>
         <button class="btn btn-secondary" disabled="@_busy" @onclick="SaveDraft">Save draft</button>
         <button class="btn btn-primary" disabled="@(_busy || !_valid || _validatedSource != _source)" @onclick="Activate">Activate</button>
@@ -68,6 +83,8 @@
     [Parameter] public string Name { get; set; } = "New Glyph";
     [Parameter] public string InitialSource { get; set; } = "glyph new_program : interaction {\n    attempted { }\n    started { }\n    tick { }\n    completed { }\n}";
     [Parameter] public EventCallback<GlyphDefinitionDto> Created { get; set; }
+    private bool _referenceOpen = true, _editorReady;
+    private GlyphCursorContextDto? _cursorContext;
     private GlyphCodeEditor? _editor;
     private int _documentVersion, _generation, _editRevision;
     private Guid? _id, _loadedParameter, _loadedEndpoint;
@@ -87,7 +104,7 @@
         int generation = ++_generation;
         _initialized = true; _loadedParameter = DefinitionId; _id = DefinitionId;
         _loadedEndpoint = Api.SelectedEndpointId;
-        _documentVersion++; _editRevision = 0; _editor = null;
+        _documentVersion++; _editRevision = 0; _editor = null; _cursorContext = null; _editorReady = false;
         _loading = true; _busy = true; _valid = false;
         _diagnostics = []; _versions = []; _traces = []; _metadata = null;
         _notice = null; _error = null; _metadataUnavailable = false;
@@ -137,6 +154,11 @@
             }
         }
     }
+    private void OnCursorContextChanged(GlyphCursorContextDto context) => _cursorContext = context;
+    private Task InsertFunction(GlyphFunctionMetadataDto function) => !_busy && _metadata?.Functions.Contains(function) == true
+        ? _editor?.InsertFunctionAsync(function) ?? Task.CompletedTask : Task.CompletedTask;
+    private Task InsertConstant(GlyphConstantMetadataDto constant) => !_busy && _metadata?.Constants.Contains(constant) == true
+        ? _editor?.InsertConstantAsync(constant) ?? Task.CompletedTask : Task.CompletedTask;
     private Task RetryMetadata() => LoadMetadata(_generation);
     private void OnSourceChanged(string source)
     {
@@ -231,7 +253,7 @@
         var definition = await Api.GetDefinitionAsync(id);
         CheckCurrent(generation);
         _source = definition!.SourceText; _editRevision++;
-        _diagnosticSource = _source; _documentVersion++;
+        _diagnosticSource = _source; _documentVersion++; _cursorContext = null; _editorReady = false;
         var versions = await Api.GetVersionsAsync(id);
         CheckCurrent(generation);
         _versions = versions;

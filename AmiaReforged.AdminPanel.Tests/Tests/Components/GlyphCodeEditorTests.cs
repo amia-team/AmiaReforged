@@ -15,7 +15,7 @@ public class GlyphCodeEditorTests
     public async Task Capture_rejects_delayed_callbacks_and_disposal_destroys_editor()
     {
         using var context = new Bunit.TestContext();
-        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=5");
+        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=6");
         module.Mode = JSRuntimeMode.Loose;
         module.Setup<GlyphCodeEditor.EditorSnapshot>("capture", _ => true)
             .SetResult(new("latest browser text", 3));
@@ -39,7 +39,7 @@ public class GlyphCodeEditorTests
     public async Task Metadata_and_diagnostics_reach_the_browser_with_the_validated_source()
     {
         using var context = new Bunit.TestContext();
-        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=5");
+        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=6");
         module.Mode = JSRuntimeMode.Loose;
         var metadata = new GlyphLanguageMetadataDto(1, [], [], [], [], []);
         var span = new GlyphSourceSpanDto("test.glyph", 3, 2, 1, 4);
@@ -55,10 +55,30 @@ public class GlyphCodeEditorTests
     }
 
     [Test]
+    public async Task Reference_insertion_is_guarded_and_context_callbacks_reject_old_revisions()
+    {
+        using var context = new Bunit.TestContext();
+        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=6");
+        module.Mode = JSRuntimeMode.Loose;
+        GlyphCursorContextDto? cursor = null;
+        var cut = context.RenderComponent<GlyphCodeEditor>(p => p.Add(c => c.CursorContextChanged, c => cursor = c));
+        await cut.InvokeAsync(() => cut.Instance.InsertFunctionAsync(GlyphReferencePanelTests.GetTag));
+        Assert.That(module.VerifyInvoke("insertFunction").Arguments[1], Is.SameAs(GlyphReferencePanelTests.GetTag));
+        await cut.InvokeAsync(() => cut.Instance.InsertConstantAsync(GlyphReferencePanelTests.Creature));
+        Assert.That(module.VerifyInvoke("insertConstant").Arguments[1], Is.SameAs(GlyphReferencePanelTests.Creature));
+        await cut.InvokeAsync(() => cut.Instance.OnCursorContextChanged(new("interaction", "tick"), 2));
+        await cut.InvokeAsync(() => cut.Instance.OnCursorContextChanged(new("interaction", "attempted"), 1));
+        Assert.That(cursor, Is.EqualTo(new GlyphCursorContextDto("interaction", "tick")));
+        cut.SetParametersAndRender(p => p.Add(c => c.ReadOnly, true));
+        await cut.InvokeAsync(() => cut.Instance.InsertFunctionAsync(GlyphReferencePanelTests.GetTag));
+        Assert.That(module.Invocations["insertFunction"].Count, Is.EqualTo(1));
+    }
+
+    [Test]
     public async Task Failed_creation_cleans_up_module_and_allows_disposal()
     {
         using var context = new Bunit.TestContext();
-        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=5");
+        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=6");
         module.Mode = JSRuntimeMode.Loose;
         module.SetupVoid("create", _ => true).SetException(new JSException("initialization failed"));
         var cut = context.RenderComponent<GlyphCodeEditor>(p => p.Add(c => c.InitialSource, "preserved"));

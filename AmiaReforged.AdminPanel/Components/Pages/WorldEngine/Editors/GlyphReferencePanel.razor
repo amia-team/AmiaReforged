@@ -1,0 +1,196 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<aside @ref="_host" id="glyph-reference" class="glyph-reference" aria-label="Glyph reference">
+    <div class="glyph-reference-header">
+        <strong>Glyph reference</strong>
+        <div class="glyph-reference-tabs" role="group" aria-label="Reference sections">
+            @foreach (var tab in new[] { "Functions", "Constants", "Members", "Types" })
+            {
+                <button type="button" aria-pressed="@((_tab == tab).ToString().ToLowerInvariant())" @onclick="() => ChangeTab(tab)">@tab</button>
+            }
+        </div>
+        <input type="search" class="form-control" aria-label="Search reference" placeholder="Search functions, constants, types…"
+               value="@_query" @oninput="Search" />
+        <label class="glyph-reference-context"><input type="checkbox" checked="@_prioritizeContext" @onchange="PrioritizeContext" /> Prioritize current context</label>
+        @if (Context?.Event != null) { <small>@Context.Event@(Context.Stage == null ? "" : "." + Context.Stage)</small> }
+    </div>
+    <div class="glyph-reference-client-results glyph-reference-list"></div>
+    @if (Metadata == null)
+    {
+        <div class="glyph-reference-empty" role="status">
+            @if (Unavailable)
+            {
+                <p>Glyph reference is unavailable.</p>
+                <button type="button" class="btn btn-sm btn-secondary" disabled="@Loading" @onclick="() => Retry.InvokeAsync()">Retry reference</button>
+            }
+            else { <p>Loading Glyph reference…</p> }
+        </div>
+    }
+    else
+    {
+        var results = Results();
+        <div class="glyph-reference-list glyph-reference-server-list" aria-label="Reference results">
+            @if (results.Count == 0) { <p class="glyph-reference-empty">No matching @_tab.ToLowerInvariant().</p> }
+            else if (!string.IsNullOrWhiteSpace(_query))
+            {
+                <small>@results.Count results in @_tab</small>
+                @foreach (var entry in results.Take(_limit)) { @Row(entry, false) }
+                @if (results.Count > _limit) { <button type="button" class="glyph-reference-more" @onclick="ShowMore">Show more results</button> }
+            }
+            else
+            {
+                @foreach (var group in results.GroupBy(e => e.Group).OrderBy(g => g.Key, StringComparer.Ordinal))
+                {
+                    var expanded = _openGroup == group.Key;
+                    <button type="button" class="glyph-reference-group" aria-expanded="@expanded.ToString().ToLowerInvariant()" @onclick="() => ToggleGroup(group.Key)">
+                        @(expanded ? "▾" : "▸") @group.Key <small>(@group.Count())</small>
+                    </button>
+                    @if (expanded)
+                    {
+                        @foreach (var entry in group.Take(_limit)) { @Row(entry, true) }
+                        @if (group.Count() > _limit) { <button type="button" class="glyph-reference-more" @onclick="ShowMore">Show more results</button> }
+                    }
+                }
+            }
+        </div>
+        <div class="glyph-reference-detail" aria-label="Reference details">
+            @if (_selected is { } selected)
+            {
+                @if (selected.Tab is "Functions" or "Members")
+                {
+                    <GlyphFunctionReference Entry="selected" Metadata="Metadata" Context="Context" />
+                }
+                else if (selected.Constant is { } constant) { <GlyphConstantReference Constant="constant" /> }
+                else { <h4>@selected.Name</h4><p>Glyph type</p> }
+            }
+            else { <p>Select an entry to see its reference.</p> }
+        </div>
+        @if (_selected is { } insertable && (insertable.Function != null || insertable.Constant != null))
+        {
+            <div class="glyph-reference-actions">
+                <button type="button" class="btn btn-sm btn-primary" disabled="@(!CanInsert)" @onclick="() => Insert(insertable)">Insert</button>
+                @if (!CanInsert) { <small>Insertion requires an editable code editor.</small> }
+            </div>
+        }
+    }
+</aside>
+
+@code {
+    [Parameter] public GlyphLanguageMetadataDto? Metadata { get; set; }
+    [Parameter] public GlyphCursorContextDto? Context { get; set; }
+    [Parameter] public bool Unavailable { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool CanInsert { get; set; }
+    [Parameter] public EventCallback Retry { get; set; }
+    [Parameter] public EventCallback<GlyphFunctionMetadataDto> InsertFunction { get; set; }
+    [Parameter] public EventCallback<GlyphConstantMetadataDto> InsertConstant { get; set; }
+    private ElementReference _host;
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<GlyphReferencePanel>? _callback;
+    private bool _attempted, _disposed;
+    private int _metadataGeneration, _sentGeneration = -1;
+    private GlyphLanguageMetadataDto? _indexedMetadata;
+    private GlyphReferenceCatalog? _catalog;
+    private GlyphReferenceEntry? _selected;
+    private string _tab = "Functions", _query = "";
+    private string? _openGroup;
+    private int _limit = 80;
+    private bool _prioritizeContext = true;
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(Metadata, _indexedMetadata)) return;
+        _metadataGeneration++;
+        _indexedMetadata = Metadata;
+        _catalog = Metadata == null ? null : new(Metadata);
+        _selected = null;
+        _openGroup = _tab == "Constants" ? null : _catalog?.Entries.FirstOrDefault(e => e.Tab == _tab)?.Group;
+        _limit = 80;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_disposed) return;
+        try
+        {
+            if (!_attempted)
+            {
+                _attempted = true;
+                var module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=6");
+                if (_disposed) { if (module != null) await module.DisposeAsync(); return; }
+                _module = module;
+                if (_module == null) return;
+                _callback = DotNetObjectReference.Create(this);
+            }
+            if (_disposed || _module == null) return;
+            if (_sentGeneration != _metadataGeneration)
+            {
+                _sentGeneration = _metadataGeneration;
+                await _module.InvokeVoidAsync("setReferenceSearch", _host, _callback, _metadataGeneration,
+                    (_catalog?.Entries ?? []).Select(e => new { e.Tab, e.Name, e.SearchFields, e.AvailableIn,
+                        Deprecated = e.Member?.Deprecated ?? e.Function?.Deprecated }).ToArray(), Metadata?.Events.Select(e => e.Name).ToArray() ?? []);
+            }
+            if (!_disposed) await _module.InvokeVoidAsync("setReferenceSearchState", _host, _tab, _prioritizeContext, Context, _selected?.Name);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or TaskCanceledException) { }
+    }
+
+    [JSInvokable]
+    public async Task OnReferenceSelected(string tab, string name, bool insert, int generation)
+    {
+        if (_disposed || generation != _metadataGeneration || tab != _tab) return;
+        var entry = _catalog?.Entries.FirstOrDefault(e => e.Tab == tab && e.Name == name);
+        if (entry == null) return;
+        _selected = entry;
+        if (insert) await Insert(entry);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        try
+        {
+            if (_module != null)
+            {
+                try { await _module.InvokeVoidAsync("destroyReferenceSearch", _host); }
+                finally { await _module.DisposeAsync(); }
+            }
+        }
+        catch (Exception ex) when (ex is JSException or TaskCanceledException) { }
+        finally { _callback?.Dispose(); }
+    }
+
+    private List<GlyphReferenceEntry> Results() => (_catalog?.Entries ?? [])
+        .Where(e => e.Tab == _tab).Select(e => (Entry: e, Rank: e.Rank(_query))).Where(e => e.Rank >= 0)
+        .OrderBy(e => e.Rank)
+        .ThenBy(e => _prioritizeContext && e.Entry.AvailableIn != null && Metadata != null &&
+            GlyphReferenceCatalog.Available(e.Entry.AvailableIn, Context, Metadata) == false ? 1 : 0)
+        .ThenBy(e => e.Entry.Name, StringComparer.Ordinal).Select(e => e.Entry).ToList();
+
+    private RenderFragment Row(GlyphReferenceEntry entry, bool compact) => @<button type="button"
+        class="glyph-reference-row @(entry.AvailableIn != null && Metadata != null && GlyphReferenceCatalog.Available(entry.AvailableIn, Context, Metadata) == false ? "glyph-reference-unavailable" : "")"
+        aria-pressed="@(ReferenceEquals(entry, _selected).ToString().ToLowerInvariant())" title="@entry.Name"
+        @onclick="() => _selected = entry" @ondblclick="() => Insert(entry)">
+        <code>@(compact && (entry.Name.StartsWith("nwn.", StringComparison.Ordinal) || entry.Constant != null || entry.Member != null) ? entry.Name[(entry.Name.LastIndexOf('.') + 1)..] : entry.Name)</code>
+        @if (!string.IsNullOrEmpty(entry.Member?.Deprecated ?? entry.Function?.Deprecated)) { <small>Deprecated</small> }
+    </button>;
+
+    private void Search(ChangeEventArgs args) { _query = args.Value?.ToString() ?? ""; _limit = 80; }
+    private void PrioritizeContext(ChangeEventArgs args) => _prioritizeContext = args.Value is true;
+    private void ChangeTab(string tab)
+    {
+        _tab = tab; _selected = null; _limit = 80;
+        _openGroup = tab == "Constants" ? null : _catalog?.Entries.FirstOrDefault(e => e.Tab == tab)?.Group;
+    }
+    private void ToggleGroup(string group) { _openGroup = _openGroup == group ? null : group; _limit = 80; }
+    private void ShowMore() => _limit += 80;
+    private async Task Insert(GlyphReferenceEntry entry)
+    {
+        _selected = entry;
+        if (!CanInsert) return;
+        if (entry.Constant != null) await InsertConstant.InvokeAsync(entry.Constant);
+        else if (entry.Function != null) await InsertFunction.InvokeAsync(entry.Function);
+    }
+}

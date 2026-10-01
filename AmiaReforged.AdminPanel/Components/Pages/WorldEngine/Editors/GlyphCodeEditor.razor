@@ -1,8 +1,7 @@
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 
-<div class="mb-1">Glyph source</div>
-<div @ref="_host"></div>
+<div class="glyph-code-host" @ref="_host"></div>
 @if (!_ready)
 {
     <textarea aria-label="Glyph source" class="form-control" rows="18" spellcheck="false"
@@ -22,6 +21,10 @@
     [Parameter] public GlyphLanguageMetadataDto? Metadata { get; set; }
     [Parameter] public IReadOnlyList<GlyphDiagnosticDto> Diagnostics { get; set; } = [];
     [Parameter] public string DiagnosticSource { get; set; } = "";
+    [Parameter] public EventCallback<GlyphCursorContextDto> CursorContextChanged { get; set; }
+    [Parameter] public EventCallback<bool> ReadyChanged { get; set; }
+    public bool CanInsert => _ready && !_disposed && !ReadOnly;
+    private long _contextRevision;
     private GlyphLanguageMetadataDto? _sentMetadata;
     private IReadOnlyList<GlyphDiagnosticDto>? _sentDiagnostics;
     private string? _sentDiagnosticSource;
@@ -42,7 +45,7 @@
             _attempted = true;
             try
             {
-                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=5");
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=6");
                 if (_disposed) { await ReleaseAsync(); return; }
                 _callback = DotNetObjectReference.Create(this);
                 await _module.InvokeVoidAsync("create", _host, _callback, _source, ReadOnly);
@@ -54,7 +57,11 @@
                 _failed = true;
                 await ReleaseAsync();
             }
-            if (!_disposed) StateHasChanged();
+            if (!_disposed)
+            {
+                await ReadyChanged.InvokeAsync(_ready);
+                StateHasChanged();
+            }
         }
         if (_ready && !_disposed)
         {
@@ -82,6 +89,24 @@
         _revision = revision;
         _source = source;
         await SourceChanged.InvokeAsync(source);
+    }
+
+    [JSInvokable]
+    public async Task OnCursorContextChanged(GlyphCursorContextDto context, long revision)
+    {
+        if (_disposed || revision <= _contextRevision) return;
+        _contextRevision = revision;
+        await CursorContextChanged.InvokeAsync(context);
+    }
+
+    public async Task InsertFunctionAsync(GlyphFunctionMetadataDto function)
+    {
+        if (CanInsert) await _module!.InvokeVoidAsync("insertFunction", _host, function);
+    }
+
+    public async Task InsertConstantAsync(GlyphConstantMetadataDto constant)
+    {
+        if (CanInsert) await _module!.InvokeVoidAsync("insertConstant", _host, constant);
     }
 
     private async Task FallbackChanged(ChangeEventArgs args)

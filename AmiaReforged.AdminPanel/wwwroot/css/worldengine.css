@@ -958,3 +958,49 @@
     font-size: 0.95rem;
     margin-bottom: 10px;
 }
+
+/* Persistent Glyph reference and independently scrolling source workspace. */
+.glyph-source-editor { padding: 12px; min-width: 0; overflow: auto; }
+.glyph-source-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.glyph-source-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 26%); height: clamp(32rem, 68vh, 58rem); min-width: 0; }
+.glyph-source-workspace--solo { grid-template-columns: minmax(0, 1fr); }
+.glyph-source-code { min-width: 0; min-height: 0; overflow: hidden; }
+.glyph-code-host, .glyph-code-host .cm-editor { height: 100%; }
+.glyph-source-code > textarea { height: 100%; }
+.glyph-code-host:empty { display: none; }
+.glyph-reference { display: flex; flex-direction: column; min-width: 0; min-height: 0; border: 1px solid var(--border-subtle, #8a8477); background: var(--bg-card, #26241f); color: var(--text-primary, #d0ccc2); }
+.glyph-reference-header { padding: 10px; border-bottom: 1px solid var(--border-subtle, #8a8477); flex-shrink: 0; }
+.glyph-reference-tabs { display: flex; flex-wrap: wrap; gap: 3px; margin: 8px 0; }
+.glyph-reference button { color: var(--text-primary, #d0ccc2); }
+.glyph-reference-tabs button, .glyph-reference-group, .glyph-reference-row, .glyph-reference-more { background: transparent; border: 0; text-align: left; cursor: pointer; padding: 6px 8px; }
+.glyph-reference-tabs button { font-size: .8rem; border: 1px solid var(--border-subtle, #8a8477); border-radius: 4px; }
+.glyph-reference button[aria-pressed="true"] { background: var(--bg-input, #33302a); box-shadow: inset 3px 0 var(--accent-gold, #c9a84c); }
+.glyph-reference button:hover { background: var(--bg-input, #33302a); }
+.glyph-reference button:focus-visible { outline: 2px solid var(--accent-gold, #c9a84c); outline-offset: -2px; }
+.glyph-reference-context { display: flex; align-items: center; gap: 6px; font-size: .8rem; margin-top: 8px; }
+.glyph-reference small { color: var(--text-secondary, #8a8477); font-size: .75rem; }
+.glyph-reference-list { flex: 1 1 45%; min-height: 7rem; overflow: auto; padding: 4px; }
+.glyph-reference-group { display: block; width: 100%; font-size: .8rem; font-weight: 600; }
+.glyph-reference-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; width: 100%; padding-left: 14px; }
+.glyph-reference-row code { color: inherit; font-size: .8rem; overflow-wrap: anywhere; }
+.glyph-reference-unavailable { color: var(--text-secondary, #8a8477) !important; }
+.glyph-reference-detail { flex: 0 1 48%; min-height: 5rem; overflow: auto; padding: 12px; border-top: 1px solid var(--border-subtle, #8a8477); font-size: .82rem; overflow-wrap: anywhere; }
+.glyph-reference-detail h4 { font-size: .95rem; color: var(--accent-gold, #c9a84c); }
+.glyph-reference-detail dl { margin-bottom: 10px; }
+.glyph-reference-detail dt { color: var(--text-secondary, #8a8477); }
+.glyph-reference-detail dd { margin: 0 0 6px; }
+.glyph-reference-detail > small { display: block; margin-top: 5px; }
+.glyph-reference-signature { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; color: var(--text-primary, #d0ccc2); background: var(--bg-input, #33302a); padding: 8px; }
+.glyph-reference-deprecated { border-left: 3px solid var(--accent-gold, #c9a84c); padding-left: 8px; }
+.glyph-reference-empty { padding: 12px; }
+@media (max-width: 1100px) {
+    .glyph-source-workspace { grid-template-columns: minmax(0, 1fr); height: auto; gap: 10px; }
+    .glyph-source-code { height: 28rem; }
+    .glyph-reference { height: 34rem; }
+    .glyph-source-toolbar { flex-wrap: wrap; }
+}
+.glyph-reference-client-results { display: none; }
+.glyph-reference--searching > .glyph-reference-client-results { display: block; }
+.glyph-reference--searching > .glyph-reference-server-list { display: none; }
+.glyph-reference-actions { flex-shrink: 0; padding: 8px 12px; border-top: 1px solid var(--border-subtle, #8a8477); }
+.glyph-reference-actions small { display: block; margin-top: 5px; }

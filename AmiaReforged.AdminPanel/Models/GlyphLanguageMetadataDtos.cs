@@ -32,8 +32,14 @@ public sealed record GlyphFieldMetadataDto(string Name, string Type, string Desc
     string? Setter);
 public sealed record GlyphReceiverMethodMetadataDto(string Name, string ReceiverType, string CanonicalName,
     string Description, string ReturnType, string Kind, IReadOnlyList<GlyphParameterMetadataDto> Parameters,
-    IReadOnlyList<GlyphAvailabilityDto> AvailableIn);
+    IReadOnlyList<GlyphAvailabilityDto> AvailableIn)
+{
+    public string Policy { get; init; } = "None";
+    public string? Deprecated { get; init; }
+}
 
 public sealed record GlyphIndexerMetadataDto(string Name, string Getter, string Setter);
 
 public sealed record GlyphConstantMetadataDto(string Name, string Namespace, string Type, object Value, string Source, string Description);
+
+public sealed record GlyphCursorContextDto(string? Event, string? Stage);

@@ -26,12 +26,12 @@ const EXPR_NODES = new Set([
   "CallExpression",
 ]);
 
-export function completionScope(state, pos, from = pos) {
+export function completionScope(state, pos, from = pos, suppress = true) {
   const tree = ensureSyntaxTree(state, pos, 50) || syntaxTree(state);
   const leaf = tree.resolveInner(pos, -1);
   for (let node = leaf; node; node = node.parent) {
     if (
-      node.from < pos &&
+      suppress && node.from < pos &&
       pos <= node.to &&
       (node.name === "LineComment" ||
         node.name === "UnterminatedString" ||
@@ -127,7 +127,7 @@ const statementSnippets = [
     type: "keyword",
   }),
 ];
-function signature(fn) {
+export function signature(fn) {
   return `(${fn.parameters.map((p) => `${p.name}: ${p.type}${p.required ? "" : ` = ${p.defaultValue}`}`).join(", ")}) → ${fn.returnType}`;
 }
 function available(fn, scope) {
@@ -256,12 +256,13 @@ function fieldCompletion(field) {
     info: field.description,
   };
 }
+export function functionSnippet(fn, name = fn.name) {
+  return `${name}(${fn.parameters.filter(p => p.required).map(p => "${" + p.name + "}").join(", ")})`;
+}
+
 function functionCompletion(fn, context) {
   const followsParen = /^\s*\(/.test(context.state.sliceDoc(context.pos));
-  const template = `${fn.name}(${fn.parameters
-    .filter((p) => p.required)
-    .map((p) => "${" + p.name + "}")
-    .join(", ")})`;
+  const template = functionSnippet(fn);
   const completion = {
     label: fn.name,
     type: "function",
@@ -277,7 +278,7 @@ function functionCompletion(fn, context) {
 // preserved and the popup shows the bare member name.
 function receiverCompletion(rm, context) {
   const followsParen = /^\s*\(/.test(context.state.sliceDoc(context.pos));
-  const template = `${rm.name}(${rm.parameters.filter(p => p.required).map((p) => "${" + p.name + "}").join(", ")})`;
+  const template = functionSnippet(rm);
 
   const completion = {
     label: rm.name,
@@ -552,35 +553,7 @@ export function glyphCompletions(metadata) {
         })),
       );
 
-      for (const fn of functions) {
-        const followsParen = /^\s*\(/.test(
-          context.state.sliceDoc(context.pos),
-        );
-
-        const required = fn.parameters.filter(
-          (p) => p.required,
-        );
-
-        const template =
-          `${fn.name}(` +
-          required
-            .map((p) => "${" + p.name + "}")
-            .join(", ") +
-          ")";
-
-        const completion = {
-          label: fn.name,
-          type: "function",
-          detail: signature(fn),
-          info: fn.description,
-        };
-
-        options.push(
-          followsParen
-            ? { ...completion, apply: fn.name }
-            : snippetCompletion(template, completion),
-        );
-      }
+      for (const fn of functions) options.push(functionCompletion(fn, context));
 
       if (functions.some(fn => fn.name.startsWith("nwn."))) {
         options.push({ label: "nwn", type: "namespace", detail: "NWN procedures", apply: "nwn.", boost: 10 });

@@ -50,7 +50,7 @@ test('editor supports editing, history, snapshots, read-only state and DOM clean
         assert.equal(await content.getAttribute('contenteditable'), 'false');
         await page.evaluate(() => editor.setReadOnly(document.querySelector('#host'), false));
         assert.equal(await content.getAttribute('contenteditable'), 'true');
-        const revisions = await page.evaluate(() => changes.map(change => change[2]));
+        const revisions = await page.evaluate(() => changes.filter(change => change[0] === 'OnEditorChanged').map(change => change[2]));
         assert.deepEqual(revisions, revisions.map((_, i) => i + 1));
 
         await page.evaluate(() => editor.create(document.querySelector('#host'), {

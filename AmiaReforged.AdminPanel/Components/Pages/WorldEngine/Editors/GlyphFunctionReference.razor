@@ -1,0 +1,45 @@
+@{ var member = Entry.Member; var function = Entry.Function;
+   var parameters = member?.Parameters ?? function!.Parameters;
+   var availability = Entry.AvailableIn!;
+   var deprecated = member?.Deprecated ?? function?.Deprecated; }
+<h4>@Entry.Name</h4>
+<pre class="glyph-reference-signature">@GlyphReferenceCatalog.Signature(Entry.Name, parameters, member?.ReturnType ?? function!.ReturnType)</pre>
+<p>@(member?.Description ?? function!.Description)</p>
+@if (!string.IsNullOrEmpty(deprecated))
+{
+    <p class="glyph-reference-deprecated" role="status">Deprecated: @deprecated</p>
+}
+<dl>
+    <dt>Category</dt><dd>@(member == null ? function!.Category : Entry.Group)</dd>
+    <dt>Kind</dt><dd>@(member?.Kind ?? function!.Kind)</dd>
+    <dt>Canonical name</dt><dd><code>@(member?.CanonicalName ?? function!.CanonicalName)</code></dd>
+    @if (member != null) { <dt>Receiver policy</dt><dd>@member.Policy</dd> }
+    @if (function?.Source != null) { <dt>Source</dt><dd>@function.Source</dd> }
+    @if (function?.Backend != null) { <dt>Backend</dt><dd>@function.Backend</dd> }
+    @if (Entry.Aliases.Count > 0) { <dt>Aliases</dt><dd>@string.Join(", ", Entry.Aliases)</dd> }
+    <dt>Availability</dt><dd>@GlyphReferenceCatalog.Availability(availability, Metadata)</dd>
+</dl>
+@if (GlyphReferenceCatalog.Available(availability, Context, Metadata) is { } available)
+{
+    <p class="@(available ? "" : "glyph-reference-unavailable")">@(available ? "Available here" : "Unavailable in current context") (@Context!.Event@(Context.Stage == null ? "" : "." + Context.Stage))</p>
+}
+@if (parameters.Count > 0)
+{
+    <dl class="glyph-reference-parameters" aria-label="Parameters">
+        @foreach (var parameter in parameters)
+        {
+            <dt><code>@parameter.Name</code>: @parameter.Type</dt>
+            <dd>@(parameter.Required ? "Required" : parameter.DefaultValue == null ? "Optional" : "Optional, default: " + parameter.DefaultValue)</dd>
+        }
+    </dl>
+}
+@if (member != null)
+{
+    <p>Typed member on @member.ReceiverType. Insert uses the canonical procedure with an explicit receiver.</p>
+}
+
+@code {
+    [Parameter, EditorRequired] public GlyphReferenceEntry Entry { get; set; } = null!;
+    [Parameter, EditorRequired] public GlyphLanguageMetadataDto Metadata { get; set; } = null!;
+    [Parameter] public GlyphCursorContextDto? Context { get; set; }
+}

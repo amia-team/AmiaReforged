@@ -2,9 +2,9 @@ import { Compartment, EditorState, EditorSelection } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLine, drawSelection } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 
-import { autocompletion, closeCompletion } from '@codemirror/autocomplete';
+import { autocompletion, closeCompletion, snippet } from '@codemirror/autocomplete';
 import { lintGutter, setDiagnostics, setDiagnosticsEffect } from '@codemirror/lint';
-import { glyphCompletions } from './glyph-completion.js';
+import { glyphCompletions, completionScope, functionSnippet } from './glyph-completion.js';
 import { compilerDiagnostics, diagnosticRange } from './glyph-diagnostics.js';
 import { glyph } from './glyph-language.js';
 
@@ -36,7 +36,7 @@ export function create(host, callback, source, readOnly) {
     destroy(host);
     const editable = new Compartment();
     const completion = new Compartment();
-    const entry = { revision: 0, disposed: false, editable, completion, view: null, observer: null };
+    const entry = { revision: 0, disposed: false, editable, completion, view: null, observer: null, context: null, contextRevision: 0 };
     try {
         entry.view = new EditorView({ parent: host, state: EditorState.create({
             doc: source,
@@ -51,7 +51,9 @@ export function create(host, callback, source, readOnly) {
                 EditorView.contentAttributes.of({ 'aria-label': 'Glyph source', 'spellcheck': 'false' }),
                 editable.of([EditorState.readOnly.of(readOnly), EditorView.editable.of(!readOnly)]),
                 EditorView.updateListener.of(update => {
-                    if (!update.docChanged || entry.disposed) return;
+                    if (entry.disposed) return;
+                    if (update.docChanged || update.selectionSet) notifyContext(entry, callback);
+                    if (!update.docChanged) return;
                     const revision = ++entry.revision;
                     callback.invokeMethodAsync('OnEditorChanged', update.state.doc.toString(), revision)
                         .catch(() => { /* A disconnected Blazor circuit cannot receive edits. */ });
@@ -59,6 +61,7 @@ export function create(host, callback, source, readOnly) {
             ]
         }) });
         editors.set(host, entry);
+        notifyContext(entry, callback);
         // DOM removal also cleans up when the server circuit cannot call DisposeAsync.
         entry.observer = new MutationObserver(() => {
             if (!host.isConnected) destroy(host);
@@ -120,3 +123,31 @@ export function focusDiagnostic(host, source, span) {
     entry.view.dispatch({ selection: EditorSelection.single(from, to), effects: EditorView.scrollIntoView(from) });
     entry.view.focus();
 }
+
+function notifyContext(entry, callback) {
+    const scope = completionScope(entry.view.state, entry.view.state.selection.main.head, undefined, false);
+    const context = { event: scope.event || null, stage: scope.stage || null };
+    const key = JSON.stringify(context);
+    if (key === entry.context) return;
+    entry.context = key;
+    callback.invokeMethodAsync('OnCursorContextChanged', context, ++entry.contextRevision).catch(() => {});
+}
+
+export function insertFunction(host, fn) {
+    const entry = editors.get(host);
+    if (!entry || entry.view.state.readOnly) return;
+    closeCompletion(entry.view);
+    const { from, to } = entry.view.state.selection.main;
+    snippet(functionSnippet(fn))(entry.view, { label: fn.name }, from, to);
+    entry.view.focus();
+}
+
+export function insertConstant(host, constant) {
+    const entry = editors.get(host);
+    if (!entry || entry.view.state.readOnly) return;
+    closeCompletion(entry.view);
+    entry.view.dispatch({ ...entry.view.state.replaceSelection(constant.name), scrollIntoView: true, userEvent: 'input' });
+    entry.view.focus();
+}
+
+export { setReferenceSearch, setReferenceSearchState, destroyReferenceSearch } from './glyph-reference.js';

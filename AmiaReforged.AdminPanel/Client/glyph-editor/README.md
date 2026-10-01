@@ -52,3 +52,54 @@ Engine completion uses the compiler's canonical `nwn.*` functions. Object is an 
 `player.` shows explicit domain aliases, not inferred NWScript methods. Location and Effect methods
 come only from the classified `receiverMethods` metadata, with a known receiver type and policy.
 The editor never derives methods from a function's first Object parameter.
+
+## Persistent language reference
+
+The source editor includes a collapsible reference beside CodeMirror on desktop,
+with a stacked layout below 1100px. Each pane scrolls independently. Functions use
+compiler categories and canonical names; compatibility aliases are grouped in the
+details rather than repeated in the list. Details show Glyph signatures, required
+and optional parameters, descriptions, provenance (including `NWScript.GetTag`),
+availability and deprecation. Typed receiver members and Glyph types have their
+own sections. Members insert their canonical procedure with an explicit receiver.
+
+The function reference is projected from compiler-owned language metadata. It is
+not a separate maintained API list. It uses the same
+`GlyphApiService.GetLanguageMetadataAsync()` request as autocomplete; no reference
+endpoint or hand-maintained function/constant catalog exists. The Admin Panel DTO
+also reads the server's receiver policy and deprecation fields.
+
+Search is independent in each section (the text carries across section changes).
+The browser filters a metadata-derived search index immediately, without a server
+round trip per keystroke. It matches names, aliases, canonical/source names,
+categories, parameter names/types, return types, constant names/domains/types and
+descriptions. Exact names precede prefixes, canonical/source matches, category or
+parameter matches, and description matches. The Blazor filter provides a fallback
+if browser initialization fails. Constants start as collapsed domains, and search
+or expanded domains initially render at most 80 rows, with explicit Show more.
+
+Select an entry to read its details. Double-click it or use the keyboard-accessible
+Insert button to insert at CodeMirror's remembered selection. Functions reuse
+`functionSnippet` from autocomplete and select the first required parameter;
+Tab moves between placeholders and Escape exits the snippet. Constants insert
+only their qualified name. Both operations use CodeMirror transactions, replace
+the selection, support undo and restore editor focus. Search-result arrow keys
+move between buttons; Enter selects; ordinary Tab navigation reaches Insert.
+Insertion is disabled while busy/read-only or when the code editor falls back to
+a textarea. Metadata failure never prevents source editing; Retry reference and
+Retry suggestions both retry the existing request.
+
+Cursor context comes from the same `completionScope` syntax tree used by
+completion, including while editing comments/strings. Availability is marked
+against the server's event/stage pairs. Prioritize current context promotes usable
+functions among equally ranked matches; unavailable APIs remain browsable and
+show their supported contexts. Unknown contexts are not claimed to be valid.
+Changing endpoints clears metadata and selection; generation checks reject old
+metadata responses and reference selection callbacks.
+
+`editor-reference.test.mjs` exercises the production bundle's insertion, focus,
+selection replacement, snippet placeholders, undo, read-only guards and cursor
+context events. `glyph-reference.test.mjs` covers browser-local search, ranking,
+bounded constants, keyboard controls and metadata generation replacement. The
+bUnit Glyph tests cover categories, details, search, availability, retry,
+endpoint switching, accessibility and reference-to-editor interop.

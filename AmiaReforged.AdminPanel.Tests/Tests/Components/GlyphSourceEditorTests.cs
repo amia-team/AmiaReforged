@@ -154,12 +154,57 @@ public class GlyphSourceEditorTests
         Assert.That(cut.FindComponent<GlyphCodeEditor>().Instance.Metadata, Is.Not.Null);
     }
 
+    [Test] public void Reference_insertion_reaches_CodeMirror_and_collapsing_preserves_the_editor()
+    {
+        var js = new Mock<IJSRuntime>();
+        var module = new Mock<IJSObjectReference>();
+        js.Setup(m => m.InvokeAsync<IJSObjectReference>("import", It.IsAny<object?[]>())).ReturnsAsync(module.Object);
+        _context.Services.AddSingleton(js.Object);
+        _handler.Metadata = GlyphReferencePanelTests.Metadata;
+        var cut = _context.RenderComponent<GlyphSourceEditor>(p => p.Add(c => c.DefinitionId, _id));
+        cut.Find("input[type=search]").Input("GetTag");
+        cut.Find(".glyph-reference-row").Click();
+        cut.WaitForAssertion(() => Assert.That(cut.Find(".glyph-reference-actions button").HasAttribute("disabled"), Is.False));
+        cut.Find(".glyph-reference-actions button").Click();
+        module.Verify(m => m.InvokeAsync<Microsoft.JSInterop.Infrastructure.IJSVoidResult>("insertFunction",
+            It.Is<object?[]>(a => ((GlyphFunctionMetadataDto)a[1]!).Name == "nwn.get_tag" && ((GlyphFunctionMetadataDto)a[1]!).Parameters.Count == 2)), Times.Once);
+        cut.FindAll(".glyph-reference-tabs button").Single(b => b.TextContent == "Constants").Click();
+        cut.Find("input[type=search]").Input("CREATURE"); cut.Find(".glyph-reference-row").DoubleClick();
+        module.Verify(m => m.InvokeAsync<Microsoft.JSInterop.Infrastructure.IJSVoidResult>("insertConstant",
+            It.Is<object?[]>(a => ((GlyphConstantMetadataDto)a[1]!).Name == "OBJECT_TYPE.CREATURE")), Times.Once);
+        var editor = cut.FindComponent<GlyphCodeEditor>().Instance;
+        cut.Find(".glyph-source-toolbar button").Click();
+        Assert.That(cut.FindAll(".glyph-reference"), Is.Empty);
+        Assert.That(cut.FindComponent<GlyphCodeEditor>().Instance, Is.SameAs(editor));
+    }
+
+    [Test] public async Task Endpoint_switch_discards_pending_metadata_and_clears_reference_selection()
+    {
+        var pending = new TaskCompletionSource<HttpResponseMessage?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _handler.Metadata = GlyphReferencePanelTests.Metadata;
+        var cut = _context.RenderComponent<GlyphSourceEditor>(p => p.Add(c => c.DefinitionId, _id));
+        cut.Find("input[type=search]").Input("GetTag"); cut.Find(".glyph-reference-row").Click();
+        Assert.That(cut.Markup, Does.Contain("NWScript.GetTag"));
+        _handler.Intercept = request => request.RequestUri!.AbsolutePath.EndsWith("/language-metadata")
+            ? pending.Task : Task.FromResult<HttpResponseMessage?>(null);
+        var api = _context.Services.GetRequiredService<GlyphApiService>();
+        api.SelectEndpoint(Guid.NewGuid()); cut.SetParametersAndRender(p => p.Add(c => c.DefinitionId, _id));
+        Assert.That(cut.Markup, Does.Not.Contain("NWScript.GetTag"));
+        _handler.Intercept = null; _handler.Metadata = new(1, [], [], [], [], []);
+        api.SelectEndpoint(Guid.NewGuid()); cut.SetParametersAndRender(p => p.Add(c => c.DefinitionId, _id));
+        pending.SetResult(JsonResponse(GlyphReferencePanelTests.Metadata));
+        await cut.InvokeAsync(async () => await Task.Yield());
+        Assert.That(cut.FindComponent<GlyphReferencePanel>().Instance.Metadata!.Functions, Is.Empty);
+        Assert.That(cut.Markup, Does.Not.Contain("NWScript.GetTag"));
+    }
+
     private static HttpResponseMessage JsonResponse(object response) => new(HttpStatusCode.OK)
     { Content = new StringContent(JsonSerializer.Serialize(response), System.Text.Encoding.UTF8, "application/json") };
 
     private sealed class Handler(Guid id) : HttpMessageHandler
     {
         public bool Valid;
+        public GlyphLanguageMetadataDto Metadata = new(1, [], [], [], [], []);
         public string Source = "glyph a : interaction {}";
         public List<GlyphVersionDto> Versions = [];
         public Func<HttpRequestMessage, Task<HttpResponseMessage?>>? Intercept;
@@ -175,7 +220,7 @@ public class GlyphSourceEditorTests
                 using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(cancellationToken));
                 LastSavedSource = body.RootElement.GetProperty("SourceText").GetString();
             }
-            object response = path.EndsWith("/language-metadata") ? new GlyphLanguageMetadataDto(1, [], [], [], [], []) :
+            object response = path.EndsWith("/language-metadata") ? Metadata :
             path.EndsWith("/traces") ? Array.Empty<GlyphTraceDto>() :
                 path.EndsWith("/versions") ? Versions :
                 path.EndsWith("/compile") ? new GlyphCompilationDto(Valid, Valid ? [] : [new("GLYPH2002", "Unknown function", new("test.glyph", 0, 1, 3, 4))]) :
