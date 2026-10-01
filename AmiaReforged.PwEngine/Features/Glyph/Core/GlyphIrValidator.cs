@@ -74,6 +74,9 @@ public sealed class GlyphIrValidator(IGlyphNodeDefinitionRegistry registry)
                 output.DataType == GlyphDataType.List && input.DataType == GlyphDataType.List &&
                 (output.ElementType ?? GlyphDataType.NwObject) != (input.ElementType ?? GlyphDataType.NwObject))
                 errors.Add(new("GLYPH4010", $"Cannot connect {output.DataType} to {input.DataType}.", EdgeId: edge.Id));
+            if (output.DataType == GlyphDataType.Dictionary && input.DataType == GlyphDataType.Dictionary &&
+                (output.KeyType != input.KeyType || output.ValueType != input.ValueType))
+                errors.Add(new("GLYPH4010", "Dictionary key/value types do not match.", EdgeId: edge.Id));
             if (output.DataType == GlyphDataType.Aggregate && input.DataType == GlyphDataType.Aggregate &&
                 AggregateIdentity(ir.GetNode(edge.SourceNodeId)!, output) is { } outputName &&
                 AggregateIdentity(ir.GetNode(edge.TargetNodeId)!, input) is { } inputName && outputName != inputName)

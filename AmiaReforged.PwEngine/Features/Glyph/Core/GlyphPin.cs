@@ -39,6 +39,9 @@ public record GlyphPin
     /// <summary>Element type for lists; absent on legacy pins means Object.</summary>
     public GlyphDataType? ElementType { get; init; }
 
+    public GlyphDataType? KeyType { get; init; }
+    public GlyphDataType? ValueType { get; init; }
+
     /// <summary>Nominal type identity for aggregate API arguments and results.</summary>
     public string? AggregateTypeName { get; init; }
 

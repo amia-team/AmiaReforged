@@ -76,9 +76,9 @@ public class GlyphApiService : ApiServiceBase
         await DeleteRequestAsync($"{DefinitionsBase}/{id}");
     }
 
-    public async Task<GlyphCompilationDto?> CompileAsync(string source, int languageVersion = 3) =>
+    public async Task<GlyphCompilationDto?> CompileAsync(string source, int languageVersion = 4) =>
         await PostAsync<GlyphCompilationDto>($"{DefinitionsBase}/compile", new CompileGlyphRequest(source, LanguageVersion: languageVersion));
-    public async Task<GlyphCompilationDto?> ActivateAsync(Guid id, string source, string? compilationHash = null, int languageVersion = 3) =>
+    public async Task<GlyphCompilationDto?> ActivateAsync(Guid id, string source, string? compilationHash = null, int languageVersion = 4) =>
         await PostAsync<GlyphCompilationDto>($"{DefinitionsBase}/{id}/activate", new CompileGlyphRequest(source, LanguageVersion: languageVersion, ExpectedCompilationHash: compilationHash));
     public async Task<GlyphCompilationDto?> RollbackAsync(Guid id) =>
         await PostAsync<GlyphCompilationDto>($"{DefinitionsBase}/{id}/rollback", new { });
@@ -95,7 +95,7 @@ public class GlyphApiService : ApiServiceBase
     public async Task<GlyphCompilationDto?> PublishModuleAsync(Guid id, string source, string? hash) => await PostAsync<GlyphCompilationDto>($"/api/worldengine/glyph-modules/{id}/publish", new GlyphModulePublicationRequest(source, hash));
     public async Task<GlyphModuleDto?> RollbackModuleAsync(Guid id) => await PostAsync<GlyphModuleDto>($"/api/worldengine/glyph-modules/{id}/rollback", new { });
     public async Task ArchiveModuleAsync(Guid id) => await DeleteRequestAsync($"/api/worldengine/glyph-modules/{id}");
-    public async Task<GlyphModuleMetadataDto?> GetModuleMetadataAsync(string source, int languageVersion = 3)
+    public async Task<GlyphModuleMetadataDto?> GetModuleMetadataAsync(string source, int languageVersion = 4)
     {
         int generation = _endpointGeneration;
         var result = await PostAsync<GlyphModuleMetadataDto>($"{DefinitionsBase}/module-metadata", new CompileGlyphRequest(source, LanguageVersion: languageVersion));

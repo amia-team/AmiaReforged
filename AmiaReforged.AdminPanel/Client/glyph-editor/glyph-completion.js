@@ -13,6 +13,8 @@ function text(state, node) {
 
 // Node names that may stand as the receiver of a member access (`receiver.`).
 const EXPR_NODES = new Set([
+  "ListExpression",
+  "CollectionConstructor",
   "VariableName",
   "Number",
   "String",
@@ -46,6 +48,8 @@ export function completionScope(state, pos, from = pos, suppress = true) {
   const inFunction = !!functionNode;
   const functionBody = functionNode?.getChild("Block");
   const inFunctionBody = !!functionBody && inside(functionBody, pos, "}");
+  const implNode = functionNode?.parent?.name === "PublicMethod" ? functionNode.parent.parent : functionNode?.parent;
+  const implType = implNode?.name === "ImplDeclaration" ? text(state, implNode.getChild("TypeName")) : null;
   const functionReturnType = text(state, functionNode?.getChild("TypeName"));
   const moduleBody = tree.topNode.getChild("ModuleDeclaration")?.getChild("ModuleBody");
   const blocks = [];
@@ -69,7 +73,7 @@ export function completionScope(state, pos, from = pos, suppress = true) {
   const locals = new Map();
   for (const parameter of functionNode?.getChild("Parameters")?.getChildren("Parameter") || []) {
     const name = text(state, parameter.getChild("ParameterName"));
-    if (name) locals.set(name, { label: name, type: text(state, parameter.getChild("TypeName")), detail: "Function parameter", boost: 20 });
+    if (name) locals.set(name, { label: name, type: text(state, parameter.getChild("TypeName")) || (name === "self" ? implType : null), detail: "Function parameter", boost: 20 });
   }
   for (const block of blocks) {
     if (["ForeachStatement", "ForStatement"].includes(block.parent?.name)) {
@@ -201,6 +205,12 @@ function firstExprChild(node) {
 function expressionType(state, node, scope, metadata) {
   if (!node || !EXPR_NODES.has(node.name)) return null;
   switch (node.name) {
+    case "CollectionConstructor":
+      return text(state, node.getChild("CollectionType")).replace(/\s*,\s*/g, ", ").replace(/\s*([<>])\s*/g, "$1");
+    case "ListExpression": {
+      const element = expressionType(state, firstExprChild(node), scope, metadata);
+      return element ? `List<${element}>` : null;
+    }
     case "Number":
       return text(state, node).includes(".") ? "Float" : "Int";
     case "String":
@@ -224,8 +234,12 @@ function expressionType(state, node, scope, metadata) {
       const field = (metadata?.aggregates || []).find(a => a.name === receiverType)?.fields?.find(f => f.name === memberName(state, node));
       return field?.typeName ?? contextField(metadata, scope, name)?.type ?? (metadata?.constants || []).find(c => c.name === name)?.type ?? null;
     }
-    case "IndexExpression":
-      return null;
+    case "IndexExpression": {
+      const receiver = expressionType(state, node.firstChild, scope, metadata);
+      const list = /^List<(.+)>$/.exec(receiver || "");
+      const dictionary = /^Dictionary<[^,]+,\s*(.+)>$/.exec(receiver || "");
+      return list?.[1] ?? dictionary?.[1] ?? null;
+    }
     case "CallExpression": {
       const callee = node.firstChild;
       if (!callee) return null;
@@ -456,6 +470,7 @@ export function glyphCompletions(metadata) {
       if (!prefix.trim()) {
         options = [
           functionSnippetCompletion,
+          snippetCompletion("impl ${Type} {\n\tfn ${method}(self): ${Int} {\n\t\treturn ${value}\n\t}\n}", { label: "impl", type: "keyword" }),
           snippetCompletion("mod ${name} {\n\t${}\n}", { label: "mod", type: "keyword" }),
           snippetCompletion("using ${module}", { label: "using", type: "keyword" }),
           snippetCompletion(
@@ -468,7 +483,7 @@ export function glyphCompletions(metadata) {
         ];
       }
     } else if (scope.moduleBody && !scope.inFunction) {
-      options = [functionSnippetCompletion, ...["pub", "const", "struct", "type", "using"].map(label => ({ label, type: "keyword" }))];
+      options = [functionSnippetCompletion, ...["pub", "const", "struct", "type", "using", "impl"].map(label => ({ label, type: "keyword" }))];
     } else if (
       (scope.event === "interaction" || metadata?.events.find(e => e.name === scope.event)?.stages?.length > 0) &&
       !scope.stage && !scope.inFunction &&

@@ -79,6 +79,7 @@ public sealed class GlyphModuleScope
         { _aliases.Remove(name); _ambiguous[name] = [existing, canonical]; }
         else _aliases[name] = canonical;
     }
+    public bool CanAccessDeclaration(string canonical) => _aliases.Values.Contains(canonical, StringComparer.Ordinal);
     public string Resolve(string name, SourceSpan span, List<GlyphDiagnostic>? diagnostics = null)
     {
         // Longest declared prefix resolves qualified ADT constructors without assuming one dot.
@@ -111,17 +112,18 @@ public sealed class GlyphModuleBinding
     public GlyphModuleScope RootScope { get; private set; } = null!;
     public Dictionary<string, GlyphModuleScope> FunctionOwners { get; } = new(StringComparer.Ordinal);
     public GlyphGlobalEnvironment Environment { get; private set; } = null!;
+    public int LanguageVersion { get; private set; }
     public Dictionary<string, GlyphDeclarationSyntax> Declarations { get; } = new(StringComparer.Ordinal);
     private readonly Dictionary<string, GlyphCompilationUnitSyntax> _units = new(StringComparer.Ordinal);
     private readonly Dictionary<string, GlyphModuleScope> _scopes = new(StringComparer.Ordinal);
 
     public static GlyphCompilationUnitSyntax? Parse(string source, string sourceId, List<GlyphDiagnostic> diagnostics, int version = GlyphLanguageVersion.Current)
     {
-        if (version is not (1 or 2 or 3))
+        if (version is not (1 or 2 or 3 or 4))
         { diagnostics.Add(new("GLYPH1007", "Unsupported language version.", new(sourceId, 0, 0, 1, 1))); return null; }
         if (source.Length > 128 * 1024)
         { diagnostics.Add(new("GLYPH1007", "Source exceeds 128 KiB.", new(sourceId, 0, 0, 1, 1))); return null; }
-        GlyphLexer lexer = new(source, sourceId, version >= 2, version >= 3);
+        GlyphLexer lexer = new(source, sourceId, version >= 2, version >= 3, version >= 4);
         GlyphParser parser = new(lexer.Lex(), version);
         var unit = parser.Parse();
         diagnostics.AddRange(lexer.Diagnostics); diagnostics.AddRange(parser.Diagnostics);
@@ -131,13 +133,13 @@ public sealed class GlyphModuleBinding
     public static GlyphModuleBinding Build(GlyphCompilationUnitSyntax root, GlyphGlobalEnvironment standard,
         GlyphLanguageCatalog catalog, IGlyphModuleResolver resolver, GlyphModuleRevision? library = null)
     {
-        GlyphModuleBinding result = new();
+        GlyphModuleBinding result = new() { LanguageVersion = root.LanguageVersion };
         HashSet<string> visiting = new(StringComparer.Ordinal);
         Dictionary<string, GlyphModuleRevision> selected = new(StringComparer.Ordinal);
         int sourceSize = 0;
         var reserved = standard.ByName.Keys.Concat(catalog.Symbols.Select(s => s.Name))
             .Concat(catalog.CallAliases.Select(a => a.Name)).Concat(catalog.PropertyAliases.Select(a => a.Name))
-            .Concat(["Bool", "Int", "Float", "String", "Object", "Void", "Location", "Effect"])
+            .Concat(["Bool", "Int", "Float", "String", "Object", "Void", "Location", "Effect", "List", "Dictionary", "Self"])
             .ToHashSet(StringComparer.Ordinal);
         var namespaces = reserved.Select(n => n.Split('.')[0]).ToHashSet(StringComparer.Ordinal);
         reserved.UnionWith(namespaces);
@@ -154,9 +156,10 @@ public sealed class GlyphModuleBinding
             }
             if (depth > 32 || selected.Count >= 64 || sourceSize + revision.SourceText.Length > 1024 * 1024)
             { result.Diagnostics.Add(new("GLYPH1007", "Module dependency budget exceeded (64 modules, depth 32, 1 MiB).", at)); return; }
-            if (revision.LanguageVersion is not (2 or 3) || revision.LanguageVersion > root.LanguageVersion)
+            if (revision.LanguageVersion is not (2 or 3 or 4) || revision.LanguageVersion > root.LanguageVersion)
             { result.Diagnostics.Add(new("GLYPH1007", $"Unsupported module language version {revision.LanguageVersion}.", at)); return; }
-            if (namespaces.Contains(revision.Name) || revision.SourceHash != GlyphModuleRevision.Hash(revision.SourceText))
+            bool legacyCollectionName = revision.LanguageVersion < 4 && revision.Name is "List" or "Dictionary" or "Self";
+            if (namespaces.Contains(revision.Name) && !legacyCollectionName || revision.SourceHash != GlyphModuleRevision.Hash(revision.SourceText))
             { result.Diagnostics.Add(new("GLYPH2024", $"Reserved module name or invalid source hash: '{revision.Name}'.", at)); return; }
             var unit = Parse(revision.SourceText, $"{revision.Name}@{revision.RevisionId}.glyph", result.Diagnostics, revision.LanguageVersion);
             if (unit?.ModuleName != revision.Name)
@@ -198,7 +201,8 @@ public sealed class GlyphModuleBinding
             }
             foreach (var declaration in own)
             {
-                if (owner != null && declaration is TypeDeclarationSyntax && declaration.Name is "Bool" or "Int" or "Float" or "String" or "Object" or "Void" or "Location" or "Effect")
+                if (owner != null && declaration is TypeDeclarationSyntax && (declaration.Name is "Bool" or "Int" or "Float" or "String" or "Object" or "Void" or "Location" or "Effect" ||
+                    unit.LanguageVersion >= 4 && declaration.Name is ("List" or "Dictionary" or "Self")))
                     result.Diagnostics.Add(new("GLYPH2006", $"Reserved type name '{declaration.Name}'.", declaration.Span));
                 scope.Own(declaration.Name, owner == null ? declaration.Name : owner + "." + declaration.Name, declaration is TypeDeclarationSyntax);
                 if (owner != null) scope.Own(owner + "." + declaration.Name, owner + "." + declaration.Name, declaration is TypeDeclarationSyntax);
@@ -216,6 +220,9 @@ public sealed class GlyphModuleBinding
         };
         void Add(GlyphCompilationUnitSyntax unit, GlyphModuleScope scope, string? owner)
         {
+            foreach (var implementation in unit.Implementations)
+                if (!unit.Declarations.Any(d => d.Name == implementation.TypeName))
+                    result.Diagnostics.Add(new("GLYPH2031", "impl requires a struct or ADT declared in the same source module.", implementation.Span));
             foreach (var declaration in unit.GlobalDeclarations.Cast<GlyphDeclarationSyntax>().Concat(unit.Declarations))
             {
                 string canonical = owner == null ? declaration.Name : owner + "." + declaration.Name;
@@ -224,7 +231,7 @@ public sealed class GlyphModuleBinding
                 GlyphDeclarationSyntax rewritten = declaration switch
                 {
                     ConstantDeclarationSyntax c => c with { Name = canonical, Initializer = c.Initializer == null ? null : RewriteConstant(c.Initializer, scope) },
-                    FunctionDeclarationSyntax f => f with { Name = canonical, Parameters = f.Parameters.Select(p => p with { TypeName = Type(p.TypeName ?? "", p.Span) }).ToArray(), ReturnType = Type(f.ReturnType, f.Span) },
+                    FunctionDeclarationSyntax f => f with { Name = canonical, Parameters = f.Parameters.Select(p => p with { TypeName = Type(p.TypeName ?? "", p.Span) }).ToArray(), ReturnType = Type(f.ReturnType, f.Span), DeclaringType = f.DeclaringType == null ? null : Type(f.DeclaringType, f.Span) },
                     StructDeclarationSyntax s => s with { Name = canonical, Fields = s.Fields.Select(Field).ToArray() },
                     AdtDeclarationSyntax a => a with { Name = canonical, Variants = a.Variants.Select(v => v with { Fields = v.Fields.Select(Field).ToArray() }).ToArray() },
                     _ => declaration
@@ -242,7 +249,7 @@ public sealed class GlyphModuleBinding
         {
             IEnumerable<string> publicTypes = declaration switch
             {
-                FunctionDeclarationSyntax f => f.Parameters.Select(p => p.TypeName ?? "").Append(f.ReturnType),
+                FunctionDeclarationSyntax f => f.Parameters.Select(p => p.TypeName ?? "").Append(f.ReturnType).Concat(f.DeclaringType == null ? [] : new[] { f.DeclaringType }),
                 StructDeclarationSyntax s => s.Fields.Select(f => f.TypeName),
                 AdtDeclarationSyntax a => a.Variants.SelectMany(v => v.Fields).Select(f => f.TypeName),
                 _ => []

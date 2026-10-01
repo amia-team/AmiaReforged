@@ -83,7 +83,14 @@ public class GlyphLanguageMetadataTests
     [Test] public void Receiver_methods_match_the_compiler_catalog()
     {
         var catalog = _runtime.Compiler.Catalog;
-        Assert.That(_metadata.ReceiverMethods.Count, Is.EqualTo(catalog.ReceiverMethods.Count));
+        Assert.That(_metadata.ReceiverMethods.Count(m => !m.CanonicalName.StartsWith("collection.", StringComparison.Ordinal)), Is.EqualTo(catalog.ReceiverMethods.Count));
+        foreach (var method in _metadata.ReceiverMethods.Where(m => m.CanonicalName.StartsWith("collection.", StringComparison.Ordinal)))
+        {
+            var definition = catalog.Registry.Get(method.CanonicalName)!;
+            Assert.That(method.ReceiverType, Is.EqualTo(GlyphTypeSymbol.From(definition.InputPins[0]).Name));
+            Assert.That(method.ReturnType, Is.EqualTo(GlyphTypeSymbol.From(definition.OutputPins[0]).Name));
+            Assert.That(method.Parameters.Select(p => (p.Name, p.Type)), Is.EqualTo(definition.InputPins.Skip(1).Select(p => (p.Id, GlyphTypeSymbol.From(p).Name))));
+        }
         foreach (var rm in catalog.ReceiverMethods)
         {
             var meta = _metadata.ReceiverMethods.Single(m => m.Name == rm.Name && m.ReceiverType == GlyphTypeSymbol.From(rm.ReceiverType).Name);

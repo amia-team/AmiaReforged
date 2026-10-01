@@ -100,6 +100,7 @@ public class GlyphPlatformTests
             "Effect" => $"nwn.apply_effect({obj}, {call})",
             "List<Object>" => $"foreach element in {call} {{ nwn.set_local_int(element, \"probe\", 1) }}",
             "List<Effect>" => $"foreach element in {call} {{ nwn.remove_effect({obj}, element) }}",
+            string type when type.StartsWith("List<", StringComparison.Ordinal) || type.StartsWith("Dictionary<", StringComparison.Ordinal) => $"let value = {call}",
             _ => throw new InvalidOperationException("Add a conformance consumer for " + returnType)
         };
     }
@@ -233,6 +234,30 @@ public class GlyphPlatformTests
             Is.EquivalentTo(new[] { "started", "tick", "completed" }));
     }
 
+    [Test] public void Reference_regeneration_preserves_the_guide_and_replaces_generated_sections()
+    {
+        var metadata = GlyphLanguageMetadata.Create(_compiler.Catalog);
+        string guide = GlyphApiReference.GuideStart + "\n## Collections\n\nKeep this example.\n" +
+            "Markers in prose: `" + GlyphApiReference.GuideEnd + "`.\n" + GlyphApiReference.GuideEnd;
+        string previous = "# Glyph reference\n\n" + guide + "\n\nOld generated API and coverage.";
+        string coverage = "# NWScript binding coverage\n\n## bound\n\n| Native | Glyph |\n";
+        string regenerated = GlyphApiReference.GenerateReference(metadata, previous, coverage);
+        Assert.That(regenerated, Does.Contain(guide));
+        Assert.That(regenerated, Does.Not.Contain("Old generated API and coverage"));
+        Assert.That(regenerated, Does.Contain("## Registered API\n"));
+        Assert.That(regenerated, Does.Contain("## NWScript binding coverage\n"));
+        Assert.That(regenerated, Does.Contain("### bound\n"));
+        Assert.That(GlyphApiReference.GenerateReference(metadata, regenerated, coverage), Is.EqualTo(regenerated));
+    }
+
+    [TestCase("<!-- glyph-guide:start -->\nMissing end")]
+    [TestCase("<!-- glyph-guide:end -->\n<!-- glyph-guide:start -->")]
+    public void Reference_regeneration_rejects_broken_guide_markers(string previous)
+    {
+        var metadata = GlyphLanguageMetadata.Create(_compiler.Catalog);
+        Assert.Throws<InvalidDataException>(() => GlyphApiReference.GenerateReference(metadata, previous, "# Coverage\n"));
+    }
+
     [Test] public void Unregistered_CLR_members_and_unavailable_context_remain_forbidden()
     {
         foreach (string expression in new[] { "player.Destroy()", "player.Area", "player.GetObjectVariable(\"x\")", "context.progress" })
@@ -258,7 +283,8 @@ internal static class GlyphParameterTestValues
     public static string TestValue(this GlyphParameterMetadataDto parameter, IReadOnlyList<GlyphFieldMetadataDto> fields) => parameter.Type switch
     {
         "Object" => fields.First(f => f.Type == "Object" && f.Name.StartsWith("context.")).Name,
-        "ObjectList" or "List<Object>" => "party.members()",
+        "ObjectList" => "party.members()",
+        "List<Object>" => "List<Object>()",
         "List<Effect>" => "nwn.effects(OBJECT.INVALID)",
         "Location" => "nwn.get_location(OBJECT.INVALID)",
         "Effect" => "effect.haste()",
@@ -266,6 +292,7 @@ internal static class GlyphParameterTestValues
         "Int" => "1",
         "Float" => "1.0",
         "Bool" => "true",
+        string type when type.StartsWith("List<", StringComparison.Ordinal) || type.StartsWith("Dictionary<", StringComparison.Ordinal) => type + "()",
         _ => throw new InvalidOperationException("Add a representative value for " + parameter.Type)
     };
 }

@@ -6,6 +6,35 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Platform;
 /// <summary>Stable machine-derived reference; conceptual language documentation stays handwritten.</summary>
 public static class GlyphApiReference
 {
+    public const string GuideStart = "<!-- glyph-guide:start -->";
+    public const string GuideEnd = "<!-- glyph-guide:end -->";
+
+    /// <summary>Refreshes generated tables while retaining the guide in the reference itself.</summary>
+    public static string GenerateReference(GlyphLanguageMetadataDto metadata, string? previous, string coverage)
+    {
+        var text = new StringBuilder("# Glyph reference\n\n");
+        string[] lines = previous?.Replace("\r\n", "\n").Split('\n') ?? [];
+        int start = Array.IndexOf(lines, GuideStart);
+        int end = Array.IndexOf(lines, GuideEnd);
+        if (start >= 0 || end >= 0)
+        {
+            if (start < 0 || end <= start || Array.LastIndexOf(lines, GuideStart) != start || Array.LastIndexOf(lines, GuideEnd) != end)
+                throw new InvalidDataException("The Glyph reference guide markers are incomplete or out of order.");
+            text.AppendJoin('\n', lines.Skip(start).Take(end - start + 1)).Append("\n\n");
+        }
+        text.Append("## Registered API\n\n");
+        AppendSection(Generate(metadata));
+        text.Append("## NWScript binding coverage\n\n");
+        AppendSection(coverage);
+        return text.ToString().Replace("\r\n", "\n").TrimEnd() + "\n";
+
+        void AppendSection(string document)
+        {
+            foreach (string line in document.Replace("\r\n", "\n").Split('\n').Skip(1))
+                text.AppendLine(line.StartsWith('#') ? "#" + line : line);
+        }
+    }
+
     public static string Generate(GlyphLanguageMetadataDto metadata)
     {
         var text = new StringBuilder("# Glyph API reference\n\nGenerated from registered Glyph contracts. Do not edit function or context tables by hand.\n\n");

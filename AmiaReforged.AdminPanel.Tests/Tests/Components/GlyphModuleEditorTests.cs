@@ -87,11 +87,11 @@ public sealed class GlyphModuleEditorTests
         source.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
         source.WaitForAssertion(() => Assert.That(source.FindAll("button").Single(b => b.TextContent == "Activate").HasAttribute("disabled"), Is.False));
         string original = source.Find("textarea").GetAttribute("value")!;
-        source.FindAll("button").Single(b => b.TextContent == "Upgrade to Glyph 3").Click();
+        source.FindAll("button").Single(b => b.TextContent == "Upgrade to Glyph 4").Click();
         Assert.That(source.FindAll("button").Single(b => b.TextContent == "Activate").HasAttribute("disabled"), Is.True);
         Assert.That(source.Find("textarea").GetAttribute("value"), Is.EqualTo(original));
         source.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
-        source.WaitForAssertion(() => Assert.That(_handler.LastLanguageVersion, Is.EqualTo(3)));
+        source.WaitForAssertion(() => Assert.That(_handler.LastLanguageVersion, Is.EqualTo(4)));
     }
     private sealed class Handler : HttpMessageHandler
     {

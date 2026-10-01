@@ -125,6 +125,7 @@ function configureMetadata(entry) {
     // The cached documentation pack stays in the browser; only the small module overlay changes.
     const metadata = standard && modules ? { ...standard,
         functions: [...new Map([...(standard.functions || []), ...(modules.functions || [])].map(f => [f.name, f])).values()],
+        receiverMethods: [...(standard.receiverMethods || []), ...(modules.receiverMethods || [])],
         constants: [...(standard.constants || []), ...(modules.constants || [])],
         types: [...new Set([...(standard.types || []), ...(modules.types || [])])],
         aggregates: modules.aggregates || [], modules: modules.modules || [], sourceLocations: modules.sourceLocations || {}

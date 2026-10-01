@@ -55,5 +55,8 @@ public enum GlyphDataType
     List,
 
     /// <summary>Nominal struct or ADT value; the value retains its declared type and variant.</summary>
-    Aggregate
+    Aggregate,
+
+    /// <summary>An immutable dictionary of basic keys and values.</summary>
+    Dictionary
 }

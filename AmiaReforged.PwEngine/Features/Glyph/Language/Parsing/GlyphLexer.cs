@@ -5,7 +5,7 @@ using AmiaReforged.PwEngine.Features.Glyph.Language.Syntax;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Language.Parsing;
 
-public sealed class GlyphLexer(string source, string sourceId = "source.glyph", bool moduleKeywords = true, bool functionKeywords = true)
+public sealed class GlyphLexer(string source, string sourceId = "source.glyph", bool moduleKeywords = true, bool functionKeywords = true, bool collectionKeywords = true)
 {
     public List<GlyphDiagnostic> Diagnostics { get; } = [];
     private int _position, _line = 1, _column = 1;
@@ -48,6 +48,7 @@ public sealed class GlyphLexer(string source, string sourceId = "source.glyph", 
                     : "identifier";
                 if (moduleKeywords && word is ("mod" or "using" or "pub")) kind = word;
                 if (functionKeywords && word == "return") kind = word;
+                if (collectionKeywords && word == "impl") kind = word;
                 if (kind is "true" or "false") value = kind == "true";
             }
             else if (char.IsDigit(Peek()))

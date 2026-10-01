@@ -46,6 +46,7 @@ internal static class GlyphBoundLimits
                 case BoundMatchArm arm:
                     Push(arm.Pattern); Push(arm.Body); break;
                 case BoundValuePattern pattern: Push(pattern.Value); break;
+                case BoundListLiteral list: foreach (var value in list.Values) Push(value); break;
                 case BoundAggregateField field: Push(field.Receiver); break;
                 case BoundSequence sequence:
                     foreach (var let in sequence.Prefix) Push(let);

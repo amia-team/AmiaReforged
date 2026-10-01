@@ -258,6 +258,15 @@ public class GlyphExecutionContext
     /// </summary>
     /// <summary>Compiler-assigned identities isolate lexical locals from graph variables.</summary>
     public Dictionary<int, GlyphLocalValue> Locals { get; } = new();
+    public int MaxCollectionSize { get; init; } = 10_000;
+    public int MaxCollectionAllocations { get; init; } = 100_000;
+    public int CollectionAllocations { get; private set; }
+    public void ChargeCollection(int allocated, int size)
+    {
+        if (size > MaxCollectionSize || allocated > MaxCollectionAllocations - CollectionAllocations)
+            throw new InvalidOperationException("Collection size or allocation budget exceeded.");
+        CollectionAllocations += allocated;
+    }
 
     /// <summary>Executor-owned iteration state, keyed by the loop owner.</summary>
     public Dictionary<Guid, object> LoopStates { get; } = new();

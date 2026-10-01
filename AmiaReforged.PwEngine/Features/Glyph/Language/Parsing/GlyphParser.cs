@@ -67,6 +67,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
             List<GlobalDeclarationSyntax> globalDeclarations = [];
             SourceSpan unitStart = Current.Span;
             List<GlyphImportSyntax> imports = [];
+            List<ImplDeclarationSyntax> implementations = [];
             string? moduleName = null;
             if (Eat("mod"))
             {
@@ -77,7 +78,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
             // Prelude declarations (const / fn) and type declarations (struct / ADT) may appear in
             // any order before the optional event script. This is what lets a global.glyph file
             // parse as a standalone unit without a `glyph name : event { ... }` body.
-            while (At("using") || At("pub") || At("const") || At("fn") || At("struct") || At("type"))
+            while (At("using") || At("pub") || At("const") || At("fn") || At("struct") || At("type") || At("impl"))
             {
                 if (Eat("using"))
                 {
@@ -99,7 +100,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
                 {
                     string constName = Expect("identifier").Text;
                     while (Eat(".")) constName += "." + Expect("identifier").Text;
-                    string? constType = Eat(":") ? QualifiedIdentifier() : null;
+                    string? constType = Eat(":") ? TypeName() : null;
                     ExpressionSyntax? initializer = null;
                     if (Eat("="))
                         initializer = Expression();
@@ -108,39 +109,24 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
                 }
                 else if (Eat("fn"))
                 {
-                    string fnName = Expect("identifier").Text;
-
-                    Expect("(");
-                    List<ParameterSyntax> parameters = [];
-                    while (!At(")") && !At("eof"))
+                    globalDeclarations.Add(Function(declarationStart) with { IsPublic = isPublic });
+                }
+                else if (Eat("impl"))
+                {
+                    RequireVersion4(declarationStart);
+                    if (isPublic) Diagnostics.Add(new("GLYPH1010", "Use pub on individual impl functions.", declarationStart));
+                    string owner = Expect("identifier").Text;
+                    Expect("{");
+                    while (!At("}") && !At("eof"))
                     {
-                        SourceSpan paramStart = Current.Span;
-                        string paramName = Expect("identifier").Text;
-                        string? paramTypeName = null;
-                        if (Eat(":"))
-                            paramTypeName = QualifiedIdentifier();
-
-                        parameters.Add(new(paramName, paramTypeName, Through(paramStart)));
-
-                        if (!Eat(",") && !Eat(";")) break;
+                        SourceSpan methodStart = Current.Span;
+                        bool methodPublic = Eat("pub");
+                        Expect("fn");
+                        globalDeclarations.Add(Function(methodStart, owner) with { IsPublic = methodPublic });
+                        Eat(";");
                     }
-                    Expect(")");
-
-                    Expect(":");
-                    string returnType = QualifiedIdentifier();
-                    FunctionBodySyntax functionBody;
-                    if (At("{"))
-                    {
-                        if (languageVersion < 3)
-                            Diagnostics.Add(new("GLYPH1011", "Statement function bodies require language version 3.", Current.Span));
-                        functionBody = new BlockFunctionBodySyntax(Block());
-                    }
-                    else
-                    {
-                        Expect("=");
-                        functionBody = new ExpressionFunctionBodySyntax(Expression());
-                    }
-                    globalDeclarations.Add(new FunctionDeclarationSyntax(fnName, parameters, returnType, functionBody, Through(declarationStart)) { IsPublic = isPublic });
+                    Expect("}");
+                    implementations.Add(new(owner, Through(declarationStart)));
                 }
                 else if (Eat("struct"))
                 {
@@ -193,7 +179,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
 
             Expect("eof");
 
-            return new(globalDeclarations, declarations, name, evt, body, Through(unitStart)) { Imports = imports, ModuleName = moduleName, LanguageVersion = languageVersion };
+            return new(globalDeclarations, declarations, name, evt, body, Through(unitStart)) { Imports = imports, Implementations = implementations, ModuleName = moduleName, LanguageVersion = languageVersion };
         }
         catch (SyntaxDepthException)
         {
@@ -214,6 +200,53 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
         return name;
     }
 
+    private void RequireVersion4(SourceSpan span)
+    {
+        if (languageVersion < 4) Diagnostics.Add(new("GLYPH1012", "Collections and impl require language version 4.", span));
+    }
+
+    private string TypeName()
+    {
+        string name = QualifiedIdentifier();
+        if (!Eat("<")) return name;
+        RequireVersion4(Current.Span);
+        if (name is not ("List" or "Dictionary"))
+            Diagnostics.Add(new("GLYPH1012", "Only List and Dictionary accept type arguments.", Current.Span));
+        List<string> arguments = [];
+        do { arguments.Add(QualifiedIdentifier()); } while (Eat(","));
+        Expect(">");
+        return name + "<" + string.Join(", ", arguments) + ">";
+    }
+
+    private FunctionDeclarationSyntax Function(SourceSpan start, string? owner = null)
+    {
+        string name = Expect("identifier").Text;
+        Expect("(");
+        List<ParameterSyntax> parameters = [];
+        while (!At(")") && !At("eof"))
+        {
+            SourceSpan at = Current.Span;
+            string parameter = Expect("identifier").Text;
+            string? type = Eat(":") ? TypeName() : null;
+            if (owner != null && parameter == "self" && parameters.Count == 0) type ??= owner;
+            if (owner != null && type == "Self") type = owner;
+            parameters.Add(new(parameter, type, Through(at)));
+            if (!Eat(",") && !Eat(";")) break;
+        }
+        Expect(")"); Expect(":");
+        string result = TypeName();
+        if (owner != null && result == "Self") result = owner;
+        FunctionBodySyntax body;
+        if (At("{"))
+        {
+            if (languageVersion < 3) Diagnostics.Add(new("GLYPH1011", "Statement function bodies require language version 3.", Current.Span));
+            body = new BlockFunctionBodySyntax(Block());
+        }
+        else { Expect("="); body = new ExpressionFunctionBodySyntax(Expression()); }
+        return new(owner == null ? name : owner + "." + name, parameters, result, body, Through(start))
+        { DeclaringType = owner, LanguageVersion = languageVersion };
+    }
+
     private IReadOnlyList<GlyphFieldDeclarationSyntax> FieldBlock()
     {
         Expect("{");
@@ -224,7 +257,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
             SourceSpan fieldStart = Current.Span;
             string fieldName = Expect("identifier").Text;
             Expect(":");
-            string typeName = QualifiedIdentifier();
+            string typeName = TypeName();
             fields.Add(new(fieldName, typeName, Through(fieldStart)));
 
             Eat(",");
@@ -423,6 +456,25 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
         {
             left = Expression();
             Expect(")");
+        }
+        else if (Eat("["))
+        {
+            RequireVersion4(start);
+            List<ExpressionSyntax> values = [];
+            while (!At("]") && !At("eof"))
+            {
+                values.Add(Expression());
+                if (!Eat(",")) break;
+            }
+            Expect("]");
+            left = new ListExpressionSyntax(values, Through(start));
+        }
+        else if (languageVersion >= 4 && Current.Text is ("List" or "Dictionary") && tokens[Math.Min(_position + 1, tokens.Count - 1)].Kind == "<")
+        {
+            RequireVersion4(start);
+            string type = TypeName();
+            Expect("("); Expect(")");
+            left = new CollectionConstructorSyntax(type, Through(start));
         }
         else if (Current.Value != null)
         {

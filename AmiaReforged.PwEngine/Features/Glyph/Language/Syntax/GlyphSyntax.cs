@@ -14,10 +14,13 @@ public sealed record GlyphCompilationUnitSyntax(
     BlockStatementSyntax Body,
     SourceSpan Span) : GlyphSyntax(Span)
 {
+    public IReadOnlyList<ImplDeclarationSyntax> Implementations { get; init; } = [];
     public IReadOnlyList<GlyphImportSyntax> Imports { get; init; } = [];
     public string? ModuleName { get; init; }
     public int LanguageVersion { get; init; } = Compilation.GlyphLanguageVersion.Current;
 }
+
+public sealed record ImplDeclarationSyntax(string TypeName, SourceSpan Span) : GlyphSyntax(Span);
 
 public sealed record GlyphImportSyntax(string Name, SourceSpan Span) : GlyphSyntax(Span);
 
@@ -43,6 +46,10 @@ public sealed record FunctionDeclarationSyntax(
     FunctionBodySyntax Body,
     SourceSpan Span) : GlobalDeclarationSyntax(Name, Span)
 {
+    public string? DeclaringType { get; init; }
+    public bool IsInstance => DeclaringType != null && Parameters.FirstOrDefault()?.Name == "self";
+    public int LanguageVersion { get; init; } = Compilation.GlyphLanguageVersion.Current;
+
     public FunctionDeclarationSyntax(string name, IReadOnlyList<ParameterSyntax> parameters, string returnType,
         ExpressionSyntax body, SourceSpan span) : this(name, parameters, returnType, new ExpressionFunctionBodySyntax(body), span) { }
 }
@@ -100,6 +107,8 @@ public sealed record WildcardPatternSyntax(SourceSpan Span) : MatchPatternSyntax
 public sealed record MatchArmSyntax(MatchPatternSyntax Pattern, BlockStatementSyntax Body, SourceSpan Span) : GlyphSyntax(Span);
 
 public abstract record ExpressionSyntax(SourceSpan Span) : GlyphSyntax(Span);
+public sealed record ListExpressionSyntax(IReadOnlyList<ExpressionSyntax> Values, SourceSpan Span) : ExpressionSyntax(Span);
+public sealed record CollectionConstructorSyntax(string TypeName, SourceSpan Span) : ExpressionSyntax(Span);
 public sealed record LiteralExpressionSyntax(object Value, SourceSpan Span) : ExpressionSyntax(Span);
 public sealed record NameExpressionSyntax(string Name, SourceSpan Span) : ExpressionSyntax(Span);
 public sealed record MemberAccessExpressionSyntax(ExpressionSyntax Receiver, string Name, SourceSpan Span) : ExpressionSyntax(Span);

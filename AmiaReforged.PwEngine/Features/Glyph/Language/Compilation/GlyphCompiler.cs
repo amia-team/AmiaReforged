@@ -10,7 +10,7 @@ using AmiaReforged.PwEngine.Features.Glyph.Language.Syntax;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Programs;
 namespace AmiaReforged.PwEngine.Features.Glyph.Language.Compilation;
 
-public static class GlyphLanguageVersion { public const int Current = 3; }
+public static class GlyphLanguageVersion { public const int Current = 4; }
 public sealed record GlyphCompilationOptions(string SourceId = "source.glyph", int LanguageVersion = GlyphLanguageVersion.Current, IReadOnlyList<GlyphModuleRevision>? DependencyLock = null);
 public sealed record GlyphCompilationResult(IReadOnlyList<GlyphDiagnostic> Diagnostics,
     GlyphCompilationUnitSyntax? SyntaxTree, BoundProgram? BoundProgram, GlyphExecutable? Executable, string SourceHash)
@@ -29,9 +29,9 @@ public sealed class GlyphCompiler(IGlyphNodeDefinitionRegistry registry, GlyphGl
         options ??= new();
         string hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)));
         SourceSpan start = new(options.SourceId, 0, 0, 1, 1);
-        if (source.Length > 128 * 1024 || options.LanguageVersion is not (1 or 2 or 3))
+        if (source.Length > 128 * 1024 || options.LanguageVersion is not (1 or 2 or 3 or 4))
             return new([new("GLYPH1007", "Unsupported language version or source exceeds 128 KiB.", start)], null, null, null, hash);
-        GlyphLexer lexer = new(source, options.SourceId, options.LanguageVersion >= 2, options.LanguageVersion >= 3);
+        GlyphLexer lexer = new(source, options.SourceId, options.LanguageVersion >= 2, options.LanguageVersion >= 3, options.LanguageVersion >= 4);
         GlyphParser parser = new(lexer.Lex(), options.LanguageVersion);
         var syntax = parser.Parse();
         List<GlyphDiagnostic> diagnostics = [..lexer.Diagnostics, ..parser.Diagnostics];

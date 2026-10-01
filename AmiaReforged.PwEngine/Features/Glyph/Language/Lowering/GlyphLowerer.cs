@@ -13,11 +13,12 @@ public sealed class GlyphLowerer
     private readonly Dictionary<string, GlyphNodeInstance> _entries = [];
     private readonly Dictionary<int, GlyphNodeInstance> _loops = [];
     private readonly Dictionary<int, Output> _stored = [];
-    private int _identity;
+    private int _identity, _temporary = -1, _languageVersion;
     private readonly Stack<(int? Symbol, GlyphTypeSymbol Type)> _returns = new();
     private readonly record struct Output(GlyphNodeInstance Node, string Pin);
     public (GlyphGraph Ir, IReadOnlyDictionary<Guid, SourceSpan> SourceMap) Lower(BoundProgram program)
     {
+        _languageVersion = program.LanguageVersion;
         _ir.Name = program.Name; _ir.EventType = program.Event;
         foreach (BoundStage stage in program.Stages) _entries[stage.EntryTypeId] = Node(stage.EntryTypeId, stage.Span);
         foreach (BoundStage stage in program.Stages) Block(stage.Body, [new(_entries[stage.EntryTypeId], "exec_out")]);
@@ -115,6 +116,7 @@ public sealed class GlyphLowerer
                 trueTails.AddRange(falseTails); return trueTails;
             case BoundForeach loop:
                 GlyphNodeInstance each = Node(loop.List.Type.ElementType == GlyphTypeSymbol.Object ? "flow.for_each" : loop.List.Type.ElementType == GlyphTypeSymbol.Effect ? "flow.for_each_effect" : "flow.for_each_" + Suffix(loop.List.Type.ElementType!), loop.Span);
+                if (_languageVersion >= 4) each.PropertyOverrides["snapshot"] = "true";
                 Wire(Expression(loop.List, ref tails), each, "list"); Connect(tails, each);
                 _loops[loop.SymbolId] = each;
                 Block(loop.Body, [new(each, "loop_body")]);
@@ -123,7 +125,7 @@ public sealed class GlyphLowerer
             default: throw new InvalidOperationException($"Unsupported bound statement {statement.GetType().Name}.");
         }
     }
-    private static string Suffix(GlyphTypeSymbol type) => Runtime.Nodes.Flow.RuntimeValueModule.Suffix(type.RuntimeType!.Value, type.ElementType?.RuntimeType);
+    private static string Suffix(GlyphTypeSymbol type) => Runtime.Nodes.Flow.RuntimeValueModule.Suffix(type.RuntimeType!.Value, type.ElementType?.RuntimeType, type.KeyType?.RuntimeType, type.ValueType?.RuntimeType);
     private static Dictionary<string, string> SlotProperties(int id, GlyphTypeSymbol type) => new()
     { ["slot"] = id.ToString(CultureInfo.InvariantCulture), ["nominal"] = type.Name };
     private Output Local(int id, GlyphTypeSymbol type, SourceSpan span) =>
@@ -132,6 +134,7 @@ public sealed class GlyphLowerer
     {
         Output input = Expression(value, ref tails);
         GlyphNodeInstance write = Node("local.write_" + Suffix(type), span, SlotProperties(id, type));
+        if (_languageVersion >= 4) write.PropertyOverrides["snapshot"] = "true";
         Wire(input, write, "value"); Connect(tails, write);
         return [new(write, "exec_out")];
     }
@@ -172,7 +175,7 @@ public sealed class GlyphLowerer
         foreach (var field in fields)
         {
             GlyphTypeSymbol fieldType = schema.Single(f => f.Name == field.Key).Type;
-            GlyphNodeInstance add = Node("aggregate.with_" + Suffix(fieldType), field.Value.Span, new() { ["field"] = field.Key, ["nominal"] = fieldType.Name, ["type"] = type });
+            GlyphNodeInstance add = Node("aggregate.with_" + Suffix(fieldType), field.Value.Span, new() { ["field"] = field.Key, ["nominal"] = fieldType.Name, ["type"] = type, ["snapshot"] = (_languageVersion >= 4).ToString() });
             Wire(aggregate, add, "aggregate"); Wire(Expression(field.Value, ref tails), add, "field_value");
             aggregate = new(add, "value");
         }
@@ -208,6 +211,24 @@ public sealed class GlyphLowerer
     {
         switch (expression)
         {
+            case BoundListLiteral list:
+            {
+                var element = list.Type.ElementType!;
+                var items = new List<Output>();
+                foreach (var item in list.Values)
+                {
+                    int slot = _temporary--;
+                    tails = Write(slot, element, item, item.Span, tails);
+                    items.Add(Local(slot, element, item.Span));
+                }
+                Output output = new(Node(Runtime.Nodes.Flow.CollectionExecutor.Id("new", GlyphDataType.List, element.RuntimeType!.Value), list.Span), "value");
+                foreach (var item in items)
+                {
+                    var append = Node(Runtime.Nodes.Flow.CollectionExecutor.Id("append", GlyphDataType.List, element.RuntimeType!.Value), list.Span);
+                    Wire(output, append, "collection"); Wire(item, append, "value"); output = new(append, "value");
+                }
+                return output;
+            }
             case BoundFunctionCall call:
             {
                 foreach (var argument in call.Arguments) tails = Statement(argument, tails);

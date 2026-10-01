@@ -1,8 +1,1231 @@
-# Glyph API reference
+# Glyph reference
+
+<!-- glyph-guide:start -->
+This is the complete Glyph reference. New scripts use Glyph 4; retained Glyph 1–3
+sources and executables keep their versions.
+
+- [Language guide](#language-guide): authoring, functions, syntax, loops, matching, and interactions
+- [Reusable modules](#reusable-glyph-modules): imports, visibility, publication, and dependencies
+- [Immutable collections and impl](#immutable-collections-and-impl): Lists, Dictionaries, struct and ADT members
+- [NWN standard library](#nwn-standard-library): values, native procedures, and execution semantics
+- [Extending Glyph](#extending-glyph): capabilities, bindings, testing, and reference regeneration
+- [Registered API](#registered-api): functions, constants, members, contexts, and writable state
+- [NWScript binding coverage](#nwscript-binding-coverage): bound, adapted, deferred, excluded, and unsupported APIs
+
+## Language guide
+
+Glyph source is the only authored program representation. The compiler emits the existing
+Glyph IR and uses the existing interpreter and executors. There is no second runtime.
+
+This reference covers language syntax, publication, modules, collections, NWN semantics,
+capability development, and the generated API and coverage tables.
+
+### Author and activate
+
+Open the World Engine Glyph editor, create a script, and edit the declaration and body.
+`Compile / validate` reports structured codes and source locations without changing the server.
+`Save draft` persists source without deployment. `Activate` recompiles and validates the
+candidate, persists its version, then publishes one atomic runtime reference. Failed compilation
+or persistence leaves the previous executable active. `Rollback` publishes the previous
+retained executable without compiling it again.
+
+Existing encounter bindings and interaction pipelines open the same reusable source editor.
+Interaction-property saves and Glyph publication are separate actions. Bind scripts to spawn
+profiles, traits, or interaction tags using the Glyph editor's binding controls.
+
+The source declaration determines event/category. An existing definition cannot be activated
+with a different event: create another definition and bind it instead.
+
+### Validate files without NWN
+
+From the repository root:
+
+```sh
+dotnet run --project tools/Glyph.Cli -- AmiaReforged.PwEngine/Features/Glyph/Language/Tests/Corpus/*.glyph
+```
+
+The command registers metadata but starts no server, Anvil service container, or database.
+It returns 0 for valid files, 1 for source diagnostics, and 2 for invocation/file errors.
+Compiler tests are part of PwEngine and need no running NWN instance:
+
+```sh
+dotnet test AmiaReforged.PwEngine -m:1 --filter FullyQualifiedName~Features.Glyph
+```
+
+### Reusable modules
+
+Language version 2 adds `mod`, explicit `using` imports, and private-by-default
+module declarations exported individually with `pub`. Version 1 sources and retained
+executables remain supported. The generated standard library remains automatically available.
+
+Manage libraries from **Glyph scripts → Manage modules** in the AdminPanel. Save and
+validate a draft, publish it, then add `using interaction_helpers` to a script. Activation
+pins the exact module revisions; publishing a new library revision does not change active scripts.
+
+See [modules and publication](#reusable-glyph-modules) for syntax, visibility, dependency behavior,
+CLI validation, and a complete prospecting example.
+
+### Immutable collections and implementations
+
+Language version 4 adds typed immutable `List<T>` and `Dictionary<K, V>` values,
+collection operations, and `impl` methods for structs and ADTs. See
+[collections and impl](#immutable-collections-and-impl) for syntax, evaluation, visibility,
+and execution limits. A complete [example](Examples/collections_and_impl.glyph) combines
+collections, struct methods, and ADT methods.
+
+### Statement functions and returns
+
+Language version 3 adds statement bodies while retaining `fn name(args): Type = expression`.
+Declare functions before the `glyph` block, or inside a module; `pub` exports a module function.
+
+```glyph
+fn larger(a: Int, b: Int): Int {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+fn notify(actor: Object): Void {
+    nwn.send_message_to_pc(actor, "Hello")
+    return;
+}
+```
+
+Block functions support local bindings, assignments, branches, loops, matches, and action calls.
+A value function must return a compatible value on every reachable path. Loops are conservatively
+considered capable of executing zero times, so a return inside a loop needs a fallback return.
+An exhaustive match whose arms all return satisfies this check. `Void` functions allow `return;`
+and normal fallthrough; they cannot return a value. `return` is only valid inside a function.
+A return exits the current function, including any nested loops, and resumes its caller.
+
+Parameters are immutable. Block-function arguments are evaluated once, in written order, even
+when a parameter is unused. Parameters and locals do not capture caller-local variables.
+A block-function call assigned to `let` executes once; existing expression-bodied functions and
+lazy pure `let` bindings retain their behavior. Returning does not replace `fail`: failing an
+interaction retains its existing behavior. Recursion remains unsupported, and calls share the
+script's execution budget and cancellation token.
+
+New scripts and module publications use version 4. Retained version 1/2/3 scripts and module
+histories keep their versions. Consumers can import modules of the same or an older language
+version; older consumers cannot import modules of a newer version. The editor selects version 3 when a statement function body is
+added to an older script. Use `--language-version 3` with Glyph.Cli to validate the new syntax.
+For an older script importing a version 3 module, choose **Upgrade to Glyph 4** in the
+editor, then compile and activate it. Upgrading invalidates earlier validation.
+
+### Syntax and capabilities
+
+```glyph
+glyph night_spawns : encounter.before_group_spawn {
+    let size = party.size
+    if time.hour >= 20 || time.hour < 6 {
+        spawn.modify_count(size * 2)
+    } else {
+        spawn.modify_count(1)
+    }
+}
+```
+
+Supported declarations:
+
+- `encounter.before_group_spawn`, `encounter.after_group_spawn`
+- `encounter.on_creature_spawn`, `encounter.on_creature_death`, `encounter.on_boss_spawn`
+- `trait.on_granted`, `trait.on_removed`
+- `interaction` containing independent `attempted`, `started`, `tick`, `completed` blocks
+
+Statements are calls, `let`, `var`, `if/else`, `while`, `for name in expression`,
+`foreach name in expression`, integer range loops, `match`, `break`, `continue`, and assignments. Semicolons are optional. Line comments begin with `//`.
+
+#### Prelude constants
+
+A program prelude may declare `const` values alongside `fn`, `struct` and `type`.
+Each constant is resolved at compile time into an immutable, statically typed value of kind
+Bool, Int, Float, String or Object. Only a supported literal, a typed Object handle, or a reference to another
+constant, is permitted as an initializer. References resolve on demand, so acyclic references
+resolve in any order; a reference that loops back onto a constant still being resolved (a
+self- or mutual cycle) is rejected, as is any runtime- or context-dependent
+initializer (member access, invocation, arithmetic, etc.), a missing initializer, a
+self- or cross reference that cannot resolve (a cycle), or a reference to an unknown constant is
+rejected with a structured diagnostic (`GLYPH2009` unsupported/missing initializer,
+`GLYPH2012` cyclic/self-referential, `GLYPH2013` unknown constant). The resolved values are available to event-program expressions and scalar match patterns.
+
+```glyph
+const OBJECT_TRIGGER = "trigger"
+const OBJECT_DOOR = "door"
+const OBJECT_PLACEABLE = "placeable"
+const OBJECT_CREATURE = "creature"
+```
+Strings support `\n`, `\r`, `\t`, `\"`, `\\`. Literals are Bool, Int, Float and String.
+Numeric operators are `+ - * / % == != < <= > >=`; Boolean operators are `! && ||`.
+Parentheses control precedence. Arguments may be positional followed by named arguments
+using the registered parameter names (for example `dc: 15`).
+
+`let` is immutable. Pure scalar initializers remain lazy: an unused pure binding does not run,
+and each reference emits its own expression evaluation. Impure value-returning calls are
+captured at the declaration and run once, even if unused; references share that result.
+Impure fields in a `let` aggregate are likewise captured. Assignment to `let` is diagnosed.
+
+`var` eagerly evaluates its initializer once at the declaration and stores the result in a
+compiler-assigned runtime slot. Reads observe the most recent write. Each slot has one static
+type; existing numeric conversions apply to assignments. Inner blocks may shadow locals;
+duplicate declarations in one block are errors. A block's locals cannot be referenced outside it.
+Loop elements and match pattern bindings are immutable and retain their declared types.
+
+```glyph
+var count = 0
+var distance = 1.5
+count += 1
+count *= 2
+count /= 2
+distance -= 0.5
+```
+
+Ordinary arithmetic retains the existing Float semantics; assigning a Float to an Int
+uses .NET `Convert.ToInt32` rounding. Range bounds and steps additionally retain integer
+`+ - * %` and unary arithmetic when their operands are Int; integer arithmetic wraps at 32 bits. String, Bool and Object support equality.
+Numeric comparison retains the existing comparison executor's tolerance. Boolean `&&`/`||`
+short-circuit: the right operand executes only when needed, including impure calls.
+There is no arbitrary .NET member access or call.
+
+#### Branches and loops
+
+`if condition { ... } else if condition { ... } else { ... }` requires Bool conditions.
+`while` checks its Bool condition before every iteration, including runtime queries, mutable
+reads and short-circuit preludes. A false condition skips the body or ends the loop.
+
+```glyph
+var i = 0
+while i < 10 {
+    player.set_local_int("loop_i", i)
+    i += 1
+}
+
+for item in player.inventory() {
+    if item.get_tag() == "keep" { continue }
+    item.destroy()
+}
+```
+
+`for item in list` and the compatible `foreach item in list` share the same runtime loop.
+Lists are evaluated once on entry; the immutable element has the list's element type,
+including Object and Effect.
+
+Integer ranges are loop syntax, not general expressions:
+
+```glyph
+for i in 0..10 { player.set_local_int("index", i) }       // 0 through 9
+for i in 0..=10 { player.set_local_int("index", i) }      // 0 through 10
+for i in 10..0 step -2 { player.set_local_int("index", i) } // 10, 8, 6, 4, 2
+```
+
+Bounds and step must be Int and are evaluated once on entry. The default step is +1 when
+start <= end, otherwise -1. An explicit step pointing away from the end produces no iterations.
+Equal exclusive bounds are empty; equal inclusive bounds produce one iteration. Ranges do not
+allocate lists. Advancing beyond the Int boundary terminates instead of wrapping. A statically
+known zero step is `GLYPH2014`; a dynamic zero step halts execution with a source-aware trace.
+
+`break` exits the nearest loop and continues after it. `continue` skips the remainder of the
+nearest loop's current body and advances to its next iteration. Both require an enclosing loop.
+Nested branches and matches retain these nearest-loop semantics. Every loop uses the existing
+execution-step guard (default 10,000 node executions). `while true {}` is bounded by that guard.
+Body/condition caches are invalidated per iteration; captured values outside the loop survive.
+
+#### Scalar and ADT matching
+
+`match` eagerly evaluates its subject once and selects the first matching arm. Scalar subjects
+may be Int, Bool, String or Object; patterns are compatible literals or resolved constants.
+A scalar match with no matching arm and no wildcard falls through without executing an arm.
+`_` matches any value, may occur once, and must be last. Duplicate scalar arms are diagnosed.
+
+```glyph
+let target = player.get_nearest_object_by_type("creature")
+match target.get_object_type() {
+    OBJECT_TYPE.CREATURE { message(player, "Creature") }
+    OBJECT_TYPE.DOOR { message(player, "Door") }
+    _ { message(player, "Other") }
+}
+```
+
+Structs and ADTs retain nominal type identity in runtime storage. Struct fields can be read
+through eager `var` storage or a runtime function result; distinct aggregate types cannot be
+assigned to one another. ADT dispatch inspects the actual runtime variant, and requested
+fields are bound using their declared types. Constructors support dynamic field values.
+
+```glyph
+type Result {
+    Found { target: Object }
+    Missing { reason: String }
+}
+
+glyph lookup : interaction {
+    completed {
+        let target = player.get_nearest_object_by_type("creature")
+        var result = Result.Missing(reason: "Nothing nearby")
+        if target.is_valid() { result = Result.Found(target: target) }
+        match result {
+            Found { target } { target.set_local_int("found", 1) }
+            Missing { reason } { message(player, reason) }
+        }
+    }
+}
+```
+
+ADT matches must cover every variant, or finish with `_`. Unknown variants, duplicate arms,
+unknown fields and duplicate pattern bindings are compile-time `GLYPH2010` diagnostics.
+Pattern bindings are scoped to their arm. Arms may contain loops, nested matches, assignments,
+`break` and `continue`; execution rejoins afterward unless the selected arm terminates flow.
+
+`context.<name>` exposes only the current event/stage's registered data outputs.
+`creature`, `player`, `party.size`, `time.hour`, `spawn.count`, and `chaos.danger`,
+`chaos.corruption`, `chaos.density`, `chaos.mutation` are domain aliases, available only
+where corresponding context exists. Creature queries use registered `nwn.*` procedures with explicit object arguments. `party.members` returns an object list.
+
+The callable vocabulary is intentionally curated by executor-local descriptors and projected into `GlyphLanguageCatalog`. Examples include
+`heal`, `damage`, `nwn.get_distance_between`, `random`, `floating_text`, `message`, `play_vfx`, `nwn.set_name`,
+`spawn.modify_count`, `spawn.cancel`, `spawn.skip_bonuses`, `spawn.skip_mutations`,
+`has_trait`, `has_item`, `has_knowledge`, `industry.is_member`, `industry.level`,
+`spawn_resource_node`, `store_session_object`, and `session_object`, plus the broad procedural NWN surface under `nwn.*`.
+Parameters, default values, result types, and event/category restrictions come from the
+registered runtime definitions. Adding an alias does not require another binder switch.
+Operations not exposed by this catalog are deliberately unavailable in v1.
+
+### Procedural NWN API and typed members
+
+`Object` is an opaque NWN handle, not a statically known creature, item, door or store.
+Engine procedures are exposed under `nwn.*`. No general Object receiver methods are generated.
+
+```glyph
+let target = nwn.get_nearest_object_by_type(player, OBJECT_TYPE.CREATURE)
+if nwn.get_is_object_valid(target) {
+    nwn.set_local_int(target, "visited", 1)
+    nwn.action_attack(player, target)
+}
+```
+
+Action commands take an explicit actor and use NWScript `AssignCommand` internally. Local storage,
+queries and mutations take their objects explicitly. NWScript names remain recognizable:
+`nwn.get_ability_score(object, ABILITY.STRENGTH)`, `nwn.get_item_stack_size(object)` and
+`nwn.get_locked(object)` do not promise that the object is of an appropriate engine subtype.
+Existing native default/no-op behavior is preserved.
+
+Known typed Glyph values retain deliberate methods:
+
+```glyph
+let location = nwn.get_location(player)
+let x = location.get_x()
+let area = location.get_area()
+let facing = location.get_facing()
+let aura = effect.haste()
+let kind = aura.get_effect_type()
+let duration = aura.get_effect_duration()
+```
+
+Location uses getter methods consistently; Effect has reviewed inspection getters. Effects can
+still be constructed through the `effect.*` namespace. Struct fields and ADT payload access are
+unchanged. Domain aliases such as `player.has_knowledge(...)` and `player.has_item(...)` remain
+intentional World Engine APIs and compose with `nwn.*`.
+
+The old `Object.*` pseudo-namespace, `distance`, `set_name`, `creature.hp`, `creature.max_hp`,
+`creature.ac` and `creature.name` source aliases have been removed. Use canonical `nwn.*` queries
+instead. The curated string-type nearest-object adapter remains available as
+`nwn.nearest_object_by_kind(origin, "door")`; it supports trigger, door, placeable, creature and
+waypoint. Prefer `nwn.get_nearest_object_by_type(origin, OBJECT_TYPE.DOOR)` for engine queries.
+All runtime TypeIds and executors remain stable, including the curated adapter's
+`getter.nearest_object_by_type` identity. Stored IR does not depend on the removed source aliases.
+
+See [NWN standard library](#nwn-standard-library) and [extension policy](#extending-glyph).
+
+### Interactions
+
+```glyph
+glyph prospect : interaction {
+    attempted {
+        if !player.has_knowledge("mining.basic") { fail "Learn mining first." }
+        if !player.has_item("mining_pick") { fail "You need a mining pick." }
+    }
+    started { required_rounds = 4 }
+    tick {
+        if skill_check(player, "search", dc: 15) { progress += 1 }
+    }
+    completed {
+        message(player, "You locate a mineral deposit.")
+        metadata["quality"] = "promising"
+    }
+}
+```
+
+`skill_check` lowers directly to the existing success/failure control-flow executor and
+is only allowed as the direct condition of `if`. It cannot be stored in a `let` or combined
+with Boolean arithmetic. `fail` is an action-call shorthand. It is not allowed inside a
+foreach because the existing interpreter resumes loop frames when a branch terminates.
+
+`progress` and `required_rounds` assignments are valid in Started/Tick, when a session exists.
+`status` assignments accept lifecycle states `Active`, `Completed`, `Cancelled`, `Failed`
+in Started/Tick/Completed, not arbitrary display text. `metadata[key]` is String-valued,
+matching the existing metadata executors. There are no implicit String conversions.
+Each state read emits a fresh context getter where one is registered, so successive writes
+and loop iterations see updated state. Each interaction stage has its own entry point and scope;
+omitted stages are independent no-ops. No stage executes the next stage implicitly.
+
+### Runtime and persistence boundary
+
+The registry is keyed by definition ID; hooks cache only binding identities, scope, and priority.
+At execution start, the hook captures a version and obtains an isolated IR copy from its
+immutable executable snapshot. Later activation cannot mutate that execution, and even an
+executor mutating its private IR cannot change a retained snapshot.
+
+Publication serializes writers per definition, awaits persistence, then swaps a single state
+reference. Readers never wait for persistence. Rollback is recorded as a new activation with
+the retained executable and a new version identity. Saving source and publishing are separate.
+Only published version sources are recompiled on startup; a draft is never startup-authoritative.
+Language version, source hash, previous version identity, and activation time are persisted.
+
+`GlyphSourcePrograms` is the one-time database migration: it removes prototype `graph_json`
+and adds canonical `source_text`, `language_version`, `published_versions_json`. It disables
+prototype definitions. There is no legacy authoring mode or graph-to-source conversion.
+Apply this migration with the initial backend release before using the new APIs. Subsequent
+source activation and rollback require no module/server restart.
+
+HTTP contracts:
+
+- `POST /api/worldengine/glyphs/compile`: `{ sourceText, sourceId?, languageVersion? }`
+- `POST /api/worldengine/glyphs`: create an inactive source draft
+- `PUT /api/worldengine/glyphs/{id}`: save draft; `isActive: false` deactivates
+- `POST /api/worldengine/glyphs/{id}/activate`: `{ sourceText, languageVersion? }`
+- `POST /api/worldengine/glyphs/{id}/rollback`: reactivate previous executable
+- `GET /api/worldengine/glyphs/{id}/versions`: activation metadata
+- `GET /api/worldengine/glyphs/{id}/traces`: recent source-aware runtime traces
+
+Compile and activate return a `success` flag and structured diagnostics. A failed compilation
+returns HTTP 200 with `success: false`; transport/operational failures use error responses.
+No authoring contract accepts IR, nodes, edges, positions, or a node palette. Source maps are
+retained with executables and trace entries include source ID, line and column alongside node
+activity. The trace store retains the latest 64 runs, up to 2,000 entries each, in process memory.
+
+Syntax nesting, alias expansion, source size, and generated operation count are bounded.
+Synthetic execution can use a candidate's `CreateExecutionGraph()` with a controlled
+`GlyphExecutionContext`; the UI does not yet offer a sandboxed dry-run button. The editor provides syntax highlighting, completion and diagnostics for this language surface.
+The UI does not yet provide automatic formatting.
+
+## Reusable Glyph modules
+
+Modules require language version 2, 3, or 4. Existing version 1 scripts and published histories
+remain supported; the editor retains a legacy script's version until a module import is added. Generated standard functions, constants, context, and documentation
+are automatically available; an authored `global.glyph` is not required.
+
+### Define a library
+
+Each library source contains one module. Its identifier is the name used by imports.
+Names are case-sensitive, unique per server, and cannot use a system namespace such as
+`nwn`. The name of a saved module is stable; create another module to rename its interface.
+
+```glyph
+mod interaction_helpers {
+    const TARGET_TAG = "todo"
+
+    fn find_target(actor: Object): Object =
+        nwn.get_nearest_object_by_tag(TARGET_TAG, actor)
+
+    pub fn prospecting_target(actor: Object): Object = find_target(actor)
+    pub const EMPTY_MESSAGE = "There is nothing to prospect."
+}
+```
+
+Every declaration is private unless marked `pub`. An exported function can call private
+helpers and read private constants in its own module. Its body sees its parameters and
+its declaring module's symbols, rather than the caller's local variables.
+
+Functions support expression bodies (`fn name(args): Type = expression`) and, in version 3,
+statement bodies (`fn name(args): Type { return value }`). They are expanded by the compiler
+into executable IR with function boundaries for early returns. `Void` helpers may fall through
+or use `return;`. Recursion and runtime initialization remain unsupported. See
+[statement functions and returns](#statement-functions-and-returns) for the full rules.
+
+### Import a module
+
+```glyph
+using interaction_helpers
+
+glyph prospect : interaction {
+    attempted {
+        let target = prospecting_target(context.creature)
+        if target == OBJECT.INVALID {
+            fail EMPTY_MESSAGE
+        }
+        nwn.set_local_object(context.creature, "prospecting_target", target)
+    }
+}
+```
+
+Unique public names can be used directly. Qualified names also work:
+`interaction_helpers.prospecting_target(context.creature)` and
+`interaction_helpers.EMPTY_MESSAGE`. Access requires a `using` declaration even when
+qualified. Private declarations such as `interaction_helpers.find_target` are unavailable.
+
+A module may declare its own imports. They remain local to that module; consumers must
+explicitly import another module to name its declarations. Imports can occur in any
+order. Duplicate imports, missing published modules, and import cycles are diagnosed.
+
+If two imports export the same name, qualify it when using it. Existing local and standard
+names retain their meaning, so an imported declaration that collides with either needs
+qualification. The editor offers published module names and visible imported symbols,
+including function signatures, context availability, and module revision origins.
+
+### Export structs and ADTs
+
+```glyph
+mod prospect_types {
+    pub struct Prospect {
+        target: Object
+    }
+
+    pub type Result {
+        Found { prospect: Prospect }
+        Missing { reason: String }
+    }
+
+    pub fn found(actor: Object): Result = Result.Found(Prospect(actor))
+}
+```
+
+Public structs expose all their fields. Public ADTs expose all variants and payload fields.
+Public signatures, fields, and variant payloads cannot expose private types.
+Field-level visibility is not part of this version.
+
+Consumers can name `prospect_types.Prospect` in function signatures and call
+`prospect_types.Result.Missing(reason: "No target")`. ADT matching accepts either
+unqualified variant names or qualified names such as `prospect_types.Result.Found`.
+Types have module identity: `a.Result` and `b.Result` are distinct even if their fields match.
+
+Functions can read context and use registered intrinsics where available, but imports
+cannot bypass event, stage, type, or loop restrictions. Prefer explicit parameters for
+helpers that should work across multiple events. Module validation checks every function,
+including unused private functions, against the real supported event/stage contexts.
+
+### Save, publish, and update
+
+1. Open **Glyph scripts → Manage modules**, enter a module name, and create a draft.
+2. Add declarations, save the draft, and select **Compile / validate**.
+3. Select **Publish module**. A saved draft is not importable until published.
+4. Add `using module_name` to a script, validate it, and activate it.
+
+Each publication creates an immutable module revision and pins its imported revisions.
+Scripts likewise retain their complete dependency closure on activation, including the
+module source needed for restart. Updating a module affects future compilations; active
+scripts and executions in progress keep their existing behavior. Republish a dependent
+module explicitly to adopt a newer dependency, then recompile and activate its consumers.
+
+Validation returns a compilation fingerprint. Publication and activation reject changed
+source or dependencies with a revalidation error. A graph requiring two revisions of the
+same module is rejected; republish its dependents against one revision before retrying.
+
+Module rollback selects the preceding published revision for future imports. Script
+rollback restores its retained executable and dependency closure. Archiving prevents
+new direct imports while retaining revisions used by published modules and scripts.
+The API exposes archive/restore operations rather than deletion of retained revisions.
+
+`SourceHash` remains the hash of the root source. `CompilationHash` includes language
+version and the selected module revision/hash entries. Module diagnostics and runtime
+source maps retain the module name, revision, line, and column. Expansion diagnostics
+also identify the call sites leading to an invalid helper.
+
+### Validate local files
+
+Keep standalone libraries in an explicit module directory:
+
+```sh
+dotnet run --project tools/Glyph.Cli -- \
+  --module-root AmiaReforged.PwEngine/Features/Glyph/Language/Examples/Modules \
+  AmiaReforged.PwEngine/Features/Glyph/Language/Examples/prospect_with_module.glyph
+```
+
+The CLI discovers `.glyph` libraries under that directory by their `mod` declarations,
+validates all libraries, and uses the same resolver/binder as the server. It does not start
+NWN or a database. A standalone library may also be passed as a file for validation.
+Use `--language-version 1` when validating legacy source that uses the new keywords as identifiers.
+The server's library store is managed through the AdminPanel/API, not a runtime filesystem loader.
+
+A source is limited to 128 KiB. A dependency closure allows at most 64 modules, depth 32,
+and 1 MiB of module source. Constant dependency depth is limited to 128, function expansion
+depth to 64, and binding to 65,536 expressions. Existing expression and 4,096-operation
+executable limits still apply.
+
+### Server API
+
+Modules use `/api/worldengine/glyph-modules` for listing and draft creation, and
+`/{id}` for reading/editing. `/compile` validates a named source; `/{id}/publish` accepts
+source and `ExpectedCompilationHash`; `/{id}/rollback` selects the preceding revision.
+`DELETE /{id}` archives a module, and an update with `IsArchived: false` restores it.
+
+`POST /api/worldengine/glyphs/module-metadata` supplies document-scoped visible symbols.
+The generated standard catalog and NWScript Lexicon remain on the existing cached
+`/language-metadata` endpoint. Compile and activation responses expose dependency
+references and compilation fingerprints. Script activation with modules requires the
+fingerprint from validation.
+
+The `GlyphModules` EF migration adds module drafts and retained publication history.
+Published script history stores immutable dependency snapshots alongside existing fields;
+legacy histories without dependencies restore with an empty lock.
+
+## Immutable collections and impl
+
+Glyph 4 adds immutable lists and dictionaries, and inherent methods for structs and ADTs.
+New scripts and module publications use version 4. Retained Glyph 1–3 sources and executables
+keep their versions. A version 4 consumer can import older modules; older consumers cannot
+import version 4 modules. Use the editor's **Upgrade to Glyph 4** action when migrating a script.
+
+### Lists
+
+A nonempty literal infers its element type from its first expression. Numeric conversions use
+Glyph's existing assignment rules. Use a typed constructor for an empty list:
+
+```glyph
+let names = ["Alice", "Bob"]
+let empty = List<Int>()
+let expanded = names.append("Charlie")
+let replaced = expanded.with(0, "Alicia")
+let shortened = replaced.remove_at(1)
+let first = names[0]
+let count = names.count()
+let present = names.contains("Alice")
+for name in expanded { message(player, name) }
+```
+
+Index positions are zero based. An invalid index halts execution with a source-aware trace.
+`append`, `with`, and `remove_at` return a new list and preserve the original.
+`contains` uses exact value equality, including exact .NET Float equality rather than Glyph's
+tolerant numeric comparison.
+
+### Dictionaries
+
+Keys and values are independently typed. Construction is initially empty; `with` adds or
+replaces an entry, and `without` removes an entry (an absent key leaves the contents unchanged).
+
+```glyph
+let empty = Dictionary<String, Int>()
+let scores = empty.with("Alice", 10).with("Bob", 20)
+let score = scores["Alice"]
+let fallback = scores.get("unknown", fallback: 0)
+let present = scores.contains_key("Alice")
+let count = scores.count()
+let remaining = scores.without("Alice")
+for key in scores.keys() { message(player, key) }
+for value in scores.values() { nwn.set_local_int(player, "score", value) }
+```
+
+Indexing a missing key halts execution. `get(key, fallback)` returns the fallback for a missing
+key. All arguments, including a fallback, are evaluated once in written order.
+`keys()` and `values()` produce corresponding lists. Ordering is unspecified; these are
+snapshots of the same immutable dictionary, not views into shared mutable storage.
+
+String keys use ordinal, case-sensitive equality. Object keys compare NWN handles; Int and
+Bool use exact equality. Float keys use .NET `Double.Equals` and `GetHashCode`: nearby numbers
+remain distinct, signed zeros compare equal, and NaN keys compare equal to other NaN keys.
+This differs from the tolerance used by Glyph numeric comparison operators.
+
+### Types and evaluation
+
+Both collections support only `Object`, `String`, `Int`, `Float`, and `Bool`. They are homogeneous;
+`List<Item>`, `List<List<Int>>`, and collection arguments involving Location or Effect are not
+supported. Existing native Effect list iteration remains available.
+
+Collection types can appear in function parameters and return types, struct fields, and ADT
+payloads:
+
+```glyph
+struct Scores { values: Dictionary<String, Int> }
+type Lookup { Found { values: List<Object> } Missing {} }
+fn add(values: List<Int>, value: Int): List<Int> = values.append(value)
+```
+
+Collection-valued `let` initializers evaluate once at their declaration in Glyph 4, including
+native API lists. These lists are copied into immutable Glyph storage. Imported older functions
+retain their older binding semantics. Scalar pure `let` bindings retain existing lazy behavior.
+
+Assignments and function arguments can share immutable storage safely. Updates never change
+another binding. `var` may be reassigned to an updated collection of the same type:
+
+```glyph
+var scores = Dictionary<String, Int>()
+let previous = scores
+scores = scores.with("Alice", 10)
+// previous is still empty.
+```
+
+Index assignments such as `scores["Alice"] = 10` are not supported. Objects stored in a collection
+are opaque handles; collection immutability does not freeze the NWN objects they reference.
+
+Default execution limits allow 10,000 entries per collection and 100,000 charged collection
+allocations per execution. Snapshotting native lists, copying list updates, and key/value list
+construction charge their entry counts; persistent dictionary updates charge one update.
+Exceeding a limit halts execution with a source-aware trace. Execution-step and cancellation
+limits continue to apply.
+
+### Struct and ADT implementations
+
+An impl block belongs to a struct or ADT declared in the same source module. The first untyped
+`self` parameter receives that type; `Self` is accepted in parameter and return type positions.
+Methods cannot assign to `self` or its fields. Return a new aggregate to express an update:
+
+```glyph
+struct Item { name: String }
+impl Item {
+    fn description(self): String = self.name
+    fn renamed(self, name: String): Self = Item(name: name)
+    fn create(name: String): Self = Item(name: name)
+}
+
+type Result { Found { target: Object } Missing { reason: String } }
+impl Result {
+    fn is_found(self): Bool {
+        match self {
+            Found { target } { return true }
+            Missing { reason } { return false }
+        }
+    }
+}
+```
+
+Instance calls use `item.description()`; associated functions omit `self` and use
+`Item.create("name")`. Instance functions may also be called explicitly as `Item.description(item)`.
+Calls can be chained. Methods evaluate their receiver and other arguments once, in written
+order, including expression-bodied methods. Ordinary expression functions retain their existing
+lazy handling of pure arguments.
+
+Within modules, methods are private by default. Export a type and individual members with `pub`:
+
+```glyph
+mod items {
+    pub struct Item { name: String }
+    impl Item { pub fn description(self): String = self.name }
+}
+```
+
+Private methods remain callable by the module's own functions. Importing a public type does not
+expose its private methods. Duplicate members, field/variant name collisions, foreign type
+implementations, and recursion are compile-time errors. There are no trait implementations,
+inheritance, mutable receivers, or general user-defined generics in this version.
+
+## NWN standard library
+
+Glyph publishes the reviewed NWN runtime surface through ordinary registered operations. The
+compiler consumes `GlyphStandardLibrary.Environment` automatically. `global.glyph` is its generated
+source representation, built from the same typed declarations as compiler binding and metadata.
+It is documentation/export, not a runtime file that must be installed or parsed on every compile.
+Programs can also declare const, expression-bodied fn, struct and type declarations; external
+preludes can be supplied through the compiler's global environment constructor argument.
+
+### Sources and generated artifacts
+
+| File | Role |
+| --- | --- |
+| `../Nwn/standard.nwnbindings` | Reviewed binding decisions, semantic overrides and constant domains |
+| `Standard/global.glyph` | Generated canonical typed constant declarations |
+| [Binding coverage](#nwscript-binding-coverage) | Generated bound/adapted/excluded/unsupported/deferred API report in this reference |
+| `Standard/NWN_API_SNAPSHOT.json` | Reviewed generated dependency signatures/defaults, decisions and all constants |
+| [Registered API](#registered-api) | Generated functions, aliases, receivers, constants and provenance in this reference |
+
+Edit the manifest or adapter descriptors, then regenerate. See [the extension guide](#extending-glyph)
+for commands, diagnostics, adapters and dependency upgrades.
+
+### Surface and layering
+
+The initial reviewed NWN.Core 8193.37.4 surface publishes 456 native methods (386 direct bindings
+and 70 adapted methods), plus 3,265 symbolic constants in 47 domains. Aliases and World Engine
+modules expand the source catalog beyond those native-method counts. The coverage report is the
+authoritative current inventory and records every native method and constant, including omissions.
+
+| Implementation | Purpose |
+| --- | --- |
+| Generated direct bindings | Scalar queries and mutations with direct static NWScript calls |
+| Generated semantic bindings | Bool sentinel conversions, Object handles, opaque Location/Effect values |
+| Generated command adapters | Explicit actor plus a specific native command under AssignCommand |
+| Handwritten adapters | Locations, effects, collection snapshots, unusual signatures, existing TypeId compatibility |
+| Glyph helpers | Receiver/alias sugar, user global functions and existing high-level operations |
+| Exclusions | Unpublished APIs with reasons or an unsupported/deferred classification |
+
+Canonical low-level functions use `nwn.*`; effect constructors also have `effect.*` aliases.
+Object is an opaque NWN handle. Engine locals, queries, mutations and commands are procedures,
+so the object or action actor is an explicit argument. Higher-level World Engine modules remain
+separate and composable; `player.has_knowledge` and `player.has_item` are deliberate domain aliases.
+
+```glyph
+glyph guardian : interaction {
+    completed {
+        let spirit = nwn.create_object(OBJECT_TYPE.CREATURE, "amia_restless_spirit", nwn.get_location(player))
+        nwn.set_name(spirit, "Restless Spirit")
+        nwn.set_local_object(spirit, "summoner", player)
+        nwn.apply_effect_to_object(spirit, effect.visual_effect(VFX.DUR_AURA_PURPLE))
+        nwn.apply_effect_to_object(spirit, effect.haste(), duration: 30.0)
+        nwn.action_move_to_object(spirit, player)
+    }
+}
+```
+
+The manifest receiver column defaults to no exposure. Only deliberate Location/Effect queries
+use `language_value:method_name`; handwritten typed methods carry `GlyphReceiverPolicy.LanguageValue`.
+Location exposes `get_x`, `get_y`, `get_z`, `get_area`, `get_facing` and distance queries. Effect
+exposes inspection getters and validity; constructors, transformations and mutations remain
+namespaced procedures. Metadata supplies this small classified receiver list to the editor.
+`nwn.` completes the broad engine surface. Generic `player.` offers explicit domain APIs.
+
+Compatibility source aliases `Object.*`, `distance`, `set_name` and creature query properties
+were removed. Canonical procedures continue to use the same runtime TypeIds, pins and executor
+implementations. The older string-filter query remains as `nwn.nearest_object_by_kind`; its
+existing runtime identity is preserved. No native function or constant was removed.
+
+### Value and execution semantics
+
+Object is an NWN handle, not a CLR object. Zero handles and absent Anvil objects normalize to
+`OBJECT.INVALID` (native OBJECT_INVALID). Object-valued native results are normalized consistently.
+Use `nwn.get_is_object_valid(object)` before behavior that depends on a successful query/creation. Missing locals
+retain NWScript defaults: Int zero, Float zero, String empty, Object invalid, Location invalid.
+Invalid collection targets produce empty typed snapshots; scalar natives retain native sentinel
+behavior. Do not assume every native operation is meaningful for every object type.
+
+Location and Effect are distinct opaque typed engine values; their pointers cannot be accessed
+from Glyph. Required invalid location/effect inputs return safe typed defaults or skip mutation.
+`nwn.location(area, x, y, z: 0.0, facing: 0.0)` constructs a location; its area, coordinates and
+facing are queryable through deliberate typed getter methods. Effect constructors compose with link/subtype operations and apply/remove.
+`nwn.apply_effect_to_object(target, effect, duration: 30.0)` selects temporary duration; omitted/zero duration
+selects permanent. `duration_type` can explicitly select `DURATION_TYPE.INSTANT` or another native
+mode. Typed local get/set/delete functions include Location as well as Int, Float, String and Object.
+
+Queries and effect/location constructors are lazy value operations. Mutations with results are
+execution operations: `let created = nwn.create_object(...)` executes at that statement, including
+when unused. All consumers share its result; loops execute it once per iteration. Function
+arguments and aggregate fields preserve this ordering. Boolean operators short circuit. The IR
+validator rejects action outputs consumed on a path that bypasses their producer, and the
+interpreter never lazily invokes actions.
+
+Inventory, area objects, effects, players, areas, faction members and objects by tag are typed
+snapshots. `foreach` supports Object and Effect elements; it does not expose native first/next
+state. Native mutations after a snapshot do not change its membership.
+
+### Boundaries and verification
+
+Bindings are compile-time generated static calls. There is no general CLR/Anvil access, reflection
+invocation, delegate value or script-source execution. Callback scheduling and additional native
+handle kinds require future language/adapter work; see the coverage report for exact omissions.
+Unique function names and type-qualified receivers avoid ambiguous overload resolution.
+
+Offline tests cover generation, semantic conversions, registration, all source functions/aliases/
+receivers binding and lowering, constants/global declarations, side-effect execution, invalid
+snapshots, IR validation and editor completion. The realistic `nwn_*.glyph` corpus covers inspection,
+locals, locations, effects, creation, inventory and areas. Native world execution requires an Anvil
+server and is deliberately separate from these tests. Before production activation, run the corpus
+in an isolated test module with its expected blueprint/tag assets and verify object creation,
+local state, effect application/removal, action subjects, inventory and area snapshots. No live
+NWN server integration run is claimed by the offline suites.
+
+## Extending Glyph
+
+A capability declares its contract beside its executor. The generated registry constructs
+executors/modules; descriptors project runtime definitions into the compiler catalog, HTTP
+metadata, editor completions and API documentation. Compiler binding remains authoritative.
+The interpreter still consumes Glyph IR, never source syntax or CLR member names.
+
+### Add an action or getter
+
+Use `[GlyphNode]` on a **public partial** executor and declare a static `Descriptor`.
+The generator supplies `TypeId`, `CreateDefinition()` and `Inputs` when needed. Existing
+executors may retain explicit implementations for compatibility. Use `Inputs.Amount` instead
+of repeating a pin ID in executable code. Changing/removing the descriptor parameter then
+produces a compiler error at its consumer. Parameter IDs should use snake_case; generated
+members use PascalCase. Declare parameters as inline `Pins.In*` calls or `GlyphPin` initializers
+so the generator can produce their symbols. Dynamic signature construction is an escape hatch;
+use explicit shared symbols in that case.
+
+```csharp
+[GlyphNode]
+public sealed partial class GiveGoldExecutor : GlyphActionNode
+{
+    public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
+    {
+        TypeId = "economy.give_gold",
+        DisplayName = "Give Gold",
+        Category = "Economy",
+        Description = "Gives gold to a creature.",
+        Archetype = GlyphNodeArchetype.Action,
+        Parameters = [Pins.InObject("creature", "Creature"), Pins.InInt("amount", "Amount", "500")],
+        Exports = [new("give_gold")]
+    };
+
+    protected override async Task RunActionAsync(GlyphNodeContext cx)
+    {
+        uint creature = await cx.InObject(Inputs.Creature);
+        int amount = await cx.InInt(Inputs.Amount);
+        // Call the curated domain implementation here.
+    }
+}
+```
+
+An action gets `exec_in`/`exec_out` automatically. For a getter, inherit `GlyphPureNode`,
+use `PureFunction` (the default), declare `Results = [Pins.Out("value", "Value", type)]`,
+and export `new("source_name", "value")`. Return an output dictionary from `RunPureAsync`.
+A multi-output runtime node can have several exports selecting different return pins, as
+`GetCreatureHPExecutor` does. Canonical source spellings select those result pins without replacing the runtime operation identity.
+
+`Pins.In*` defaults are stored as the existing runtime strings; **null means required**.
+String defaults are raw text, without JSON quotes. The interpreter supplies connected/default
+values before executor input access. The typed accessor's fallback applies to missing or
+mistyped input, including direct executor unit tests; it does not redefine the signature default.
+
+### When to use a receiver method
+
+Use member syntax only when the receiver has a meaningful Glyph value type, or the API is an
+explicit higher-level language/domain abstraction. `Object` is an opaque NWN handle. Parameter
+zero being Object is insufficient: Glyph cannot prove it is a creature, item, door, store or area.
+
+Bad: `object.get_ability_score(ABILITY.STRENGTH)`.
+Good: `nwn.get_ability_score(object, ABILITY.STRENGTH)`.
+Good typed value: `location.get_x()`.
+Good domain abstraction: `player.has_knowledge("mining.basic")`.
+Struct fields such as `request.actor` and ADT payloads retain their language-defined semantics.
+
+Typed value methods use an explicit policy:
+
+```csharp
+new("nwn.location_x", "x", ReceiverMethods: ["get_x"],
+    ReceiverType: GlyphDataType.Location, ReceiverPolicy: GlyphReceiverPolicy.LanguageValue)
+```
+
+Parameter zero must match `ReceiverType`. `LanguageValue` currently allows Location and Effect,
+with reviewed inspection/geometry methods. Their transformations and mutations remain procedural.
+`DomainAbstraction` is reserved for hand-authored semantic APIs; raw NWScript descriptors cannot
+claim it. `None` is the default and exposes no receiver. `Legacy` requires a deprecation message
+with a removal plan; no general Object compatibility receivers are retained by this refactor.
+Names must be unique within the receiver type. The verifier rejects unclassified and incompatible
+receivers. Removing a source alias does not change TypeIds, pins or persisted executable graphs.
+
+If Glyph later gains actual Creature, Item, Door, Placeable, Area or Store refinement types,
+methods such as `creature.ability_score(...)` can be reconsidered. Do not invent those subtypes
+just to preserve Object methods today.
+
+### Add domain aliases and availability
+
+Declare call/property aliases locally, including the injected expression:
+
+```csharp
+new("has_item", "has_item", CallAliases: [new("player.has_item", "has_item", "player")])
+new("set_progress", AllowedStages: ["started", "tick"], WritableAs: "progress")
+```
+
+Set `RestrictToEventType` or `ScriptCategory` on the runtime descriptor. Set `AllowedStages`
+on an export to restrict it to interaction stages, e.g. `["tick"]`. Writable aliases target
+one-parameter actions. Indexers are declared with `Indexer: new(name, getter, setter)` on an
+export; the binder uses registered indexers without a function-specific syntax switch.
+`status` remains write-only; it does not create a new readable context field.
+
+Special flow nodes can keep custom `CreateDefinition()` implementations. A predicate export
+uses `Strategy: GlyphLoweringStrategy.PredicateBranch` with `FlowControl` and
+`ExecutionOutputs = [Pins.ExecOut("success", "Success"), Pins.ExecOut("failure", "Failure")]`.
+Infrastructure nodes may be registered with `[GlyphNode]` and no descriptor; they gain no
+source function accidentally.
+
+### Expose context and add an event
+
+An event executor inherits `GlyphEventNode`. Declare a static `Event` descriptor, a static
+`GlyphContextSchema`, and the short instance projections `EventContract`, `Schema`,
+`SourceDisplayName`, and `Description`. Existing event executors are complete examples.
+
+```csharp
+public static GlyphContextSchema Context { get; } = new([
+    new("quality", "Quality", GlyphDataType.Int,
+        cx => cx.Get<CraftingGlyphContext>()?.Quality ?? 0)
+]);
+```
+
+The schema drives entry output pins/values, context getter executors, compiler types, metadata
+and `context.quality` completion. Add `Aliases: ["crafting.quality"]` to the same field to
+expose an additional spelling. Schema readers should return the correct Glyph value type and
+a safe fallback when their typed capability is absent. `Get<T>()` returns null when absent;
+`Set(new CraftingGlyphContext { Quality = 85 })` attaches typed data without adding a property
+to Glyph core. Event `Capabilities` declares the data its integration hook should attach.
+Encounter, trait, interaction and shared character identity already use this mechanism.
+
+New events currently require **one appended `GlyphEventType` member**, an event descriptor/
+executor, and the subsystem lifecycle hook that constructs context and invokes Glyph.
+Never reorder/renumber existing enum members: they are persisted identities. Declare source
+name/category/entry in `Event`; registration, category lookup, entry lookup, metadata and
+context exposure are derived. Do not edit bootstrap, catalog event lists, graph entry switches
+or category switches. Interaction declares its existing four stages once in its event
+contract; stage outputs/readers derive from schemas. Adding new stage keywords is a genuine
+syntax change and requires compiler/editor grammar work.
+
+### Add a subsystem module
+
+Prefer `Features/WorldEngine/Subsystems/<Domain>/Glyph/` for domain executors, contracts,
+service adapters and modules. Industry, knowledge and resource-node integrations live there.
+
+```csharp
+[GlyphModule]
+public sealed class CraftingGlyphModule : IGlyphModule
+{
+    public void Configure(GlyphModuleBuilder glyph)
+    {
+        glyph.Add<CraftingProficiencyExecutor>();
+        glyph.Add<HasRecipeExecutor>();
+    }
+}
+```
+
+Use `[GlyphNode(Automatic = false)]` on module-owned executors: the marker still generates
+input symbols/descriptor projections, while the module controls their construction. Duplicate
+registration is rejected, never silently overwritten. `[GlyphModule]` discovers stateless
+parameterless modules at compile time. Use `glyph.Add(() => new Executor(injectedService))`
+when a module closes over constructor-injected dependencies. Do not resolve a global container.
+For service-backed modules, inject them normally at the composition root and supply them to
+`GlyphBootstrap(registry, modules)` (Anvil resolves `IEnumerable<IGlyphModule>` services); do not mark a dependency-constructed module for automatic
+parameterless registration. Each module owns its executor registrations; capabilities added to
+it require no core edits.
+
+Use the subsystem's normal application API or a narrow Glyph-facing service. Production
+industry, knowledge and resource nodes use `IGlyphIndustryApi`, `IGlyphKnowledgeApi` and
+`IGlyphResourceNodeApi`, with separate Anvil bindings. The old `IGlyphWorldEngineApi` and
+flat context properties are compatibility forwards to these same objects/data; do not expand them.
+The interaction hook injects narrow services directly.
+
+### Verify and regenerate
+
+```sh
+dotnet test AmiaReforged.PwEngine -m:1 --filter FullyQualifiedName~Features.Glyph
+dotnet test tools/Glyph.Generators.Tests -m:1
+dotnet run --project tools/Glyph.Cli -- AmiaReforged.PwEngine/Features/Glyph/Language/Tests/Corpus/*.glyph
+dotnet run --project tools/Glyph.Docs -- --output AmiaReforged.PwEngine/Features/Glyph/Language/API_REFERENCE.md --metadata /tmp/glyph-language-metadata.json
+cd AmiaReforged.AdminPanel/Client/glyph-editor
+npm test
+GLYPH_METADATA_PATH=/tmp/glyph-language-metadata.json npm run test:platform
+npm run build
+```
+
+`GlyphFeatureVerifier` runs at startup and checks registrations, defaults, returns, receivers,
+aliases, event/stage restrictions, entry definitions and schema getter wiring. Generic tests
+compile every advertised function, alias and receiver in every advertised scope and compare
+schema entry/getter values. Add a behavior test for a new capability. The generator also emits
+compile-time errors for duplicate constant runtime/source identities, missing literal return
+outputs and unsupported registration shapes. Arbitrarily computed descriptors are checked by the assembled conformance verifier.
+
+The default documentation command constructs the stateless generated platform offline. For
+service-backed modules supplied through Anvil injection, export the actual server's language
+metadata and use `dotnet run --project tools/Glyph.Docs -- --from-metadata server-metadata.json --output reference.md`.
+That mode uses the same typed compiler-owned payload and does not construct server dependencies.
+
+The written guide lives between `<!-- glyph-guide:start -->` and `<!-- glyph-guide:end -->`
+in this reference. Edit it here. `Glyph.Docs --output` preserves that block and refreshes the
+registered API and binding coverage below it. Do not hand-edit generated tables. For a separate
+server reference export, copy this reference to the output path first to retain the guide.
+The `--nwn-coverage` option is available for temporary standalone coverage exports; the checked-in
+coverage lives in this reference.
+
+Generated source can be inspected in IDE analyzer output or with:
+
+```sh
+dotnet build AmiaReforged.PwEngine -p:EmitCompilerGeneratedFiles=true -p:CompilerGeneratedFilesOutputPath=/tmp/glyph-generated
+```
+
+The HTTP endpoint remains `/api/worldengine/glyphs/language-metadata`; its DTO retains existing
+fields and adds `writableState`, constants/domains, value types, and function provenance. Ordinary capability changes require no frontend function
+catalog edits. New syntax (declarations, control flow, keywords) still needs parser/binder/
+lowerer and Lezer work. Intrinsics, aliases and contexts do not.
+
+### Migration and boundaries
+
+| Work | Previously | Now |
+| --- | --- | --- |
+| Action | Definition, executor, bootstrap, catalog, aliases/docs | Partial executor + descriptor + behavior test |
+| Getter | Pins, runtime list, source/output catalog entry, docs | Descriptor parameters/results/export + executor + test |
+| Typed value receiver | Typed signature + explicit policy + docs | Export `ReceiverMethods` with `LanguageValue` and `ReceiverType` |
+| Context | Event pins, output dictionary, getters, metadata/aliases | Schema field + typed integration data |
+| Subsystem | Central Glyph nodes and growing broad facade | Subsystem-owned module/executors/narrow API |
+| Event | Enum + bootstrap + source list + category/entry switches | Append enum identity + descriptor/schema/executor + lifecycle hook |
+
+Existing source spellings, runtime TypeIds, pin IDs, enum numeric values, persistence format,
+source version, publication isolation and compiler/runtime boundaries are retained. Existing
+CLR executor namespaces are retained even where files moved. Event schemas now safely return
+fallbacks for absent domain capabilities and consistently provide context getters.
+
+Deliberately deferred: replacing persisted enums with string event IDs; cross-assembly generator
+manifests; generated typed input structs (constants already prevent ID drift); removing legacy
+flat-property/composite-API adapters; redesigning the interpreter/IR; and adding new stage syntax.
+No runtime assembly scanning, general reflection dispatch or implicit CLR exposure is introduced.
+
+
+### Adding an NWScript binding
+
+`../Nwn/standard.nwnbindings` is the reviewed source of binding decisions. `NwnBindingGenerator`
+inspects Roslyn symbols from the referenced `NWN.Core.NWScript` during compilation and emits
+ordinary descriptors, direct-call executors, registry entries, constants and API coverage.
+No runtime reflection dispatch is involved. New native APIs stay unpublished until reviewed.
+
+A function row has twelve pipe-separated fields; empty fields are significant:
+
+```text
+function|NativeMember|GlyphName|mode|returnType|parameterRules|receiverExposure|aliases|category|adapterClass|descriptionOrReason|deprecation
+```
+
+For example:
+
+```text
+function|GetLocalInt|nwn.get_local_int|pure|||||Locals||Read an object's local integer.|
+function|SetLocalInt|nwn.set_local_int|action|||||Locals||Write an object's local integer.|
+function|GetIsDM|nwn.get_is_dm|pure|Bool||||Creatures||Whether the creature is a DM.|
+function|GetAreaFromLocation|nwn.get_area_from_location|pure||lLocation:Location|language_value:get_area||Objects||Area of a typed Location.|
+```
+
+1. Add a row using `pure` for queries and value constructors, `action` for mutations (including
+   mutations returning values), or `command` for operations executed under an explicit actor.
+2. Override semantic types where CLR types are insufficient. `nativeName:GlyphType:pinName`
+   rules are comma-separated; the pin name may be omitted. For example `bRun:Bool` converts
+   an integer sentinel to Bool, and `lTarget:Location` maps an opaque native location.
+3. Leave receiver exposure empty (the default `None`) for ordinary procedures and commands.
+   Only reviewed typed Location/Effect methods use `language_value:method_name`. Bare names,
+   Object receivers and automatic domain aliases are errors (`GLYPHNW009`). Constructor namespace
+   aliases such as `effect.haste` remain comma-separated source aliases and use the same executor.
+4. Run the tests and regenerate the standard artifacts with the command below.
+
+Scalar types are inferred: int -> Int, float/double -> Float, string -> String, uint -> Object.
+IntPtr requires explicit Location/Effect semantics. Ref/out, delegates, vectors, item properties,
+events, JSON and other unrepresented types require adapters rather than accidental CLR access.
+`nativeName:omit` can omit an optional native parameter; its native `default` is passed. Ordinary
+native scalar defaults are preserved. OBJECT_SELF defaults require an explicit Glyph Object
+because Glyph normalizes zero handles to OBJECT_INVALID. First Object subject parameters remain
+required independently of receiver exposure, preserving the original runtime pin contracts. Typed
+value receiver parameters are also required.
+
+`command` adds a required `actor: Object` parameter before native parameters and runs the specific
+call under `NWScript.AssignCommand(actor, ...)`. The actor remains an explicit first source argument, not a receiver. This is internal
+scheduling machinery; Glyph cannot supply or obtain a delegate. Command functions return Void.
+Non-Void actions produce both exec and data outputs and execute once at their source position.
+Use unique source names, not implicit overload resolution; native overloads require an adapter.
+
+### Adding an NWScript adapter
+
+Use a `[GlyphNode]` partial executor with a static descriptor beside its implementation. Add a
+`manual` manifest row naming the fully qualified executor class. `LocationExecutor`,
+`ApplyEffectValueExecutor`, and `InventoryExecutor` show construction, reordered/defaulted
+parameters, and first/next snapshots respectively. The normal registry generator registers the
+adapter; the NWN generator emits no second executor. Startup verifies its published source name.
+The descriptor is authoritative for the adapter's pins, aliases and receiver exports.
+
+Adapters use `GlyphNwnLocation` and `GlyphNwnEffect`, never strings or integer pointer values.
+Use `GlyphNodeContext.InObject` and `GlyphNwnValue.NormalizeObject` at handle boundaries. An
+iterator adapter must finish its first/next traversal synchronously after resolving its inputs,
+then return a typed snapshot (`List<Object>` or `List<Effect>`). Do not await inside native
+iterator traversal. A list pin sets `ElementType`; legacy list pins with no element type mean
+Object, preserving persisted graphs. New element types need explicit compiler/runtime support.
+
+Preserve an existing runtime TypeId and pin IDs when adapting an existing executor. Add the
+canonical `nwn.*` spelling to its exports. The manifest's `manual` mode ensures ordinary generation
+does not create a competing implementation. Keep semantic helpers such as `heal`, `damage`, and
+legacy string-based object queries when their behavior differs from the native primitive.
+
+### Adding an NWScript constant domain
+
+Add `domain|NATIVE_PREFIX|GLYPH_NAMESPACE` to the manifest. The longest matching prefix wins:
+`OBJECT_TYPE_CREATURE` becomes `OBJECT_TYPE.CREATURE`, even when the broader `OBJECT` domain is
+also selected. Numeric suffixes receive `VALUE_` to remain valid identifiers: `DAMAGE_BONUS_1`
+becomes `DAMAGE_BONUS.VALUE_1`. Types and values come from native compile-time constant fields.
+The generator rejects collisions. Constants enter `GlyphStandardLibrary.Environment`, metadata,
+completion and documentation from the same generated table. Do not edit `global.glyph` by hand.
+
+### Excluding an NWScript method
+
+Use an `exclude` or `deferred` row and put the reason in the description field. Callback-taking
+DelayCommand/ActionDoCommand need future Glyph-native control flow. First/next methods are replaced
+by snapshot adapters. CLR/script-source execution remains outside the published boundary.
+Unselected methods remain visible in coverage: representable signatures are classified excluded
+pending review, nonrepresentable signatures unsupported, callbacks deferred. Dependency upgrades
+cannot quietly add source functions. Unsupported means a type/semantic adapter is needed, not a
+permanent game-state restriction.
+
+### Adding an Anvil-backed general NWN operation
+
+Add an adapter in `Nwn/` with an ordinary descriptor, stable `nwn.*` export, `Source` and `Backend`.
+Use a manual manifest row when replacing a native method. An Anvil-only operation needs no fake
+NWScript row; registration and metadata follow its descriptor. Inject needed dependencies through
+an `IGlyphModule`, as above. Add conversion/runtime tests separately from compiler conformance.
+Keep Amia industry, resources, knowledge and other domain logic in its World Engine module.
+
+### Regenerate the NWN standard artifacts and review upgrades
+
+From the repository root:
+
+```sh
+dotnet run --project tools/Glyph.Docs -- \
+  --output AmiaReforged.PwEngine/Features/Glyph/Language/API_REFERENCE.md \
+  --metadata /tmp/glyph-language-metadata.json \
+  --global AmiaReforged.PwEngine/Features/Glyph/Language/Standard/global.glyph \
+  --nwn-snapshot AmiaReforged.PwEngine/Features/Glyph/Language/Standard/NWN_API_SNAPSHOT.json
+```
+
+Before regenerating the snapshot after an NWN dependency upgrade, run:
+
+```sh
+dotnet run --project tools/Glyph.Docs -- \
+  --compare-nwn AmiaReforged.PwEngine/Features/Glyph/Language/Standard/NWN_API_SNAPSHOT.json
+```
+
+Comparison returns exit code 1 when versions, signatures/defaults, binding decisions or constants
+have changed, and lists added/removed/changed functions and constants. Review the changes, update
+manifest/adapters, run conformance, then commit the regenerated artifacts together. The reviewed
+snapshot is also a regression test; the ordinary test suite fails on unreviewed API drift.
+`GLYPHNW001`–`GLYPHNW008` report duplicate source names, parameter/return mapping problems,
+object semantics, receiver/constant collisions, missing adapters, malformed manifest entries and invalid receiver policies (`GLYPHNW009`).
+
+
+### Imperative language runtime
+
+Language syntax is separate from the registered intrinsic/API catalog. `var`, `while`, `for`,
+`continue` and `match` bind to typed nodes and lower into registered compiler operations;
+control keywords are not API intrinsics. Update both the backend parser and the Lezer grammar
+in `AmiaReforged.AdminPanel/Client/glyph-editor/` when extending the language, regenerate the
+parser and production bundle with `npm run build`, and run `npm test`.
+
+Mutable locals use compiler symbol IDs in `GlyphExecutionContext.Locals`, with runtime and
+nominal types stored alongside their values. `local.write_*` is eager; `local.read_*` bypasses
+cached outputs. Writes invalidate only pure downstream dependencies of that symbol's reads.
+Action outputs captured by `let` remain snapshots. Pure `let` expressions remain lazy.
+
+All loops share `GlyphExecFrame`, `GlyphNodeResult.LoopBody` and interpreter continuation
+handling. `flow.while` owns a frame whose body starts with the condition's lowered prelude,
+including action calls and short-circuit branches. A false condition breaks that frame;
+normal termination or `flow.continue` re-enters the prelude. `flow.for_range` keeps an integer
+cursor in `LoopStates`; bounds and step are snapshots, no list is allocated, and advancement
+uses long arithmetic to avoid Int overflow. `for` over lists shares the `foreach` executor.
+`CompletedPinId` declares the break continuation. `break` removes loop-owned state;
+`continue` preserves it. All state is cleared when the execution chain exits.
+
+Executed nodes are tracked in every enclosing loop frame. Cached lazy dependencies are also
+tracked, stopping at action snapshots and flow outputs owned by their producer. Iteration
+advance clears only these caches. The default 10,000-step guard counts flow and lazy data
+execution; cancellation, zero range steps and runtime errors halt execution with traces.
+Each generated operation retains a source span, including condition preludes and match arms.
+
+`GlyphDataType.Aggregate` carries `GlyphAggregateValue`: nominal type name, optional ADT
+variant name and immutable typed field values. Compiler aggregate construction uses typed
+`aggregate.with_*` operations; destructuring uses `aggregate.field_*`. Registered aggregate
+arguments/results declare `GlyphPin.AggregateTypeName`; declare the corresponding struct or
+ADT in the global environment so source binding knows its fields/variants. IR validation checks
+known nominal aggregate identities, while the binder enforces nominal assignment compatibility.
+This supports aggregates through locals, captured results and global function parameters/results
+without reflection, JSON payloads, or a second interpreter.
+
+`BoundMatch` captures its subject once in a typed slot, then lowers to ordinary branches with
+scalar equality or `aggregate.is_variant` tests. Each arm has a lexical field-binding scope;
+ADT exhaustiveness remains a compiler requirement (a final wildcard may satisfy it). Scalar
+matches without a wildcard may fall through. Terminating arms do not emit join edges.
+
+New bound forms must be traversed by `GlyphBoundLimits`. Extend the execution tests and corpus
+alongside syntax changes; do not rely on parser-only tests to establish runtime support.
+<!-- glyph-guide:end -->
+
+## Registered API
+
 
 Generated from registered Glyph contracts. Do not edit function or context tables by hand.
 
-## Events and stages
+### Events and stages
 
 | Source event | Runtime identity | Category | Stages |
 | --- | --- | --- | --- |
@@ -15,11 +1238,11 @@ Generated from registered Glyph contracts. Do not edit function or context table
 | trait.on_granted | OnTraitGranted | Trait |  |
 | trait.on_removed | OnTraitRemoved | Trait |  |
 
-## NWN procedures and language/domain functions
+### NWN procedures and language/domain functions
 
-## Actions
+### Actions
 
-### `damage`
+#### `damage`
 
 `damage(creature: Object, amount: Int = 10, damage_type: String = MAGICAL) → Void`
 
@@ -29,7 +1252,7 @@ Kind: Action. Canonical: `damage`.
 
 Available in: all Glyph events/stages.
 
-### `floating_text`
+#### `floating_text`
 
 `floating_text(creature: Object, message: String = ) → Void`
 
@@ -39,7 +1262,7 @@ Kind: Action. Canonical: `floating_text`.
 
 Available in: all Glyph events/stages.
 
-### `heal`
+#### `heal`
 
 `heal(creature: Object, amount: Int = 10) → Void`
 
@@ -49,7 +1272,7 @@ Kind: Action. Canonical: `heal`.
 
 Available in: all Glyph events/stages.
 
-### `message`
+#### `message`
 
 `message(creature: Object, message: String, channel: String = server) → Void`
 
@@ -59,7 +1282,7 @@ Kind: Action. Canonical: `message`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `nwn.set_name`
+#### `nwn.set_name`
 
 `nwn.set_name(creature: Object, name: String) → Void`
 
@@ -71,7 +1294,7 @@ Kind: Action. Canonical: `nwn.set_name`.
 
 Available in: all Glyph events/stages.
 
-### `play_vfx`
+#### `play_vfx`
 
 `play_vfx(target: Object, vfx_id: Int = 287, duration: Float = 0) → Void`
 
@@ -81,7 +1304,7 @@ Kind: Action. Canonical: `play_vfx`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `spawn.cancel`
+#### `spawn.cancel`
 
 `spawn.cancel() → Void`
 
@@ -91,7 +1314,7 @@ Kind: Action. Canonical: `spawn.cancel`.
 
 Available in: encounter.before_group_spawn.
 
-### `spawn.modify_count`
+#### `spawn.modify_count`
 
 `spawn.modify_count(new_count: Int = 1) → Void`
 
@@ -101,7 +1324,7 @@ Kind: Action. Canonical: `spawn.modify_count`.
 
 Available in: encounter.before_group_spawn.
 
-### `spawn.skip_bonuses`
+#### `spawn.skip_bonuses`
 
 `spawn.skip_bonuses() → Void`
 
@@ -111,7 +1334,7 @@ Kind: Action. Canonical: `spawn.skip_bonuses`.
 
 Available in: all Glyph events/stages.
 
-### `spawn.skip_mutations`
+#### `spawn.skip_mutations`
 
 `spawn.skip_mutations() → Void`
 
@@ -121,7 +1344,7 @@ Kind: Action. Canonical: `spawn.skip_mutations`.
 
 Available in: all Glyph events/stages.
 
-### `spawn_resource_node`
+#### `spawn_resource_node`
 
 `spawn_resource_node(trigger: Object) → Void`
 
@@ -131,9 +1354,9 @@ Kind: Action. Canonical: `spawn_resource_node`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-## Getters
+### Getters
 
-### `has_item`
+#### `has_item`
 
 `has_item(creature: Object, item_tag: String) → Bool`
 
@@ -143,7 +1366,7 @@ Kind: Value. Canonical: `has_item`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `nwn.get_ac`
+#### `nwn.get_ac`
 
 `nwn.get_ac(creature: Object) → Int`
 
@@ -155,7 +1378,7 @@ Kind: Value. Canonical: `nwn.get_ac`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_current_hit_points`
+#### `nwn.get_current_hit_points`
 
 `nwn.get_current_hit_points(creature: Object) → Int`
 
@@ -167,7 +1390,7 @@ Kind: Value. Canonical: `nwn.get_current_hit_points`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_distance_between`
+#### `nwn.get_distance_between`
 
 `nwn.get_distance_between(object_a: Object, object_b: Object) → Float`
 
@@ -179,7 +1402,7 @@ Kind: Value. Canonical: `nwn.get_distance_between`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_pc`
+#### `nwn.get_is_pc`
 
 `nwn.get_is_pc(object: Object) → Bool`
 
@@ -191,7 +1414,7 @@ Kind: Value. Canonical: `nwn.get_is_pc`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_max_hit_points`
+#### `nwn.get_max_hit_points`
 
 `nwn.get_max_hit_points(creature: Object) → Int`
 
@@ -203,7 +1426,7 @@ Kind: Value. Canonical: `nwn.get_max_hit_points`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_name`
+#### `nwn.get_name`
 
 `nwn.get_name(creature: Object) → String`
 
@@ -215,7 +1438,7 @@ Kind: Value. Canonical: `nwn.get_name`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_original_name`
+#### `nwn.get_original_name`
 
 `nwn.get_original_name(creature: Object) → String`
 
@@ -227,7 +1450,7 @@ Kind: Value. Canonical: `nwn.get_original_name`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.is_player`
+#### `nwn.is_player`
 
 `nwn.is_player(object: Object) → Bool`
 
@@ -239,7 +1462,7 @@ Kind: Value. Canonical: `nwn.is_player`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.nearest_object_by_kind`
+#### `nwn.nearest_object_by_kind`
 
 `nwn.nearest_object_by_kind(origin: Object, type: String) → Object`
 
@@ -251,7 +1474,7 @@ Kind: Value. Canonical: `nwn.nearest_object_by_kind`.
 
 Available in: all Glyph events/stages.
 
-### `party.members`
+#### `party.members`
 
 `party.members() → List<Object>`
 
@@ -261,7 +1484,7 @@ Kind: Value. Canonical: `party.members`.
 
 Available in: encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn.
 
-### `player.has_item`
+#### `player.has_item`
 
 `player.has_item(item_tag: String) → Bool`
 
@@ -271,7 +1494,7 @@ Kind: Value. Canonical: `has_item`. Implicit parameter: `player`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `random`
+#### `random`
 
 `random(min: Int = 1, max: Int = 100) → Int`
 
@@ -281,9 +1504,9 @@ Kind: Value. Canonical: `random`.
 
 Available in: all Glyph events/stages.
 
-## Industries
+### Industries
 
-### `has_knowledge`
+#### `has_knowledge`
 
 `has_knowledge(character_id: String, knowledge_tag: String) → Bool`
 
@@ -293,7 +1516,7 @@ Kind: Value. Canonical: `has_knowledge`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `industry.is_member`
+#### `industry.is_member`
 
 `industry.is_member(character_id: String, industry_tag: String) → Bool`
 
@@ -303,7 +1526,7 @@ Kind: Value. Canonical: `industry.is_member`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `industry.level`
+#### `industry.level`
 
 `industry.level(character_id: String, industry_tag: String) → Int`
 
@@ -313,7 +1536,7 @@ Kind: Value. Canonical: `industry.level`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `player.has_knowledge`
+#### `player.has_knowledge`
 
 `player.has_knowledge(knowledge_tag: String) → Bool`
 
@@ -323,9 +1546,9 @@ Kind: Value. Canonical: `has_knowledge`. Implicit parameter: `context.character_
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-## Interactions
+### Interactions
 
-### `fail`
+#### `fail`
 
 `fail(message: String = Interaction failed) → Void`
 
@@ -335,7 +1558,7 @@ Kind: Action. Canonical: `fail`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `metadata`
+#### `metadata`
 
 `metadata(key: String) → String`
 
@@ -345,7 +1568,7 @@ Kind: Value. Canonical: `metadata`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `session_object`
+#### `session_object`
 
 `session_object(key: String) → Object`
 
@@ -355,7 +1578,7 @@ Kind: Value. Canonical: `session_object`.
 
 Available in: interaction/started, interaction/tick, interaction/completed.
 
-### `set_metadata`
+#### `set_metadata`
 
 `set_metadata(key: String, value: String) → Void`
 
@@ -365,7 +1588,7 @@ Kind: Action. Canonical: `set_metadata`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `set_progress`
+#### `set_progress`
 
 `set_progress(new_progress: Int = 0) → Void`
 
@@ -375,7 +1598,7 @@ Kind: Action. Canonical: `set_progress`.
 
 Available in: interaction/started, interaction/tick.
 
-### `set_required_rounds`
+#### `set_required_rounds`
 
 `set_required_rounds(new_rounds: Int = 3) → Void`
 
@@ -385,7 +1608,7 @@ Kind: Action. Canonical: `set_required_rounds`.
 
 Available in: interaction/started, interaction/tick.
 
-### `set_status`
+#### `set_status`
 
 `set_status(status: String = Completed) → Void`
 
@@ -395,7 +1618,7 @@ Kind: Action. Canonical: `set_status`.
 
 Available in: interaction/started, interaction/tick, interaction/completed.
 
-### `skill_check`
+#### `skill_check`
 
 `skill_check(creature: Object, skill: String = Lore, dc: Int = 15) → Bool`
 
@@ -405,7 +1628,7 @@ Kind: PredicateBranch. Canonical: `skill_check`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `store_session_object`
+#### `store_session_object`
 
 `store_session_object(key: String, object: Object) → Void`
 
@@ -415,9 +1638,9 @@ Kind: Action. Canonical: `store_session_object`.
 
 Available in: interaction/started, interaction/tick, interaction/completed.
 
-## NWN / Actions
+### NWN / Actions
 
-### `nwn.action_attack`
+#### `nwn.action_attack`
 
 `nwn.action_attack(actor: Object, attackee: Object, passive: Bool = false) → Void`
 
@@ -431,7 +1654,7 @@ Kind: Action. Canonical: `nwn.action_attack`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_cast_fake_spell_at_location`
+#### `nwn.action_cast_fake_spell_at_location`
 
 `nwn.action_cast_fake_spell_at_location(actor: Object, spell: Int, target: Location, projectile_path_type: Int = 0) → Void`
 
@@ -445,7 +1668,7 @@ Kind: Action. Canonical: `nwn.action_cast_fake_spell_at_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_cast_fake_spell_at_object`
+#### `nwn.action_cast_fake_spell_at_object`
 
 `nwn.action_cast_fake_spell_at_object(actor: Object, spell: Int, target: Object, projectile_path_type: Int = 0) → Void`
 
@@ -459,7 +1682,7 @@ Kind: Action. Canonical: `nwn.action_cast_fake_spell_at_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_cast_spell_at_location`
+#### `nwn.action_cast_spell_at_location`
 
 `nwn.action_cast_spell_at_location(actor: Object, spell: Int, target_location: Location, meta_magic: Int = 255, cheat: Bool = false, projectile_path_type: Int = 0, instant_spell: Bool = false, class: Int = -1, spontaneous_cast: Bool = false, domainlevel: Int = 0) → Void`
 
@@ -473,7 +1696,7 @@ Kind: Action. Canonical: `nwn.action_cast_spell_at_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_cast_spell_at_object`
+#### `nwn.action_cast_spell_at_object`
 
 `nwn.action_cast_spell_at_object(actor: Object, spell: Int, target: Object, meta_magic: Int = 255, cheat: Bool = false, domain_level: Int = 0, projectile_path_type: Int = 0, instant_spell: Bool = false, class: Int = -1, spontaneous_cast: Bool = false) → Void`
 
@@ -487,7 +1710,7 @@ Kind: Action. Canonical: `nwn.action_cast_spell_at_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_close_door`
+#### `nwn.action_close_door`
 
 `nwn.action_close_door(actor: Object, door: Object, run: Bool = false) → Void`
 
@@ -501,7 +1724,7 @@ Kind: Action. Canonical: `nwn.action_close_door`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_counter_spell`
+#### `nwn.action_counter_spell`
 
 `nwn.action_counter_spell(actor: Object, counter_spell_target: Object) → Void`
 
@@ -515,7 +1738,7 @@ Kind: Action. Canonical: `nwn.action_counter_spell`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_equip_item`
+#### `nwn.action_equip_item`
 
 `nwn.action_equip_item(actor: Object, item: Object, inventory_slot: Int) → Void`
 
@@ -529,7 +1752,7 @@ Kind: Action. Canonical: `nwn.action_equip_item`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_equip_most_damaging_melee`
+#### `nwn.action_equip_most_damaging_melee`
 
 `nwn.action_equip_most_damaging_melee(actor: Object, versus: Object = 2130706432, off_hand: Bool = false) → Void`
 
@@ -543,7 +1766,7 @@ Kind: Action. Canonical: `nwn.action_equip_most_damaging_melee`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_equip_most_damaging_ranged`
+#### `nwn.action_equip_most_damaging_ranged`
 
 `nwn.action_equip_most_damaging_ranged(actor: Object, versus: Object = 2130706432) → Void`
 
@@ -557,7 +1780,7 @@ Kind: Action. Canonical: `nwn.action_equip_most_damaging_ranged`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_examine`
+#### `nwn.action_examine`
 
 `nwn.action_examine(actor: Object, examine: Object) → Void`
 
@@ -571,7 +1794,7 @@ Kind: Action. Canonical: `nwn.action_examine`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_force_follow_object`
+#### `nwn.action_force_follow_object`
 
 `nwn.action_force_follow_object(actor: Object, follow: Object, follow_distance: Float = 0) → Void`
 
@@ -585,7 +1808,7 @@ Kind: Action. Canonical: `nwn.action_force_follow_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_force_move_to_location`
+#### `nwn.action_force_move_to_location`
 
 `nwn.action_force_move_to_location(actor: Object, destination: Location, run: Bool = false, timeout: Float = 30) → Void`
 
@@ -599,7 +1822,7 @@ Kind: Action. Canonical: `nwn.action_force_move_to_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_force_move_to_object`
+#### `nwn.action_force_move_to_object`
 
 `nwn.action_force_move_to_object(actor: Object, move_to: Object, run: Bool = false, range: Float = 1, timeout: Float = 30) → Void`
 
@@ -613,7 +1836,7 @@ Kind: Action. Canonical: `nwn.action_force_move_to_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_give_item`
+#### `nwn.action_give_item`
 
 `nwn.action_give_item(actor: Object, item: Object, give_to: Object) → Void`
 
@@ -627,7 +1850,7 @@ Kind: Action. Canonical: `nwn.action_give_item`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_interact_object`
+#### `nwn.action_interact_object`
 
 `nwn.action_interact_object(actor: Object, placeable: Object) → Void`
 
@@ -641,7 +1864,7 @@ Kind: Action. Canonical: `nwn.action_interact_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_jump_to_location`
+#### `nwn.action_jump_to_location`
 
 `nwn.action_jump_to_location(actor: Object, location: Location) → Void`
 
@@ -655,7 +1878,7 @@ Kind: Action. Canonical: `nwn.action_jump_to_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_jump_to_object`
+#### `nwn.action_jump_to_object`
 
 `nwn.action_jump_to_object(actor: Object, to_jump_to: Object, walk_straight_line_to_point: Bool = true) → Void`
 
@@ -669,7 +1892,7 @@ Kind: Action. Canonical: `nwn.action_jump_to_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_lock_object`
+#### `nwn.action_lock_object`
 
 `nwn.action_lock_object(actor: Object, target: Object) → Void`
 
@@ -683,7 +1906,7 @@ Kind: Action. Canonical: `nwn.action_lock_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_move_away_from_location`
+#### `nwn.action_move_away_from_location`
 
 `nwn.action_move_away_from_location(actor: Object, move_away_from: Location, run: Bool = false, move_away_range: Float = 40) → Void`
 
@@ -697,7 +1920,7 @@ Kind: Action. Canonical: `nwn.action_move_away_from_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_move_away_from_object`
+#### `nwn.action_move_away_from_object`
 
 `nwn.action_move_away_from_object(actor: Object, flee_from: Object, run: Bool = false, move_away_range: Float = 40) → Void`
 
@@ -711,7 +1934,7 @@ Kind: Action. Canonical: `nwn.action_move_away_from_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_move_to_location`
+#### `nwn.action_move_to_location`
 
 `nwn.action_move_to_location(actor: Object, destination: Location, run: Bool = false) → Void`
 
@@ -725,7 +1948,7 @@ Kind: Action. Canonical: `nwn.action_move_to_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_move_to_object`
+#### `nwn.action_move_to_object`
 
 `nwn.action_move_to_object(actor: Object, move_to: Object, run: Bool = false, range: Float = 1) → Void`
 
@@ -739,7 +1962,7 @@ Kind: Action. Canonical: `nwn.action_move_to_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_open_door`
+#### `nwn.action_open_door`
 
 `nwn.action_open_door(actor: Object, door: Object, run: Bool = false) → Void`
 
@@ -753,7 +1976,7 @@ Kind: Action. Canonical: `nwn.action_open_door`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_pause_conversation`
+#### `nwn.action_pause_conversation`
 
 `nwn.action_pause_conversation(actor: Object) → Void`
 
@@ -767,7 +1990,7 @@ Kind: Action. Canonical: `nwn.action_pause_conversation`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_pick_up_item`
+#### `nwn.action_pick_up_item`
 
 `nwn.action_pick_up_item(actor: Object, item: Object) → Void`
 
@@ -781,7 +2004,7 @@ Kind: Action. Canonical: `nwn.action_pick_up_item`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_play_animation`
+#### `nwn.action_play_animation`
 
 `nwn.action_play_animation(actor: Object, animation: Int, speed: Float = 1, duration_seconds: Float = 0) → Void`
 
@@ -795,7 +2018,7 @@ Kind: Action. Canonical: `nwn.action_play_animation`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_put_down_item`
+#### `nwn.action_put_down_item`
 
 `nwn.action_put_down_item(actor: Object, item: Object) → Void`
 
@@ -809,7 +2032,7 @@ Kind: Action. Canonical: `nwn.action_put_down_item`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_random_walk`
+#### `nwn.action_random_walk`
 
 `nwn.action_random_walk(actor: Object) → Void`
 
@@ -823,7 +2046,7 @@ Kind: Action. Canonical: `nwn.action_random_walk`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_rest`
+#### `nwn.action_rest`
 
 `nwn.action_rest(actor: Object, creature_to_enemy_line_of_sight_check: Bool = false) → Void`
 
@@ -837,7 +2060,7 @@ Kind: Action. Canonical: `nwn.action_rest`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_resume_conversation`
+#### `nwn.action_resume_conversation`
 
 `nwn.action_resume_conversation(actor: Object) → Void`
 
@@ -851,7 +2074,7 @@ Kind: Action. Canonical: `nwn.action_resume_conversation`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_sit`
+#### `nwn.action_sit`
 
 `nwn.action_sit(actor: Object, chair: Object) → Void`
 
@@ -865,7 +2088,7 @@ Kind: Action. Canonical: `nwn.action_sit`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_speak_string`
+#### `nwn.action_speak_string`
 
 `nwn.action_speak_string(actor: Object, string_to_speak: String, talk_volume: Int = 0) → Void`
 
@@ -879,7 +2102,7 @@ Kind: Action. Canonical: `nwn.action_speak_string`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_speak_string_by_str_ref`
+#### `nwn.action_speak_string_by_str_ref`
 
 `nwn.action_speak_string_by_str_ref(actor: Object, str_ref: Int, talk_volume: Int = 0) → Void`
 
@@ -893,7 +2116,7 @@ Kind: Action. Canonical: `nwn.action_speak_string_by_str_ref`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_start_conversation`
+#### `nwn.action_start_conversation`
 
 `nwn.action_start_conversation(actor: Object, object_to_converse_with: Object, dialog_res_ref: String = , private_conversation: Bool = false, play_hello: Bool = true) → Void`
 
@@ -907,7 +2130,7 @@ Kind: Action. Canonical: `nwn.action_start_conversation`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_take_item`
+#### `nwn.action_take_item`
 
 `nwn.action_take_item(actor: Object, item: Object, take_from: Object) → Void`
 
@@ -921,7 +2144,7 @@ Kind: Action. Canonical: `nwn.action_take_item`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_unequip_item`
+#### `nwn.action_unequip_item`
 
 `nwn.action_unequip_item(actor: Object, item: Object) → Void`
 
@@ -935,7 +2158,7 @@ Kind: Action. Canonical: `nwn.action_unequip_item`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_unlock_object`
+#### `nwn.action_unlock_object`
 
 `nwn.action_unlock_object(actor: Object, target: Object) → Void`
 
@@ -949,7 +2172,7 @@ Kind: Action. Canonical: `nwn.action_unlock_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_use_feat`
+#### `nwn.action_use_feat`
 
 `nwn.action_use_feat(actor: Object, feat: Int, target: Object = 2130706432, sub_feat: Int = 0, target_location: Location = invalid) → Void`
 
@@ -963,7 +2186,7 @@ Kind: Action. Canonical: `nwn.action_use_feat`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_use_skill`
+#### `nwn.action_use_skill`
 
 `nwn.action_use_skill(actor: Object, skill: Int, target: Object, sub_skill: Int = 0, item_used: Object = 2130706432) → Void`
 
@@ -977,7 +2200,7 @@ Kind: Action. Canonical: `nwn.action_use_skill`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_wait`
+#### `nwn.action_wait`
 
 `nwn.action_wait(actor: Object, seconds: Float) → Void`
 
@@ -991,7 +2214,7 @@ Kind: Action. Canonical: `nwn.action_wait`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.clear_all_actions`
+#### `nwn.clear_all_actions`
 
 `nwn.clear_all_actions(actor: Object, clear_combat_state: Int = 0, object: Object = 2130706432) → Void`
 
@@ -1005,7 +2228,7 @@ Kind: Action. Canonical: `nwn.clear_all_actions`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.jump_to_location`
+#### `nwn.jump_to_location`
 
 `nwn.jump_to_location(actor: Object, destination: Location) → Void`
 
@@ -1019,7 +2242,7 @@ Kind: Action. Canonical: `nwn.jump_to_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.jump_to_object`
+#### `nwn.jump_to_object`
 
 `nwn.jump_to_object(actor: Object, to_jump_to: Object, walk_straight_line_to_point: Int = 1) → Void`
 
@@ -1033,7 +2256,7 @@ Kind: Action. Canonical: `nwn.jump_to_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.play_animation`
+#### `nwn.play_animation`
 
 `nwn.play_animation(actor: Object, animation: Int, speed: Float = 1, seconds: Float = 0) → Void`
 
@@ -1047,7 +2270,7 @@ Kind: Action. Canonical: `nwn.play_animation`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.speak_string`
+#### `nwn.speak_string`
 
 `nwn.speak_string(actor: Object, string_to_speak: String, talk_volume: Int = 0) → Void`
 
@@ -1061,9 +2284,9 @@ Kind: Action. Canonical: `nwn.speak_string`.
 
 Available in: all Glyph events/stages.
 
-## NWN / Adapters
+### NWN / Adapters
 
-### `nwn.apply_effect`
+#### `nwn.apply_effect`
 
 `nwn.apply_effect(target: Object, effect: Effect, duration: Float = 0, duration_type: Int = -1) → Void`
 
@@ -1075,7 +2298,7 @@ Kind: Action. Canonical: `nwn.apply_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.apply_effect_to_object`
+#### `nwn.apply_effect_to_object`
 
 `nwn.apply_effect_to_object(target: Object, effect: Effect, duration: Float = 0, duration_type: Int = -1) → Void`
 
@@ -1087,7 +2310,7 @@ Kind: Action. Canonical: `nwn.apply_effect_to_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.areas`
+#### `nwn.areas`
 
 `nwn.areas() → List<Object>`
 
@@ -1099,7 +2322,7 @@ Kind: Value. Canonical: `nwn.areas`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effects`
+#### `nwn.effects`
 
 `nwn.effects(target: Object) → List<Effect>`
 
@@ -1111,7 +2334,7 @@ Kind: Value. Canonical: `nwn.effects`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.faction_members`
+#### `nwn.faction_members`
 
 `nwn.faction_members(member: Object, pc_only: Bool = false) → List<Object>`
 
@@ -1123,7 +2346,7 @@ Kind: Value. Canonical: `nwn.faction_members`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_nearest_object`
+#### `nwn.get_nearest_object`
 
 `nwn.get_nearest_object(origin: Object, object_type: Int = 32767, nth: Int = 1) → Object`
 
@@ -1135,7 +2358,7 @@ Kind: Value. Canonical: `nwn.get_nearest_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_nearest_object_by_type`
+#### `nwn.get_nearest_object_by_type`
 
 `nwn.get_nearest_object_by_type(origin: Object, object_type: Int = 32767, nth: Int = 1) → Object`
 
@@ -1147,7 +2370,7 @@ Kind: Value. Canonical: `nwn.get_nearest_object_by_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.inventory`
+#### `nwn.inventory`
 
 `nwn.inventory(target: Object) → List<Object>`
 
@@ -1159,7 +2382,7 @@ Kind: Value. Canonical: `nwn.inventory`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.location`
+#### `nwn.location`
 
 `nwn.location(area: Object, x: Float, y: Float, z: Float = 0, facing: Float = 0) → Location`
 
@@ -1171,7 +2394,7 @@ Kind: Value. Canonical: `nwn.location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.location_x`
+#### `nwn.location_x`
 
 `nwn.location_x(location: Location) → Float`
 
@@ -1183,7 +2406,7 @@ Kind: Value. Canonical: `nwn.location_x`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.location_y`
+#### `nwn.location_y`
 
 `nwn.location_y(location: Location) → Float`
 
@@ -1195,7 +2418,7 @@ Kind: Value. Canonical: `nwn.location_y`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.location_z`
+#### `nwn.location_z`
 
 `nwn.location_z(location: Location) → Float`
 
@@ -1207,7 +2430,7 @@ Kind: Value. Canonical: `nwn.location_z`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.objects_by_tag`
+#### `nwn.objects_by_tag`
 
 `nwn.objects_by_tag(tag: String) → List<Object>`
 
@@ -1219,7 +2442,7 @@ Kind: Value. Canonical: `nwn.objects_by_tag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.objects_in_area`
+#### `nwn.objects_in_area`
 
 `nwn.objects_in_area(area: Object, object_type: Int = 32767) → List<Object>`
 
@@ -1231,7 +2454,7 @@ Kind: Value. Canonical: `nwn.objects_in_area`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.players`
+#### `nwn.players`
 
 `nwn.players() → List<Object>`
 
@@ -1243,9 +2466,9 @@ Kind: Value. Canonical: `nwn.players`.
 
 Available in: all Glyph events/stages.
 
-## NWN / Areas and time
+### NWN / Areas and time
 
-### `nwn.ambient_sound_change_day`
+#### `nwn.ambient_sound_change_day`
 
 `nwn.ambient_sound_change_day(area: Object, track: Int) → Void`
 
@@ -1257,7 +2480,7 @@ Kind: Action. Canonical: `nwn.ambient_sound_change_day`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.ambient_sound_change_night`
+#### `nwn.ambient_sound_change_night`
 
 `nwn.ambient_sound_change_night(area: Object, track: Int) → Void`
 
@@ -1269,7 +2492,7 @@ Kind: Action. Canonical: `nwn.ambient_sound_change_night`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.ambient_sound_play`
+#### `nwn.ambient_sound_play`
 
 `nwn.ambient_sound_play(area: Object) → Void`
 
@@ -1281,7 +2504,7 @@ Kind: Action. Canonical: `nwn.ambient_sound_play`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.ambient_sound_set_day_volume`
+#### `nwn.ambient_sound_set_day_volume`
 
 `nwn.ambient_sound_set_day_volume(area: Object, volume: Int) → Void`
 
@@ -1293,7 +2516,7 @@ Kind: Action. Canonical: `nwn.ambient_sound_set_day_volume`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.ambient_sound_set_night_volume`
+#### `nwn.ambient_sound_set_night_volume`
 
 `nwn.ambient_sound_set_night_volume(area: Object, volume: Int) → Void`
 
@@ -1305,7 +2528,7 @@ Kind: Action. Canonical: `nwn.ambient_sound_set_night_volume`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.ambient_sound_stop`
+#### `nwn.ambient_sound_stop`
 
 `nwn.ambient_sound_stop(area: Object) → Void`
 
@@ -1317,7 +2540,7 @@ Kind: Action. Canonical: `nwn.ambient_sound_stop`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.copy_area`
+#### `nwn.copy_area`
 
 `nwn.copy_area(area: Object, new_tag: String = , new_name: String = ) → Object`
 
@@ -1329,7 +2552,7 @@ Kind: Action. Canonical: `nwn.copy_area`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.create_area`
+#### `nwn.create_area`
 
 `nwn.create_area(source_res_ref: String, new_tag: String = , new_name: String = ) → Object`
 
@@ -1341,7 +2564,7 @@ Kind: Action. Canonical: `nwn.create_area`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.destroy_area`
+#### `nwn.destroy_area`
 
 `nwn.destroy_area(area: Object) → Int`
 
@@ -1353,7 +2576,7 @@ Kind: Action. Canonical: `nwn.destroy_area`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.explore_area_for_player`
+#### `nwn.explore_area_for_player`
 
 `nwn.explore_area_for_player(area: Object, player: Object, explored: Bool = true) → Void`
 
@@ -1365,7 +2588,7 @@ Kind: Action. Canonical: `nwn.explore_area_for_player`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_area`
+#### `nwn.get_area`
 
 `nwn.get_area(target: Object) → Object`
 
@@ -1377,7 +2600,7 @@ Kind: Value. Canonical: `nwn.get_area`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_area_from_location`
+#### `nwn.get_area_from_location`
 
 `nwn.get_area_from_location(location: Location) → Object`
 
@@ -1389,7 +2612,7 @@ Kind: Value. Canonical: `nwn.get_area_from_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_area_light_color`
+#### `nwn.get_area_light_color`
 
 `nwn.get_area_light_color(color_type: Int, area: Object = 2130706432) → Int`
 
@@ -1401,7 +2624,7 @@ Kind: Value. Canonical: `nwn.get_area_light_color`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_area_no_rest_flag`
+#### `nwn.get_area_no_rest_flag`
 
 `nwn.get_area_no_rest_flag(area: Object) → Int`
 
@@ -1413,7 +2636,7 @@ Kind: Value. Canonical: `nwn.get_area_no_rest_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_area_size`
+#### `nwn.get_area_size`
 
 `nwn.get_area_size(area_dimension: Int, area: Object = 2130706432) → Int`
 
@@ -1425,7 +2648,7 @@ Kind: Value. Canonical: `nwn.get_area_size`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_calendar_day`
+#### `nwn.get_calendar_day`
 
 `nwn.get_calendar_day() → Int`
 
@@ -1437,7 +2660,7 @@ Kind: Value. Canonical: `nwn.get_calendar_day`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_calendar_month`
+#### `nwn.get_calendar_month`
 
 `nwn.get_calendar_month() → Int`
 
@@ -1449,7 +2672,7 @@ Kind: Value. Canonical: `nwn.get_calendar_month`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_calendar_year`
+#### `nwn.get_calendar_year`
 
 `nwn.get_calendar_year() → Int`
 
@@ -1461,7 +2684,7 @@ Kind: Value. Canonical: `nwn.get_calendar_year`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_fog_amount`
+#### `nwn.get_fog_amount`
 
 `nwn.get_fog_amount(fog_type: Int, area: Object = 2130706432) → Int`
 
@@ -1473,7 +2696,7 @@ Kind: Value. Canonical: `nwn.get_fog_amount`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_fog_color`
+#### `nwn.get_fog_color`
 
 `nwn.get_fog_color(fog_type: Int, area: Object = 2130706432) → Int`
 
@@ -1485,7 +2708,7 @@ Kind: Value. Canonical: `nwn.get_fog_color`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_area_above_ground`
+#### `nwn.get_is_area_above_ground`
 
 `nwn.get_is_area_above_ground(area: Object) → Bool`
 
@@ -1497,7 +2720,7 @@ Kind: Value. Canonical: `nwn.get_is_area_above_ground`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_area_interior`
+#### `nwn.get_is_area_interior`
 
 `nwn.get_is_area_interior(area: Object) → Bool`
 
@@ -1509,7 +2732,7 @@ Kind: Value. Canonical: `nwn.get_is_area_interior`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_area_natural`
+#### `nwn.get_is_area_natural`
 
 `nwn.get_is_area_natural(area: Object) → Bool`
 
@@ -1521,7 +2744,7 @@ Kind: Value. Canonical: `nwn.get_is_area_natural`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_time_hour`
+#### `nwn.get_time_hour`
 
 `nwn.get_time_hour() → Int`
 
@@ -1533,7 +2756,7 @@ Kind: Value. Canonical: `nwn.get_time_hour`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_time_minute`
+#### `nwn.get_time_minute`
 
 `nwn.get_time_minute() → Int`
 
@@ -1545,7 +2768,7 @@ Kind: Value. Canonical: `nwn.get_time_minute`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_time_second`
+#### `nwn.get_time_second`
 
 `nwn.get_time_second() → Int`
 
@@ -1557,7 +2780,7 @@ Kind: Value. Canonical: `nwn.get_time_second`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_weather`
+#### `nwn.get_weather`
 
 `nwn.get_weather(area: Object) → Int`
 
@@ -1569,7 +2792,7 @@ Kind: Value. Canonical: `nwn.get_weather`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.music_background_change_day`
+#### `nwn.music_background_change_day`
 
 `nwn.music_background_change_day(area: Object, track: Int) → Void`
 
@@ -1581,7 +2804,7 @@ Kind: Action. Canonical: `nwn.music_background_change_day`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.music_background_change_night`
+#### `nwn.music_background_change_night`
 
 `nwn.music_background_change_night(area: Object, track: Int) → Void`
 
@@ -1593,7 +2816,7 @@ Kind: Action. Canonical: `nwn.music_background_change_night`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.music_background_play`
+#### `nwn.music_background_play`
 
 `nwn.music_background_play(area: Object) → Void`
 
@@ -1605,7 +2828,7 @@ Kind: Action. Canonical: `nwn.music_background_play`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.music_background_stop`
+#### `nwn.music_background_stop`
 
 `nwn.music_background_stop(area: Object) → Void`
 
@@ -1617,7 +2840,7 @@ Kind: Action. Canonical: `nwn.music_background_stop`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.music_battle_change`
+#### `nwn.music_battle_change`
 
 `nwn.music_battle_change(area: Object, track: Int) → Void`
 
@@ -1629,7 +2852,7 @@ Kind: Action. Canonical: `nwn.music_battle_change`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.music_battle_play`
+#### `nwn.music_battle_play`
 
 `nwn.music_battle_play(area: Object) → Void`
 
@@ -1641,7 +2864,7 @@ Kind: Action. Canonical: `nwn.music_battle_play`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.music_battle_stop`
+#### `nwn.music_battle_stop`
 
 `nwn.music_battle_stop(area: Object) → Void`
 
@@ -1653,7 +2876,7 @@ Kind: Action. Canonical: `nwn.music_battle_stop`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_area_no_rest_flag`
+#### `nwn.set_area_no_rest_flag`
 
 `nwn.set_area_no_rest_flag(no_rest_flag: Bool, area: Object = 2130706432) → Void`
 
@@ -1665,7 +2888,7 @@ Kind: Action. Canonical: `nwn.set_area_no_rest_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_calendar`
+#### `nwn.set_calendar`
 
 `nwn.set_calendar(year: Int, month: Int, day: Int) → Void`
 
@@ -1677,7 +2900,7 @@ Kind: Action. Canonical: `nwn.set_calendar`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_fog_amount`
+#### `nwn.set_fog_amount`
 
 `nwn.set_fog_amount(fog_type: Int, fog_amount: Int, area: Object = 2130706432) → Void`
 
@@ -1689,7 +2912,7 @@ Kind: Action. Canonical: `nwn.set_fog_amount`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_fog_color`
+#### `nwn.set_fog_color`
 
 `nwn.set_fog_color(fog_type: Int, fog_color: Int, area: Object = 2130706432, fade_time: Float = 0) → Void`
 
@@ -1701,7 +2924,7 @@ Kind: Action. Canonical: `nwn.set_fog_color`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_time`
+#### `nwn.set_time`
 
 `nwn.set_time(hour: Int, minute: Int, second: Int, millisecond: Int) → Void`
 
@@ -1713,7 +2936,7 @@ Kind: Action. Canonical: `nwn.set_time`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_weather`
+#### `nwn.set_weather`
 
 `nwn.set_weather(target: Object, weather: Int) → Void`
 
@@ -1725,9 +2948,9 @@ Kind: Action. Canonical: `nwn.set_weather`.
 
 Available in: all Glyph events/stages.
 
-## NWN / Compatibility
+### NWN / Compatibility
 
-### `nwn.destroy_object`
+#### `nwn.destroy_object`
 
 `nwn.destroy_object(creature: Object, delay_seconds: Float = 0) → Void`
 
@@ -1739,7 +2962,7 @@ Kind: Action. Canonical: `nwn.destroy_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_hit_dice`
+#### `nwn.get_hit_dice`
 
 `nwn.get_hit_dice(creature: Object) → Int`
 
@@ -1751,7 +2974,7 @@ Kind: Value. Canonical: `nwn.get_hit_dice`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_racial_type`
+#### `nwn.get_racial_type`
 
 `nwn.get_racial_type(creature: Object) → Int`
 
@@ -1763,7 +2986,7 @@ Kind: Value. Canonical: `nwn.get_racial_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_res_ref`
+#### `nwn.get_res_ref`
 
 `nwn.get_res_ref(object: Object) → String`
 
@@ -1775,7 +2998,7 @@ Kind: Value. Canonical: `nwn.get_res_ref`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_resref`
+#### `nwn.get_resref`
 
 `nwn.get_resref(object: Object) → String`
 
@@ -1787,7 +3010,7 @@ Kind: Value. Canonical: `nwn.get_resref`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_tag`
+#### `nwn.get_tag`
 
 `nwn.get_tag(object: Object) → String`
 
@@ -1799,9 +3022,9 @@ Kind: Value. Canonical: `nwn.get_tag`.
 
 Available in: all Glyph events/stages.
 
-## NWN / Creatures
+### NWN / Creatures
 
-### `nwn.adjust_alignment`
+#### `nwn.adjust_alignment`
 
 `nwn.adjust_alignment(subject: Object, alignment: Int, shift: Int, all_party_members: Bool = true) → Void`
 
@@ -1813,7 +3036,7 @@ Kind: Action. Canonical: `nwn.adjust_alignment`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.change_faction`
+#### `nwn.change_faction`
 
 `nwn.change_faction(object_to_change_faction: Object, member_of_faction_to_join: Object) → Void`
 
@@ -1825,7 +3048,7 @@ Kind: Action. Canonical: `nwn.change_faction`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.change_to_standard_faction`
+#### `nwn.change_to_standard_faction`
 
 `nwn.change_to_standard_faction(creature_to_change: Object, standard_faction: Int) → Void`
 
@@ -1837,7 +3060,7 @@ Kind: Action. Canonical: `nwn.change_to_standard_faction`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.floating_text_str_ref_on_creature`
+#### `nwn.floating_text_str_ref_on_creature`
 
 `nwn.floating_text_str_ref_on_creature(str_ref_to_display: Int, creature_to_float_above: Object, broadcast_to_faction: Bool = true, chat_window: Bool = true) → Void`
 
@@ -1849,7 +3072,7 @@ Kind: Action. Canonical: `nwn.floating_text_str_ref_on_creature`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.floating_text_string_on_creature`
+#### `nwn.floating_text_string_on_creature`
 
 `nwn.floating_text_string_on_creature(string_to_display: String, creature_to_float_above: Object, broadcast_to_faction: Bool = true, chat_window: Bool = true) → Void`
 
@@ -1861,7 +3084,7 @@ Kind: Action. Canonical: `nwn.floating_text_string_on_creature`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.fortitude_save`
+#### `nwn.fortitude_save`
 
 `nwn.fortitude_save(creature: Object, dc: Int, save_type: Int = 0, save_versus: Object = 2130706432) → Bool`
 
@@ -1873,7 +3096,7 @@ Kind: Action. Canonical: `nwn.fortitude_save`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_ability_modifier`
+#### `nwn.get_ability_modifier`
 
 `nwn.get_ability_modifier(ability: Int, creature: Object = 2130706432) → Int`
 
@@ -1885,7 +3108,7 @@ Kind: Value. Canonical: `nwn.get_ability_modifier`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_ability_score`
+#### `nwn.get_ability_score`
 
 `nwn.get_ability_score(creature: Object, ability_type: Int, base_ability_score: Bool = false) → Int`
 
@@ -1897,7 +3120,7 @@ Kind: Value. Canonical: `nwn.get_ability_score`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_alignment_good_evil`
+#### `nwn.get_alignment_good_evil`
 
 `nwn.get_alignment_good_evil(creature: Object) → Int`
 
@@ -1909,7 +3132,7 @@ Kind: Value. Canonical: `nwn.get_alignment_good_evil`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_alignment_law_chaos`
+#### `nwn.get_alignment_law_chaos`
 
 `nwn.get_alignment_law_chaos(creature: Object) → Int`
 
@@ -1921,7 +3144,7 @@ Kind: Value. Canonical: `nwn.get_alignment_law_chaos`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_animal_companion_creature_type`
+#### `nwn.get_animal_companion_creature_type`
 
 `nwn.get_animal_companion_creature_type(creature: Object) → Int`
 
@@ -1933,7 +3156,7 @@ Kind: Value. Canonical: `nwn.get_animal_companion_creature_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_arcane_spell_failure`
+#### `nwn.get_arcane_spell_failure`
 
 `nwn.get_arcane_spell_failure(creature: Object) → Int`
 
@@ -1945,7 +3168,7 @@ Kind: Value. Canonical: `nwn.get_arcane_spell_failure`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_associate`
+#### `nwn.get_associate`
 
 `nwn.get_associate(associate_type: Int, master: Object = 2130706432, th: Int = 1) → Object`
 
@@ -1957,7 +3180,7 @@ Kind: Value. Canonical: `nwn.get_associate`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_associate_type`
+#### `nwn.get_associate_type`
 
 `nwn.get_associate_type(associate: Object) → Int`
 
@@ -1969,7 +3192,7 @@ Kind: Value. Canonical: `nwn.get_associate_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_attack_target`
+#### `nwn.get_attack_target`
 
 `nwn.get_attack_target(creature: Object) → Object`
 
@@ -1981,7 +3204,7 @@ Kind: Value. Canonical: `nwn.get_attack_target`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_attacks_per_round`
+#### `nwn.get_attacks_per_round`
 
 `nwn.get_attacks_per_round(creature: Object, check_overriden_value: Bool = true) → Int`
 
@@ -1993,7 +3216,7 @@ Kind: Value. Canonical: `nwn.get_attacks_per_round`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_base_attack_bonus`
+#### `nwn.get_base_attack_bonus`
 
 `nwn.get_base_attack_bonus(creature: Object) → Int`
 
@@ -2005,7 +3228,7 @@ Kind: Value. Canonical: `nwn.get_base_attack_bonus`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_class_by_position`
+#### `nwn.get_class_by_position`
 
 `nwn.get_class_by_position(class_position: Int, creature: Object = 2130706432) → Int`
 
@@ -2017,7 +3240,7 @@ Kind: Value. Canonical: `nwn.get_class_by_position`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_creature_body_part`
+#### `nwn.get_creature_body_part`
 
 `nwn.get_creature_body_part(part: Int, creature: Object = 2130706432) → Int`
 
@@ -2029,7 +3252,7 @@ Kind: Value. Canonical: `nwn.get_creature_body_part`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_creature_size`
+#### `nwn.get_creature_size`
 
 `nwn.get_creature_size(creature: Object) → Int`
 
@@ -2041,7 +3264,7 @@ Kind: Value. Canonical: `nwn.get_creature_size`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_creature_tail_type`
+#### `nwn.get_creature_tail_type`
 
 `nwn.get_creature_tail_type(creature: Object) → Int`
 
@@ -2053,7 +3276,7 @@ Kind: Value. Canonical: `nwn.get_creature_tail_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_creature_wing_type`
+#### `nwn.get_creature_wing_type`
 
 `nwn.get_creature_wing_type(creature: Object) → Int`
 
@@ -2065,7 +3288,7 @@ Kind: Value. Canonical: `nwn.get_creature_wing_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_average_good_evil_alignment`
+#### `nwn.get_faction_average_good_evil_alignment`
 
 `nwn.get_faction_average_good_evil_alignment(faction_member: Object) → Int`
 
@@ -2077,7 +3300,7 @@ Kind: Value. Canonical: `nwn.get_faction_average_good_evil_alignment`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_average_law_chaos_alignment`
+#### `nwn.get_faction_average_law_chaos_alignment`
 
 `nwn.get_faction_average_law_chaos_alignment(faction_member: Object) → Int`
 
@@ -2089,7 +3312,7 @@ Kind: Value. Canonical: `nwn.get_faction_average_law_chaos_alignment`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_average_level`
+#### `nwn.get_faction_average_level`
 
 `nwn.get_faction_average_level(faction_member: Object) → Int`
 
@@ -2101,7 +3324,7 @@ Kind: Value. Canonical: `nwn.get_faction_average_level`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_average_reputation`
+#### `nwn.get_faction_average_reputation`
 
 `nwn.get_faction_average_reputation(source_faction_member: Object, target: Object) → Int`
 
@@ -2113,7 +3336,7 @@ Kind: Value. Canonical: `nwn.get_faction_average_reputation`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_average_xp`
+#### `nwn.get_faction_average_xp`
 
 `nwn.get_faction_average_xp(faction_member: Object) → Int`
 
@@ -2125,7 +3348,7 @@ Kind: Value. Canonical: `nwn.get_faction_average_xp`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_best_ac`
+#### `nwn.get_faction_best_ac`
 
 `nwn.get_faction_best_ac(faction_member: Object, must_be_visible: Bool = true) → Object`
 
@@ -2137,7 +3360,7 @@ Kind: Value. Canonical: `nwn.get_faction_best_ac`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_equal`
+#### `nwn.get_faction_equal`
 
 `nwn.get_faction_equal(first_object: Object, second_object: Object = 2130706432) → Bool`
 
@@ -2149,7 +3372,7 @@ Kind: Value. Canonical: `nwn.get_faction_equal`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_leader`
+#### `nwn.get_faction_leader`
 
 `nwn.get_faction_leader(member_of_faction: Object) → Object`
 
@@ -2161,7 +3384,7 @@ Kind: Value. Canonical: `nwn.get_faction_leader`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_least_damaged_member`
+#### `nwn.get_faction_least_damaged_member`
 
 `nwn.get_faction_least_damaged_member(faction_member: Object, must_be_visible: Bool = true) → Object`
 
@@ -2173,7 +3396,7 @@ Kind: Value. Canonical: `nwn.get_faction_least_damaged_member`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_most_damaged_member`
+#### `nwn.get_faction_most_damaged_member`
 
 `nwn.get_faction_most_damaged_member(faction_member: Object, must_be_visible: Bool = true) → Object`
 
@@ -2185,7 +3408,7 @@ Kind: Value. Canonical: `nwn.get_faction_most_damaged_member`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_strongest_member`
+#### `nwn.get_faction_strongest_member`
 
 `nwn.get_faction_strongest_member(faction_member: Object, must_be_visible: Bool = true) → Object`
 
@@ -2197,7 +3420,7 @@ Kind: Value. Canonical: `nwn.get_faction_strongest_member`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_weakest_member`
+#### `nwn.get_faction_weakest_member`
 
 `nwn.get_faction_weakest_member(faction_member: Object, must_be_visible: Bool = true) → Object`
 
@@ -2209,7 +3432,7 @@ Kind: Value. Canonical: `nwn.get_faction_weakest_member`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_faction_worst_ac`
+#### `nwn.get_faction_worst_ac`
 
 `nwn.get_faction_worst_ac(faction_member: Object, must_be_visible: Bool = true) → Object`
 
@@ -2221,7 +3444,7 @@ Kind: Value. Canonical: `nwn.get_faction_worst_ac`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_familiar_creature_type`
+#### `nwn.get_familiar_creature_type`
 
 `nwn.get_familiar_creature_type(creature: Object) → Int`
 
@@ -2233,7 +3456,7 @@ Kind: Value. Canonical: `nwn.get_familiar_creature_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_fortitude_saving_throw`
+#### `nwn.get_fortitude_saving_throw`
 
 `nwn.get_fortitude_saving_throw(target: Object) → Int`
 
@@ -2245,7 +3468,7 @@ Kind: Value. Canonical: `nwn.get_fortitude_saving_throw`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_gender`
+#### `nwn.get_gender`
 
 `nwn.get_gender(creature: Object) → Int`
 
@@ -2257,7 +3480,7 @@ Kind: Value. Canonical: `nwn.get_gender`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_gold`
+#### `nwn.get_gold`
 
 `nwn.get_gold(target: Object) → Int`
 
@@ -2269,7 +3492,7 @@ Kind: Value. Canonical: `nwn.get_gold`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_gold_piece_value`
+#### `nwn.get_gold_piece_value`
 
 `nwn.get_gold_piece_value(item: Object) → Int`
 
@@ -2281,7 +3504,7 @@ Kind: Value. Canonical: `nwn.get_gold_piece_value`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_has_feat`
+#### `nwn.get_has_feat`
 
 `nwn.get_has_feat(feat: Int, creature: Object = 2130706432, ignore_uses: Bool = false) → Bool`
 
@@ -2293,7 +3516,7 @@ Kind: Value. Canonical: `nwn.get_has_feat`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_has_skill`
+#### `nwn.get_has_skill`
 
 `nwn.get_has_skill(skill: Int, creature: Object = 2130706432) → Bool`
 
@@ -2305,7 +3528,7 @@ Kind: Value. Canonical: `nwn.get_has_skill`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_has_spell`
+#### `nwn.get_has_spell`
 
 `nwn.get_has_spell(spell: Int, creature: Object = 2130706432) → Int`
 
@@ -2317,7 +3540,7 @@ Kind: Value. Canonical: `nwn.get_has_spell`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_level_by_class`
+#### `nwn.get_level_by_class`
 
 `nwn.get_level_by_class(class_type: Int, creature: Object = 2130706432) → Int`
 
@@ -2329,7 +3552,7 @@ Kind: Value. Canonical: `nwn.get_level_by_class`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_master`
+#### `nwn.get_master`
 
 `nwn.get_master(associate: Object) → Object`
 
@@ -2341,7 +3564,7 @@ Kind: Value. Canonical: `nwn.get_master`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_memorized_spell_id`
+#### `nwn.get_memorized_spell_id`
 
 `nwn.get_memorized_spell_id(creature: Object, class_type: Int, spell_level: Int, index: Int) → Int`
 
@@ -2353,7 +3576,7 @@ Kind: Value. Canonical: `nwn.get_memorized_spell_id`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_memorized_spell_ready`
+#### `nwn.get_memorized_spell_ready`
 
 `nwn.get_memorized_spell_ready(creature: Object, class_type: Int, spell_level: Int, index: Int) → Int`
 
@@ -2365,7 +3588,7 @@ Kind: Value. Canonical: `nwn.get_memorized_spell_ready`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_nearest_creature`
+#### `nwn.get_nearest_creature`
 
 `nwn.get_nearest_creature(first_criteria_type: Int, first_criteria_value: Int, target: Object = 2130706432, nth: Int = 1, second_criteria_type: Int = -1, second_criteria_value: Int = -1, third_criteria_type: Int = -1, third_criteria_value: Int = -1) → Object`
 
@@ -2377,7 +3600,7 @@ Kind: Value. Canonical: `nwn.get_nearest_creature`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_nearest_creature_to_location`
+#### `nwn.get_nearest_creature_to_location`
 
 `nwn.get_nearest_creature_to_location(first_criteria_type: Int, first_criteria_value: Int, location: Location, nth: Int = 1, second_criteria_type: Int = -1, second_criteria_value: Int = -1, third_criteria_type: Int = -1, third_criteria_value: Int = -1) → Object`
 
@@ -2389,7 +3612,7 @@ Kind: Value. Canonical: `nwn.get_nearest_creature_to_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_reflex_saving_throw`
+#### `nwn.get_reflex_saving_throw`
 
 `nwn.get_reflex_saving_throw(target: Object) → Int`
 
@@ -2401,7 +3624,7 @@ Kind: Value. Canonical: `nwn.get_reflex_saving_throw`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_skill_rank`
+#### `nwn.get_skill_rank`
 
 `nwn.get_skill_rank(skill: Int, target: Object = 2130706432, base_skill_rank: Int = 0) → Int`
 
@@ -2413,7 +3636,7 @@ Kind: Value. Canonical: `nwn.get_skill_rank`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_spell_resistance`
+#### `nwn.get_spell_resistance`
 
 `nwn.get_spell_resistance(creature: Object) → Int`
 
@@ -2425,7 +3648,7 @@ Kind: Value. Canonical: `nwn.get_spell_resistance`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_will_saving_throw`
+#### `nwn.get_will_saving_throw`
 
 `nwn.get_will_saving_throw(target: Object) → Int`
 
@@ -2437,7 +3660,7 @@ Kind: Value. Canonical: `nwn.get_will_saving_throw`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_xp`
+#### `nwn.get_xp`
 
 `nwn.get_xp(creature: Object) → Int`
 
@@ -2449,7 +3672,7 @@ Kind: Value. Canonical: `nwn.get_xp`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.give_gold_to_creature`
+#### `nwn.give_gold_to_creature`
 
 `nwn.give_gold_to_creature(creature: Object, gp: Int) → Void`
 
@@ -2461,7 +3684,7 @@ Kind: Action. Canonical: `nwn.give_gold_to_creature`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.give_xp_to_creature`
+#### `nwn.give_xp_to_creature`
 
 `nwn.give_xp_to_creature(creature: Object, xp_amount: Int) → Void`
 
@@ -2473,7 +3696,7 @@ Kind: Action. Canonical: `nwn.give_xp_to_creature`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.reflex_save`
+#### `nwn.reflex_save`
 
 `nwn.reflex_save(creature: Object, dc: Int, save_type: Int = 0, save_versus: Object = 2130706432) → Bool`
 
@@ -2485,7 +3708,7 @@ Kind: Action. Canonical: `nwn.reflex_save`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_base_attack_bonus`
+#### `nwn.set_base_attack_bonus`
 
 `nwn.set_base_attack_bonus(base_attack_bonus: Int, creature: Object = 2130706432) → Void`
 
@@ -2497,7 +3720,7 @@ Kind: Action. Canonical: `nwn.set_base_attack_bonus`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_creature_appearance_type`
+#### `nwn.set_creature_appearance_type`
 
 `nwn.set_creature_appearance_type(creature: Object, appearance_type: Int) → Void`
 
@@ -2509,7 +3732,7 @@ Kind: Action. Canonical: `nwn.set_creature_appearance_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_creature_body_part`
+#### `nwn.set_creature_body_part`
 
 `nwn.set_creature_body_part(part: Int, model_number: Int, creature: Object = 2130706432) → Void`
 
@@ -2521,7 +3744,7 @@ Kind: Action. Canonical: `nwn.set_creature_body_part`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_creature_tail_type`
+#### `nwn.set_creature_tail_type`
 
 `nwn.set_creature_tail_type(tail_type: Int, creature: Object = 2130706432) → Void`
 
@@ -2533,7 +3756,7 @@ Kind: Action. Canonical: `nwn.set_creature_tail_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_creature_wing_type`
+#### `nwn.set_creature_wing_type`
 
 `nwn.set_creature_wing_type(wing_type: Int, creature: Object = 2130706432) → Void`
 
@@ -2545,7 +3768,7 @@ Kind: Action. Canonical: `nwn.set_creature_wing_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_gender`
+#### `nwn.set_gender`
 
 `nwn.set_gender(creature: Object, gender: Int) → Void`
 
@@ -2557,7 +3780,7 @@ Kind: Action. Canonical: `nwn.set_gender`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_xp`
+#### `nwn.set_xp`
 
 `nwn.set_xp(creature: Object, xp_amount: Int) → Void`
 
@@ -2569,7 +3792,7 @@ Kind: Action. Canonical: `nwn.set_xp`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.take_gold_from_creature`
+#### `nwn.take_gold_from_creature`
 
 `nwn.take_gold_from_creature(amount: Int, creature_to_take_from: Object, destroy: Bool = false) → Void`
 
@@ -2581,7 +3804,7 @@ Kind: Action. Canonical: `nwn.take_gold_from_creature`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.will_save`
+#### `nwn.will_save`
 
 `nwn.will_save(creature: Object, dc: Int, save_type: Int = 0, save_versus: Object = 2130706432) → Bool`
 
@@ -2593,9 +3816,9 @@ Kind: Action. Canonical: `nwn.will_save`.
 
 Available in: all Glyph events/stages.
 
-## NWN / Effects
+### NWN / Effects
 
-### `effect.ability_decrease`
+#### `effect.ability_decrease`
 
 `effect.ability_decrease(ability: Int, modify_by: Int) → Effect`
 
@@ -2607,7 +3830,7 @@ Kind: Value. Canonical: `effect.ability_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `effect.ability_increase`
+#### `effect.ability_increase`
 
 `effect.ability_increase(ability_to_increase: Int, modify_by: Int) → Effect`
 
@@ -2619,7 +3842,7 @@ Kind: Value. Canonical: `effect.ability_increase`.
 
 Available in: all Glyph events/stages.
 
-### `effect.ac_decrease`
+#### `effect.ac_decrease`
 
 `effect.ac_decrease(value: Int, modify_type: Int = 0, damage_type: Int = 4103) → Effect`
 
@@ -2631,7 +3854,7 @@ Kind: Value. Canonical: `effect.ac_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `effect.ac_increase`
+#### `effect.ac_increase`
 
 `effect.ac_increase(value: Int, modify_type: Int = 0, damage_type: Int = 4103) → Effect`
 
@@ -2643,7 +3866,7 @@ Kind: Value. Canonical: `effect.ac_increase`.
 
 Available in: all Glyph events/stages.
 
-### `effect.appear`
+#### `effect.appear`
 
 `effect.appear(animation: Int = 1) → Effect`
 
@@ -2655,7 +3878,7 @@ Kind: Value. Canonical: `effect.appear`.
 
 Available in: all Glyph events/stages.
 
-### `effect.attack_decrease`
+#### `effect.attack_decrease`
 
 `effect.attack_decrease(penalty: Int, modifier_type: Int = 0) → Effect`
 
@@ -2667,7 +3890,7 @@ Kind: Value. Canonical: `effect.attack_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `effect.attack_increase`
+#### `effect.attack_increase`
 
 `effect.attack_increase(bonus: Int, modifier_type: Int = 0) → Effect`
 
@@ -2679,7 +3902,7 @@ Kind: Value. Canonical: `effect.attack_increase`.
 
 Available in: all Glyph events/stages.
 
-### `effect.beam`
+#### `effect.beam`
 
 `effect.beam(beam_visual_effect: Int, effector: Object, body_part: Int, miss_effect: Bool = false, scale: Float = 1) → Effect`
 
@@ -2691,7 +3914,7 @@ Kind: Value. Canonical: `effect.beam`.
 
 Available in: all Glyph events/stages.
 
-### `effect.blindness`
+#### `effect.blindness`
 
 `effect.blindness() → Effect`
 
@@ -2703,7 +3926,7 @@ Kind: Value. Canonical: `effect.blindness`.
 
 Available in: all Glyph events/stages.
 
-### `effect.bonus_feat`
+#### `effect.bonus_feat`
 
 `effect.bonus_feat(feat: Int) → Effect`
 
@@ -2715,7 +3938,7 @@ Kind: Value. Canonical: `effect.bonus_feat`.
 
 Available in: all Glyph events/stages.
 
-### `effect.charmed`
+#### `effect.charmed`
 
 `effect.charmed() → Effect`
 
@@ -2727,7 +3950,7 @@ Kind: Value. Canonical: `effect.charmed`.
 
 Available in: all Glyph events/stages.
 
-### `effect.concealment`
+#### `effect.concealment`
 
 `effect.concealment(percentage: Int, miss_type: Int = 0) → Effect`
 
@@ -2739,7 +3962,7 @@ Kind: Value. Canonical: `effect.concealment`.
 
 Available in: all Glyph events/stages.
 
-### `effect.confused`
+#### `effect.confused`
 
 `effect.confused() → Effect`
 
@@ -2751,7 +3974,7 @@ Kind: Value. Canonical: `effect.confused`.
 
 Available in: all Glyph events/stages.
 
-### `effect.curse`
+#### `effect.curse`
 
 `effect.curse(str_mod: Int = 1, dex_mod: Int = 1, con_mod: Int = 1, int_mod: Int = 1, wis_mod: Int = 1, cha_mod: Int = 1) → Effect`
 
@@ -2763,7 +3986,7 @@ Kind: Value. Canonical: `effect.curse`.
 
 Available in: all Glyph events/stages.
 
-### `effect.cutscene_dominated`
+#### `effect.cutscene_dominated`
 
 `effect.cutscene_dominated() → Effect`
 
@@ -2775,7 +3998,7 @@ Kind: Value. Canonical: `effect.cutscene_dominated`.
 
 Available in: all Glyph events/stages.
 
-### `effect.cutscene_ghost`
+#### `effect.cutscene_ghost`
 
 `effect.cutscene_ghost() → Effect`
 
@@ -2787,7 +4010,7 @@ Kind: Value. Canonical: `effect.cutscene_ghost`.
 
 Available in: all Glyph events/stages.
 
-### `effect.cutscene_immobilize`
+#### `effect.cutscene_immobilize`
 
 `effect.cutscene_immobilize() → Effect`
 
@@ -2799,7 +4022,7 @@ Kind: Value. Canonical: `effect.cutscene_immobilize`.
 
 Available in: all Glyph events/stages.
 
-### `effect.cutscene_paralyze`
+#### `effect.cutscene_paralyze`
 
 `effect.cutscene_paralyze() → Effect`
 
@@ -2811,7 +4034,7 @@ Kind: Value. Canonical: `effect.cutscene_paralyze`.
 
 Available in: all Glyph events/stages.
 
-### `effect.damage`
+#### `effect.damage`
 
 `effect.damage(damage_amount: Int, damage_type: Int = 8, damage_power: Int = 0) → Effect`
 
@@ -2823,7 +4046,7 @@ Kind: Value. Canonical: `effect.damage`.
 
 Available in: all Glyph events/stages.
 
-### `effect.damage_decrease`
+#### `effect.damage_decrease`
 
 `effect.damage_decrease(penalty: Int, damage_type: Int = 8) → Effect`
 
@@ -2835,7 +4058,7 @@ Kind: Value. Canonical: `effect.damage_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `effect.damage_immunity_decrease`
+#### `effect.damage_immunity_decrease`
 
 `effect.damage_immunity_decrease(damage_type: Int, percent_immunity: Int) → Effect`
 
@@ -2847,7 +4070,7 @@ Kind: Value. Canonical: `effect.damage_immunity_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `effect.damage_immunity_increase`
+#### `effect.damage_immunity_increase`
 
 `effect.damage_immunity_increase(damage_type: Int, percent_immunity: Int) → Effect`
 
@@ -2859,7 +4082,7 @@ Kind: Value. Canonical: `effect.damage_immunity_increase`.
 
 Available in: all Glyph events/stages.
 
-### `effect.damage_increase`
+#### `effect.damage_increase`
 
 `effect.damage_increase(bonus: Int, damage_type: Int = 8) → Effect`
 
@@ -2871,7 +4094,7 @@ Kind: Value. Canonical: `effect.damage_increase`.
 
 Available in: all Glyph events/stages.
 
-### `effect.damage_reduction`
+#### `effect.damage_reduction`
 
 `effect.damage_reduction(amount: Int, damage_power: Int, limit: Int = 0, ranged_only: Bool = false) → Effect`
 
@@ -2883,7 +4106,7 @@ Kind: Value. Canonical: `effect.damage_reduction`.
 
 Available in: all Glyph events/stages.
 
-### `effect.damage_resistance`
+#### `effect.damage_resistance`
 
 `effect.damage_resistance(damage_type: Int, amount: Int, limit: Int = 0, ranged_only: Bool = false) → Effect`
 
@@ -2895,7 +4118,7 @@ Kind: Value. Canonical: `effect.damage_resistance`.
 
 Available in: all Glyph events/stages.
 
-### `effect.damage_shield`
+#### `effect.damage_shield`
 
 `effect.damage_shield(damage_amount: Int, random_amount: Int, damage_type: Int) → Effect`
 
@@ -2907,7 +4130,7 @@ Kind: Value. Canonical: `effect.damage_shield`.
 
 Available in: all Glyph events/stages.
 
-### `effect.darkness`
+#### `effect.darkness`
 
 `effect.darkness() → Effect`
 
@@ -2919,7 +4142,7 @@ Kind: Value. Canonical: `effect.darkness`.
 
 Available in: all Glyph events/stages.
 
-### `effect.dazed`
+#### `effect.dazed`
 
 `effect.dazed() → Effect`
 
@@ -2931,7 +4154,7 @@ Kind: Value. Canonical: `effect.dazed`.
 
 Available in: all Glyph events/stages.
 
-### `effect.deaf`
+#### `effect.deaf`
 
 `effect.deaf() → Effect`
 
@@ -2943,7 +4166,7 @@ Kind: Value. Canonical: `effect.deaf`.
 
 Available in: all Glyph events/stages.
 
-### `effect.death`
+#### `effect.death`
 
 `effect.death(spectacular_death: Int = 0, display_feedback: Int = 1) → Effect`
 
@@ -2955,7 +4178,7 @@ Kind: Value. Canonical: `effect.death`.
 
 Available in: all Glyph events/stages.
 
-### `effect.disappear`
+#### `effect.disappear`
 
 `effect.disappear(animation: Int = 1) → Effect`
 
@@ -2967,7 +4190,7 @@ Kind: Value. Canonical: `effect.disappear`.
 
 Available in: all Glyph events/stages.
 
-### `effect.disappear_appear`
+#### `effect.disappear_appear`
 
 `effect.disappear_appear(location: Location, animation: Int = 1) → Effect`
 
@@ -2979,7 +4202,7 @@ Kind: Value. Canonical: `effect.disappear_appear`.
 
 Available in: all Glyph events/stages.
 
-### `effect.disease`
+#### `effect.disease`
 
 `effect.disease(disease_type: Int) → Effect`
 
@@ -2991,7 +4214,7 @@ Kind: Value. Canonical: `effect.disease`.
 
 Available in: all Glyph events/stages.
 
-### `effect.dispel_magic_all`
+#### `effect.dispel_magic_all`
 
 `effect.dispel_magic_all(caster_level: Int = 0) → Effect`
 
@@ -3003,7 +4226,7 @@ Kind: Value. Canonical: `effect.dispel_magic_all`.
 
 Available in: all Glyph events/stages.
 
-### `effect.dispel_magic_best`
+#### `effect.dispel_magic_best`
 
 `effect.dispel_magic_best(caster_level: Int = 0) → Effect`
 
@@ -3015,7 +4238,7 @@ Kind: Value. Canonical: `effect.dispel_magic_best`.
 
 Available in: all Glyph events/stages.
 
-### `effect.dominated`
+#### `effect.dominated`
 
 `effect.dominated() → Effect`
 
@@ -3027,7 +4250,7 @@ Kind: Value. Canonical: `effect.dominated`.
 
 Available in: all Glyph events/stages.
 
-### `effect.enemy_attack_bonus`
+#### `effect.enemy_attack_bonus`
 
 `effect.enemy_attack_bonus(bonus: Int) → Effect`
 
@@ -3039,7 +4262,7 @@ Kind: Value. Canonical: `effect.enemy_attack_bonus`.
 
 Available in: all Glyph events/stages.
 
-### `effect.entangle`
+#### `effect.entangle`
 
 `effect.entangle() → Effect`
 
@@ -3051,7 +4274,7 @@ Kind: Value. Canonical: `effect.entangle`.
 
 Available in: all Glyph events/stages.
 
-### `effect.ethereal`
+#### `effect.ethereal`
 
 `effect.ethereal() → Effect`
 
@@ -3063,7 +4286,7 @@ Kind: Value. Canonical: `effect.ethereal`.
 
 Available in: all Glyph events/stages.
 
-### `effect.force_walk`
+#### `effect.force_walk`
 
 `effect.force_walk() → Effect`
 
@@ -3075,7 +4298,7 @@ Kind: Value. Canonical: `effect.force_walk`.
 
 Available in: all Glyph events/stages.
 
-### `effect.frightened`
+#### `effect.frightened`
 
 `effect.frightened() → Effect`
 
@@ -3087,7 +4310,7 @@ Kind: Value. Canonical: `effect.frightened`.
 
 Available in: all Glyph events/stages.
 
-### `effect.haste`
+#### `effect.haste`
 
 `effect.haste() → Effect`
 
@@ -3099,7 +4322,7 @@ Kind: Value. Canonical: `effect.haste`.
 
 Available in: all Glyph events/stages.
 
-### `effect.heal`
+#### `effect.heal`
 
 `effect.heal(damage_to_heal: Int) → Effect`
 
@@ -3111,7 +4334,7 @@ Kind: Value. Canonical: `effect.heal`.
 
 Available in: all Glyph events/stages.
 
-### `effect.hit_point_change_when_dying`
+#### `effect.hit_point_change_when_dying`
 
 `effect.hit_point_change_when_dying(hit_point_change_per_round: Float) → Effect`
 
@@ -3123,7 +4346,7 @@ Kind: Value. Canonical: `effect.hit_point_change_when_dying`.
 
 Available in: all Glyph events/stages.
 
-### `effect.icon`
+#### `effect.icon`
 
 `effect.icon(icon_id: Int) → Effect`
 
@@ -3135,7 +4358,7 @@ Kind: Value. Canonical: `effect.icon`.
 
 Available in: all Glyph events/stages.
 
-### `effect.immunity`
+#### `effect.immunity`
 
 `effect.immunity(immunity_type: Int) → Effect`
 
@@ -3147,7 +4370,7 @@ Kind: Value. Canonical: `effect.immunity`.
 
 Available in: all Glyph events/stages.
 
-### `effect.invisibility`
+#### `effect.invisibility`
 
 `effect.invisibility(invisibility_type: Int) → Effect`
 
@@ -3159,7 +4382,7 @@ Kind: Value. Canonical: `effect.invisibility`.
 
 Available in: all Glyph events/stages.
 
-### `effect.knockdown`
+#### `effect.knockdown`
 
 `effect.knockdown() → Effect`
 
@@ -3171,7 +4394,7 @@ Kind: Value. Canonical: `effect.knockdown`.
 
 Available in: all Glyph events/stages.
 
-### `effect.link_effects`
+#### `effect.link_effects`
 
 `effect.link_effects(child_effect: Effect, parent_effect: Effect) → Effect`
 
@@ -3183,7 +4406,7 @@ Kind: Value. Canonical: `effect.link_effects`.
 
 Available in: all Glyph events/stages.
 
-### `effect.miss_chance`
+#### `effect.miss_chance`
 
 `effect.miss_chance(percentage: Int, miss_chance_type: Int = 0) → Effect`
 
@@ -3195,7 +4418,7 @@ Kind: Value. Canonical: `effect.miss_chance`.
 
 Available in: all Glyph events/stages.
 
-### `effect.modify_attacks`
+#### `effect.modify_attacks`
 
 `effect.modify_attacks(attacks: Int) → Effect`
 
@@ -3207,7 +4430,7 @@ Kind: Value. Canonical: `effect.modify_attacks`.
 
 Available in: all Glyph events/stages.
 
-### `effect.movement_speed_decrease`
+#### `effect.movement_speed_decrease`
 
 `effect.movement_speed_decrease(percent_change: Int) → Effect`
 
@@ -3219,7 +4442,7 @@ Kind: Value. Canonical: `effect.movement_speed_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `effect.movement_speed_increase`
+#### `effect.movement_speed_increase`
 
 `effect.movement_speed_increase(percent_change: Int) → Effect`
 
@@ -3231,7 +4454,7 @@ Kind: Value. Canonical: `effect.movement_speed_increase`.
 
 Available in: all Glyph events/stages.
 
-### `effect.negative_level`
+#### `effect.negative_level`
 
 `effect.negative_level(num_levels: Int, hp_bonus: Bool = false) → Effect`
 
@@ -3243,7 +4466,7 @@ Kind: Value. Canonical: `effect.negative_level`.
 
 Available in: all Glyph events/stages.
 
-### `effect.pacified`
+#### `effect.pacified`
 
 `effect.pacified() → Effect`
 
@@ -3255,7 +4478,7 @@ Kind: Value. Canonical: `effect.pacified`.
 
 Available in: all Glyph events/stages.
 
-### `effect.paralyze`
+#### `effect.paralyze`
 
 `effect.paralyze() → Effect`
 
@@ -3267,7 +4490,7 @@ Kind: Value. Canonical: `effect.paralyze`.
 
 Available in: all Glyph events/stages.
 
-### `effect.petrify`
+#### `effect.petrify`
 
 `effect.petrify() → Effect`
 
@@ -3279,7 +4502,7 @@ Kind: Value. Canonical: `effect.petrify`.
 
 Available in: all Glyph events/stages.
 
-### `effect.poison`
+#### `effect.poison`
 
 `effect.poison(poison_type: Int) → Effect`
 
@@ -3291,7 +4514,7 @@ Kind: Value. Canonical: `effect.poison`.
 
 Available in: all Glyph events/stages.
 
-### `effect.polymorph`
+#### `effect.polymorph`
 
 `effect.polymorph(polymorph_selection: Int, locked: Int = 0, unpolymorph_vfx: Int = 85, spell_ability_modifier: Int = -1, spell_ability_caster_level: Int = 0) → Effect`
 
@@ -3303,7 +4526,7 @@ Kind: Value. Canonical: `effect.polymorph`.
 
 Available in: all Glyph events/stages.
 
-### `effect.regenerate`
+#### `effect.regenerate`
 
 `effect.regenerate(amount: Int, interval_seconds: Float) → Effect`
 
@@ -3315,7 +4538,7 @@ Kind: Value. Canonical: `effect.regenerate`.
 
 Available in: all Glyph events/stages.
 
-### `effect.resurrection`
+#### `effect.resurrection`
 
 `effect.resurrection() → Effect`
 
@@ -3327,7 +4550,7 @@ Kind: Value. Canonical: `effect.resurrection`.
 
 Available in: all Glyph events/stages.
 
-### `effect.sanctuary`
+#### `effect.sanctuary`
 
 `effect.sanctuary(difficulty_class: Int) → Effect`
 
@@ -3339,7 +4562,7 @@ Kind: Value. Canonical: `effect.sanctuary`.
 
 Available in: all Glyph events/stages.
 
-### `effect.saving_throw_decrease`
+#### `effect.saving_throw_decrease`
 
 `effect.saving_throw_decrease(save: Int, value: Int, save_type: Int = 0) → Effect`
 
@@ -3351,7 +4574,7 @@ Kind: Value. Canonical: `effect.saving_throw_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `effect.saving_throw_increase`
+#### `effect.saving_throw_increase`
 
 `effect.saving_throw_increase(save: Int, value: Int, save_type: Int = 0) → Effect`
 
@@ -3363,7 +4586,7 @@ Kind: Value. Canonical: `effect.saving_throw_increase`.
 
 Available in: all Glyph events/stages.
 
-### `effect.see_invisible`
+#### `effect.see_invisible`
 
 `effect.see_invisible() → Effect`
 
@@ -3375,7 +4598,7 @@ Kind: Value. Canonical: `effect.see_invisible`.
 
 Available in: all Glyph events/stages.
 
-### `effect.silence`
+#### `effect.silence`
 
 `effect.silence() → Effect`
 
@@ -3387,7 +4610,7 @@ Kind: Value. Canonical: `effect.silence`.
 
 Available in: all Glyph events/stages.
 
-### `effect.skill_decrease`
+#### `effect.skill_decrease`
 
 `effect.skill_decrease(skill: Int, value: Int) → Effect`
 
@@ -3399,7 +4622,7 @@ Kind: Value. Canonical: `effect.skill_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `effect.skill_increase`
+#### `effect.skill_increase`
 
 `effect.skill_increase(skill: Int, value: Int) → Effect`
 
@@ -3411,7 +4634,7 @@ Kind: Value. Canonical: `effect.skill_increase`.
 
 Available in: all Glyph events/stages.
 
-### `effect.sleep`
+#### `effect.sleep`
 
 `effect.sleep() → Effect`
 
@@ -3423,7 +4646,7 @@ Kind: Value. Canonical: `effect.sleep`.
 
 Available in: all Glyph events/stages.
 
-### `effect.slow`
+#### `effect.slow`
 
 `effect.slow() → Effect`
 
@@ -3435,7 +4658,7 @@ Kind: Value. Canonical: `effect.slow`.
 
 Available in: all Glyph events/stages.
 
-### `effect.spell_failure`
+#### `effect.spell_failure`
 
 `effect.spell_failure(percent: Int = 100, spell_school: Int = 0, spell_failure_type: Int = 0) → Effect`
 
@@ -3447,7 +4670,7 @@ Kind: Value. Canonical: `effect.spell_failure`.
 
 Available in: all Glyph events/stages.
 
-### `effect.spell_immunity`
+#### `effect.spell_immunity`
 
 `effect.spell_immunity(immunity_to_spell: Int = -1) → Effect`
 
@@ -3459,7 +4682,7 @@ Kind: Value. Canonical: `effect.spell_immunity`.
 
 Available in: all Glyph events/stages.
 
-### `effect.spell_level_absorption`
+#### `effect.spell_level_absorption`
 
 `effect.spell_level_absorption(max_spell_level_absorbed: Int, total_spell_levels_absorbed: Int = 0, spell_school: Int = 0) → Effect`
 
@@ -3471,7 +4694,7 @@ Kind: Value. Canonical: `effect.spell_level_absorption`.
 
 Available in: all Glyph events/stages.
 
-### `effect.spell_resistance_decrease`
+#### `effect.spell_resistance_decrease`
 
 `effect.spell_resistance_decrease(value: Int) → Effect`
 
@@ -3483,7 +4706,7 @@ Kind: Value. Canonical: `effect.spell_resistance_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `effect.spell_resistance_increase`
+#### `effect.spell_resistance_increase`
 
 `effect.spell_resistance_increase(value: Int) → Effect`
 
@@ -3495,7 +4718,7 @@ Kind: Value. Canonical: `effect.spell_resistance_increase`.
 
 Available in: all Glyph events/stages.
 
-### `effect.stunned`
+#### `effect.stunned`
 
 `effect.stunned() → Effect`
 
@@ -3507,7 +4730,7 @@ Kind: Value. Canonical: `effect.stunned`.
 
 Available in: all Glyph events/stages.
 
-### `effect.summon_creature`
+#### `effect.summon_creature`
 
 `effect.summon_creature(creature_resref: String, visual_effect_id: Int = -1, delay_seconds: Float = 0, use_appear_animation: Int = 0, unsummon_visual_effect_id: Int = 99, summon_to_add: Object = 2130706432) → Effect`
 
@@ -3519,7 +4742,7 @@ Kind: Value. Canonical: `effect.summon_creature`.
 
 Available in: all Glyph events/stages.
 
-### `effect.swarm`
+#### `effect.swarm`
 
 `effect.swarm(looping: Int, creature_template1: String, creature_template2: String = , creature_template3: String = , creature_template4: String = ) → Effect`
 
@@ -3531,7 +4754,7 @@ Kind: Value. Canonical: `effect.swarm`.
 
 Available in: all Glyph events/stages.
 
-### `effect.temporary_hitpoints`
+#### `effect.temporary_hitpoints`
 
 `effect.temporary_hitpoints(hit_points: Int) → Effect`
 
@@ -3543,7 +4766,7 @@ Kind: Value. Canonical: `effect.temporary_hitpoints`.
 
 Available in: all Glyph events/stages.
 
-### `effect.time_stop`
+#### `effect.time_stop`
 
 `effect.time_stop() → Effect`
 
@@ -3555,7 +4778,7 @@ Kind: Value. Canonical: `effect.time_stop`.
 
 Available in: all Glyph events/stages.
 
-### `effect.time_stop_immunity`
+#### `effect.time_stop_immunity`
 
 `effect.time_stop_immunity() → Effect`
 
@@ -3567,7 +4790,7 @@ Kind: Value. Canonical: `effect.time_stop_immunity`.
 
 Available in: all Glyph events/stages.
 
-### `effect.true_seeing`
+#### `effect.true_seeing`
 
 `effect.true_seeing() → Effect`
 
@@ -3579,7 +4802,7 @@ Kind: Value. Canonical: `effect.true_seeing`.
 
 Available in: all Glyph events/stages.
 
-### `effect.turn_resistance_decrease`
+#### `effect.turn_resistance_decrease`
 
 `effect.turn_resistance_decrease(hit_dice: Int) → Effect`
 
@@ -3591,7 +4814,7 @@ Kind: Value. Canonical: `effect.turn_resistance_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `effect.turn_resistance_increase`
+#### `effect.turn_resistance_increase`
 
 `effect.turn_resistance_increase(hit_dice: Int) → Effect`
 
@@ -3603,7 +4826,7 @@ Kind: Value. Canonical: `effect.turn_resistance_increase`.
 
 Available in: all Glyph events/stages.
 
-### `effect.turned`
+#### `effect.turned`
 
 `effect.turned() → Effect`
 
@@ -3615,7 +4838,7 @@ Kind: Value. Canonical: `effect.turned`.
 
 Available in: all Glyph events/stages.
 
-### `effect.ultravision`
+#### `effect.ultravision`
 
 `effect.ultravision() → Effect`
 
@@ -3627,7 +4850,7 @@ Kind: Value. Canonical: `effect.ultravision`.
 
 Available in: all Glyph events/stages.
 
-### `effect.visual_effect`
+#### `effect.visual_effect`
 
 `effect.visual_effect(visual_effect_id: Int, miss_effect: Int = 0, scale: Float = 1) → Effect`
 
@@ -3639,7 +4862,7 @@ Kind: Value. Canonical: `effect.visual_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.action_equip_most_effective_armor`
+#### `nwn.action_equip_most_effective_armor`
 
 `nwn.action_equip_most_effective_armor(actor: Object) → Void`
 
@@ -3653,7 +4876,7 @@ Kind: Action. Canonical: `nwn.action_equip_most_effective_armor`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.apply_effect_at_location`
+#### `nwn.apply_effect_at_location`
 
 `nwn.apply_effect_at_location(duration_type: Int, effect: Effect, location: Location, duration: Float = 0) → Void`
 
@@ -3665,7 +4888,7 @@ Kind: Action. Canonical: `nwn.apply_effect_at_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_ability_decrease`
+#### `nwn.effect_ability_decrease`
 
 `nwn.effect_ability_decrease(ability: Int, modify_by: Int) → Effect`
 
@@ -3677,7 +4900,7 @@ Kind: Value. Canonical: `nwn.effect_ability_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_ability_increase`
+#### `nwn.effect_ability_increase`
 
 `nwn.effect_ability_increase(ability_to_increase: Int, modify_by: Int) → Effect`
 
@@ -3689,7 +4912,7 @@ Kind: Value. Canonical: `nwn.effect_ability_increase`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_ac_decrease`
+#### `nwn.effect_ac_decrease`
 
 `nwn.effect_ac_decrease(value: Int, modify_type: Int = 0, damage_type: Int = 4103) → Effect`
 
@@ -3701,7 +4924,7 @@ Kind: Value. Canonical: `nwn.effect_ac_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_ac_increase`
+#### `nwn.effect_ac_increase`
 
 `nwn.effect_ac_increase(value: Int, modify_type: Int = 0, damage_type: Int = 4103) → Effect`
 
@@ -3713,7 +4936,7 @@ Kind: Value. Canonical: `nwn.effect_ac_increase`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_appear`
+#### `nwn.effect_appear`
 
 `nwn.effect_appear(animation: Int = 1) → Effect`
 
@@ -3725,7 +4948,7 @@ Kind: Value. Canonical: `nwn.effect_appear`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_attack_decrease`
+#### `nwn.effect_attack_decrease`
 
 `nwn.effect_attack_decrease(penalty: Int, modifier_type: Int = 0) → Effect`
 
@@ -3737,7 +4960,7 @@ Kind: Value. Canonical: `nwn.effect_attack_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_attack_increase`
+#### `nwn.effect_attack_increase`
 
 `nwn.effect_attack_increase(bonus: Int, modifier_type: Int = 0) → Effect`
 
@@ -3749,7 +4972,7 @@ Kind: Value. Canonical: `nwn.effect_attack_increase`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_beam`
+#### `nwn.effect_beam`
 
 `nwn.effect_beam(beam_visual_effect: Int, effector: Object, body_part: Int, miss_effect: Bool = false, scale: Float = 1) → Effect`
 
@@ -3761,7 +4984,7 @@ Kind: Value. Canonical: `nwn.effect_beam`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_blindness`
+#### `nwn.effect_blindness`
 
 `nwn.effect_blindness() → Effect`
 
@@ -3773,7 +4996,7 @@ Kind: Value. Canonical: `nwn.effect_blindness`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_bonus_feat`
+#### `nwn.effect_bonus_feat`
 
 `nwn.effect_bonus_feat(feat: Int) → Effect`
 
@@ -3785,7 +5008,7 @@ Kind: Value. Canonical: `nwn.effect_bonus_feat`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_charmed`
+#### `nwn.effect_charmed`
 
 `nwn.effect_charmed() → Effect`
 
@@ -3797,7 +5020,7 @@ Kind: Value. Canonical: `nwn.effect_charmed`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_concealment`
+#### `nwn.effect_concealment`
 
 `nwn.effect_concealment(percentage: Int, miss_type: Int = 0) → Effect`
 
@@ -3809,7 +5032,7 @@ Kind: Value. Canonical: `nwn.effect_concealment`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_confused`
+#### `nwn.effect_confused`
 
 `nwn.effect_confused() → Effect`
 
@@ -3821,7 +5044,7 @@ Kind: Value. Canonical: `nwn.effect_confused`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_curse`
+#### `nwn.effect_curse`
 
 `nwn.effect_curse(str_mod: Int = 1, dex_mod: Int = 1, con_mod: Int = 1, int_mod: Int = 1, wis_mod: Int = 1, cha_mod: Int = 1) → Effect`
 
@@ -3833,7 +5056,7 @@ Kind: Value. Canonical: `nwn.effect_curse`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_cutscene_dominated`
+#### `nwn.effect_cutscene_dominated`
 
 `nwn.effect_cutscene_dominated() → Effect`
 
@@ -3845,7 +5068,7 @@ Kind: Value. Canonical: `nwn.effect_cutscene_dominated`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_cutscene_ghost`
+#### `nwn.effect_cutscene_ghost`
 
 `nwn.effect_cutscene_ghost() → Effect`
 
@@ -3857,7 +5080,7 @@ Kind: Value. Canonical: `nwn.effect_cutscene_ghost`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_cutscene_immobilize`
+#### `nwn.effect_cutscene_immobilize`
 
 `nwn.effect_cutscene_immobilize() → Effect`
 
@@ -3869,7 +5092,7 @@ Kind: Value. Canonical: `nwn.effect_cutscene_immobilize`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_cutscene_paralyze`
+#### `nwn.effect_cutscene_paralyze`
 
 `nwn.effect_cutscene_paralyze() → Effect`
 
@@ -3881,7 +5104,7 @@ Kind: Value. Canonical: `nwn.effect_cutscene_paralyze`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_damage`
+#### `nwn.effect_damage`
 
 `nwn.effect_damage(damage_amount: Int, damage_type: Int = 8, damage_power: Int = 0) → Effect`
 
@@ -3893,7 +5116,7 @@ Kind: Value. Canonical: `nwn.effect_damage`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_damage_decrease`
+#### `nwn.effect_damage_decrease`
 
 `nwn.effect_damage_decrease(penalty: Int, damage_type: Int = 8) → Effect`
 
@@ -3905,7 +5128,7 @@ Kind: Value. Canonical: `nwn.effect_damage_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_damage_immunity_decrease`
+#### `nwn.effect_damage_immunity_decrease`
 
 `nwn.effect_damage_immunity_decrease(damage_type: Int, percent_immunity: Int) → Effect`
 
@@ -3917,7 +5140,7 @@ Kind: Value. Canonical: `nwn.effect_damage_immunity_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_damage_immunity_increase`
+#### `nwn.effect_damage_immunity_increase`
 
 `nwn.effect_damage_immunity_increase(damage_type: Int, percent_immunity: Int) → Effect`
 
@@ -3929,7 +5152,7 @@ Kind: Value. Canonical: `nwn.effect_damage_immunity_increase`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_damage_increase`
+#### `nwn.effect_damage_increase`
 
 `nwn.effect_damage_increase(bonus: Int, damage_type: Int = 8) → Effect`
 
@@ -3941,7 +5164,7 @@ Kind: Value. Canonical: `nwn.effect_damage_increase`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_damage_reduction`
+#### `nwn.effect_damage_reduction`
 
 `nwn.effect_damage_reduction(amount: Int, damage_power: Int, limit: Int = 0, ranged_only: Bool = false) → Effect`
 
@@ -3953,7 +5176,7 @@ Kind: Value. Canonical: `nwn.effect_damage_reduction`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_damage_resistance`
+#### `nwn.effect_damage_resistance`
 
 `nwn.effect_damage_resistance(damage_type: Int, amount: Int, limit: Int = 0, ranged_only: Bool = false) → Effect`
 
@@ -3965,7 +5188,7 @@ Kind: Value. Canonical: `nwn.effect_damage_resistance`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_damage_shield`
+#### `nwn.effect_damage_shield`
 
 `nwn.effect_damage_shield(damage_amount: Int, random_amount: Int, damage_type: Int) → Effect`
 
@@ -3977,7 +5200,7 @@ Kind: Value. Canonical: `nwn.effect_damage_shield`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_darkness`
+#### `nwn.effect_darkness`
 
 `nwn.effect_darkness() → Effect`
 
@@ -3989,7 +5212,7 @@ Kind: Value. Canonical: `nwn.effect_darkness`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_dazed`
+#### `nwn.effect_dazed`
 
 `nwn.effect_dazed() → Effect`
 
@@ -4001,7 +5224,7 @@ Kind: Value. Canonical: `nwn.effect_dazed`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_deaf`
+#### `nwn.effect_deaf`
 
 `nwn.effect_deaf() → Effect`
 
@@ -4013,7 +5236,7 @@ Kind: Value. Canonical: `nwn.effect_deaf`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_death`
+#### `nwn.effect_death`
 
 `nwn.effect_death(spectacular_death: Int = 0, display_feedback: Int = 1) → Effect`
 
@@ -4025,7 +5248,7 @@ Kind: Value. Canonical: `nwn.effect_death`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_disappear`
+#### `nwn.effect_disappear`
 
 `nwn.effect_disappear(animation: Int = 1) → Effect`
 
@@ -4037,7 +5260,7 @@ Kind: Value. Canonical: `nwn.effect_disappear`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_disappear_appear`
+#### `nwn.effect_disappear_appear`
 
 `nwn.effect_disappear_appear(location: Location, animation: Int = 1) → Effect`
 
@@ -4049,7 +5272,7 @@ Kind: Value. Canonical: `nwn.effect_disappear_appear`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_disease`
+#### `nwn.effect_disease`
 
 `nwn.effect_disease(disease_type: Int) → Effect`
 
@@ -4061,7 +5284,7 @@ Kind: Value. Canonical: `nwn.effect_disease`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_dispel_magic_all`
+#### `nwn.effect_dispel_magic_all`
 
 `nwn.effect_dispel_magic_all(caster_level: Int = 0) → Effect`
 
@@ -4073,7 +5296,7 @@ Kind: Value. Canonical: `nwn.effect_dispel_magic_all`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_dispel_magic_best`
+#### `nwn.effect_dispel_magic_best`
 
 `nwn.effect_dispel_magic_best(caster_level: Int = 0) → Effect`
 
@@ -4085,7 +5308,7 @@ Kind: Value. Canonical: `nwn.effect_dispel_magic_best`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_dominated`
+#### `nwn.effect_dominated`
 
 `nwn.effect_dominated() → Effect`
 
@@ -4097,7 +5320,7 @@ Kind: Value. Canonical: `nwn.effect_dominated`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_enemy_attack_bonus`
+#### `nwn.effect_enemy_attack_bonus`
 
 `nwn.effect_enemy_attack_bonus(bonus: Int) → Effect`
 
@@ -4109,7 +5332,7 @@ Kind: Value. Canonical: `nwn.effect_enemy_attack_bonus`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_entangle`
+#### `nwn.effect_entangle`
 
 `nwn.effect_entangle() → Effect`
 
@@ -4121,7 +5344,7 @@ Kind: Value. Canonical: `nwn.effect_entangle`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_ethereal`
+#### `nwn.effect_ethereal`
 
 `nwn.effect_ethereal() → Effect`
 
@@ -4133,7 +5356,7 @@ Kind: Value. Canonical: `nwn.effect_ethereal`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_force_walk`
+#### `nwn.effect_force_walk`
 
 `nwn.effect_force_walk() → Effect`
 
@@ -4145,7 +5368,7 @@ Kind: Value. Canonical: `nwn.effect_force_walk`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_frightened`
+#### `nwn.effect_frightened`
 
 `nwn.effect_frightened() → Effect`
 
@@ -4157,7 +5380,7 @@ Kind: Value. Canonical: `nwn.effect_frightened`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_haste`
+#### `nwn.effect_haste`
 
 `nwn.effect_haste() → Effect`
 
@@ -4169,7 +5392,7 @@ Kind: Value. Canonical: `nwn.effect_haste`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_heal`
+#### `nwn.effect_heal`
 
 `nwn.effect_heal(damage_to_heal: Int) → Effect`
 
@@ -4181,7 +5404,7 @@ Kind: Value. Canonical: `nwn.effect_heal`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_hit_point_change_when_dying`
+#### `nwn.effect_hit_point_change_when_dying`
 
 `nwn.effect_hit_point_change_when_dying(hit_point_change_per_round: Float) → Effect`
 
@@ -4193,7 +5416,7 @@ Kind: Value. Canonical: `nwn.effect_hit_point_change_when_dying`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_icon`
+#### `nwn.effect_icon`
 
 `nwn.effect_icon(icon_id: Int) → Effect`
 
@@ -4205,7 +5428,7 @@ Kind: Value. Canonical: `nwn.effect_icon`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_immunity`
+#### `nwn.effect_immunity`
 
 `nwn.effect_immunity(immunity_type: Int) → Effect`
 
@@ -4217,7 +5440,7 @@ Kind: Value. Canonical: `nwn.effect_immunity`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_invisibility`
+#### `nwn.effect_invisibility`
 
 `nwn.effect_invisibility(invisibility_type: Int) → Effect`
 
@@ -4229,7 +5452,7 @@ Kind: Value. Canonical: `nwn.effect_invisibility`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_knockdown`
+#### `nwn.effect_knockdown`
 
 `nwn.effect_knockdown() → Effect`
 
@@ -4241,7 +5464,7 @@ Kind: Value. Canonical: `nwn.effect_knockdown`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_link_effects`
+#### `nwn.effect_link_effects`
 
 `nwn.effect_link_effects(child_effect: Effect, parent_effect: Effect) → Effect`
 
@@ -4253,7 +5476,7 @@ Kind: Value. Canonical: `nwn.effect_link_effects`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_miss_chance`
+#### `nwn.effect_miss_chance`
 
 `nwn.effect_miss_chance(percentage: Int, miss_chance_type: Int = 0) → Effect`
 
@@ -4265,7 +5488,7 @@ Kind: Value. Canonical: `nwn.effect_miss_chance`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_modify_attacks`
+#### `nwn.effect_modify_attacks`
 
 `nwn.effect_modify_attacks(attacks: Int) → Effect`
 
@@ -4277,7 +5500,7 @@ Kind: Value. Canonical: `nwn.effect_modify_attacks`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_movement_speed_decrease`
+#### `nwn.effect_movement_speed_decrease`
 
 `nwn.effect_movement_speed_decrease(percent_change: Int) → Effect`
 
@@ -4289,7 +5512,7 @@ Kind: Value. Canonical: `nwn.effect_movement_speed_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_movement_speed_increase`
+#### `nwn.effect_movement_speed_increase`
 
 `nwn.effect_movement_speed_increase(percent_change: Int) → Effect`
 
@@ -4301,7 +5524,7 @@ Kind: Value. Canonical: `nwn.effect_movement_speed_increase`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_negative_level`
+#### `nwn.effect_negative_level`
 
 `nwn.effect_negative_level(num_levels: Int, hp_bonus: Bool = false) → Effect`
 
@@ -4313,7 +5536,7 @@ Kind: Value. Canonical: `nwn.effect_negative_level`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_pacified`
+#### `nwn.effect_pacified`
 
 `nwn.effect_pacified() → Effect`
 
@@ -4325,7 +5548,7 @@ Kind: Value. Canonical: `nwn.effect_pacified`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_paralyze`
+#### `nwn.effect_paralyze`
 
 `nwn.effect_paralyze() → Effect`
 
@@ -4337,7 +5560,7 @@ Kind: Value. Canonical: `nwn.effect_paralyze`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_petrify`
+#### `nwn.effect_petrify`
 
 `nwn.effect_petrify() → Effect`
 
@@ -4349,7 +5572,7 @@ Kind: Value. Canonical: `nwn.effect_petrify`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_poison`
+#### `nwn.effect_poison`
 
 `nwn.effect_poison(poison_type: Int) → Effect`
 
@@ -4361,7 +5584,7 @@ Kind: Value. Canonical: `nwn.effect_poison`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_polymorph`
+#### `nwn.effect_polymorph`
 
 `nwn.effect_polymorph(polymorph_selection: Int, locked: Int = 0, unpolymorph_vfx: Int = 85, spell_ability_modifier: Int = -1, spell_ability_caster_level: Int = 0) → Effect`
 
@@ -4373,7 +5596,7 @@ Kind: Value. Canonical: `nwn.effect_polymorph`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_regenerate`
+#### `nwn.effect_regenerate`
 
 `nwn.effect_regenerate(amount: Int, interval_seconds: Float) → Effect`
 
@@ -4385,7 +5608,7 @@ Kind: Value. Canonical: `nwn.effect_regenerate`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_resurrection`
+#### `nwn.effect_resurrection`
 
 `nwn.effect_resurrection() → Effect`
 
@@ -4397,7 +5620,7 @@ Kind: Value. Canonical: `nwn.effect_resurrection`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_sanctuary`
+#### `nwn.effect_sanctuary`
 
 `nwn.effect_sanctuary(difficulty_class: Int) → Effect`
 
@@ -4409,7 +5632,7 @@ Kind: Value. Canonical: `nwn.effect_sanctuary`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_saving_throw_decrease`
+#### `nwn.effect_saving_throw_decrease`
 
 `nwn.effect_saving_throw_decrease(save: Int, value: Int, save_type: Int = 0) → Effect`
 
@@ -4421,7 +5644,7 @@ Kind: Value. Canonical: `nwn.effect_saving_throw_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_saving_throw_increase`
+#### `nwn.effect_saving_throw_increase`
 
 `nwn.effect_saving_throw_increase(save: Int, value: Int, save_type: Int = 0) → Effect`
 
@@ -4433,7 +5656,7 @@ Kind: Value. Canonical: `nwn.effect_saving_throw_increase`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_see_invisible`
+#### `nwn.effect_see_invisible`
 
 `nwn.effect_see_invisible() → Effect`
 
@@ -4445,7 +5668,7 @@ Kind: Value. Canonical: `nwn.effect_see_invisible`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_silence`
+#### `nwn.effect_silence`
 
 `nwn.effect_silence() → Effect`
 
@@ -4457,7 +5680,7 @@ Kind: Value. Canonical: `nwn.effect_silence`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_skill_decrease`
+#### `nwn.effect_skill_decrease`
 
 `nwn.effect_skill_decrease(skill: Int, value: Int) → Effect`
 
@@ -4469,7 +5692,7 @@ Kind: Value. Canonical: `nwn.effect_skill_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_skill_increase`
+#### `nwn.effect_skill_increase`
 
 `nwn.effect_skill_increase(skill: Int, value: Int) → Effect`
 
@@ -4481,7 +5704,7 @@ Kind: Value. Canonical: `nwn.effect_skill_increase`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_sleep`
+#### `nwn.effect_sleep`
 
 `nwn.effect_sleep() → Effect`
 
@@ -4493,7 +5716,7 @@ Kind: Value. Canonical: `nwn.effect_sleep`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_slow`
+#### `nwn.effect_slow`
 
 `nwn.effect_slow() → Effect`
 
@@ -4505,7 +5728,7 @@ Kind: Value. Canonical: `nwn.effect_slow`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_spell_failure`
+#### `nwn.effect_spell_failure`
 
 `nwn.effect_spell_failure(percent: Int = 100, spell_school: Int = 0, spell_failure_type: Int = 0) → Effect`
 
@@ -4517,7 +5740,7 @@ Kind: Value. Canonical: `nwn.effect_spell_failure`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_spell_immunity`
+#### `nwn.effect_spell_immunity`
 
 `nwn.effect_spell_immunity(immunity_to_spell: Int = -1) → Effect`
 
@@ -4529,7 +5752,7 @@ Kind: Value. Canonical: `nwn.effect_spell_immunity`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_spell_level_absorption`
+#### `nwn.effect_spell_level_absorption`
 
 `nwn.effect_spell_level_absorption(max_spell_level_absorbed: Int, total_spell_levels_absorbed: Int = 0, spell_school: Int = 0) → Effect`
 
@@ -4541,7 +5764,7 @@ Kind: Value. Canonical: `nwn.effect_spell_level_absorption`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_spell_resistance_decrease`
+#### `nwn.effect_spell_resistance_decrease`
 
 `nwn.effect_spell_resistance_decrease(value: Int) → Effect`
 
@@ -4553,7 +5776,7 @@ Kind: Value. Canonical: `nwn.effect_spell_resistance_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_spell_resistance_increase`
+#### `nwn.effect_spell_resistance_increase`
 
 `nwn.effect_spell_resistance_increase(value: Int) → Effect`
 
@@ -4565,7 +5788,7 @@ Kind: Value. Canonical: `nwn.effect_spell_resistance_increase`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_stunned`
+#### `nwn.effect_stunned`
 
 `nwn.effect_stunned() → Effect`
 
@@ -4577,7 +5800,7 @@ Kind: Value. Canonical: `nwn.effect_stunned`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_summon_creature`
+#### `nwn.effect_summon_creature`
 
 `nwn.effect_summon_creature(creature_resref: String, visual_effect_id: Int = -1, delay_seconds: Float = 0, use_appear_animation: Int = 0, unsummon_visual_effect_id: Int = 99, summon_to_add: Object = 2130706432) → Effect`
 
@@ -4589,7 +5812,7 @@ Kind: Value. Canonical: `nwn.effect_summon_creature`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_swarm`
+#### `nwn.effect_swarm`
 
 `nwn.effect_swarm(looping: Int, creature_template1: String, creature_template2: String = , creature_template3: String = , creature_template4: String = ) → Effect`
 
@@ -4601,7 +5824,7 @@ Kind: Value. Canonical: `nwn.effect_swarm`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_temporary_hitpoints`
+#### `nwn.effect_temporary_hitpoints`
 
 `nwn.effect_temporary_hitpoints(hit_points: Int) → Effect`
 
@@ -4613,7 +5836,7 @@ Kind: Value. Canonical: `nwn.effect_temporary_hitpoints`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_time_stop`
+#### `nwn.effect_time_stop`
 
 `nwn.effect_time_stop() → Effect`
 
@@ -4625,7 +5848,7 @@ Kind: Value. Canonical: `nwn.effect_time_stop`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_time_stop_immunity`
+#### `nwn.effect_time_stop_immunity`
 
 `nwn.effect_time_stop_immunity() → Effect`
 
@@ -4637,7 +5860,7 @@ Kind: Value. Canonical: `nwn.effect_time_stop_immunity`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_true_seeing`
+#### `nwn.effect_true_seeing`
 
 `nwn.effect_true_seeing() → Effect`
 
@@ -4649,7 +5872,7 @@ Kind: Value. Canonical: `nwn.effect_true_seeing`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_turn_resistance_decrease`
+#### `nwn.effect_turn_resistance_decrease`
 
 `nwn.effect_turn_resistance_decrease(hit_dice: Int) → Effect`
 
@@ -4661,7 +5884,7 @@ Kind: Value. Canonical: `nwn.effect_turn_resistance_decrease`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_turn_resistance_increase`
+#### `nwn.effect_turn_resistance_increase`
 
 `nwn.effect_turn_resistance_increase(hit_dice: Int) → Effect`
 
@@ -4673,7 +5896,7 @@ Kind: Value. Canonical: `nwn.effect_turn_resistance_increase`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_turned`
+#### `nwn.effect_turned`
 
 `nwn.effect_turned() → Effect`
 
@@ -4685,7 +5908,7 @@ Kind: Value. Canonical: `nwn.effect_turned`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_ultravision`
+#### `nwn.effect_ultravision`
 
 `nwn.effect_ultravision() → Effect`
 
@@ -4697,7 +5920,7 @@ Kind: Value. Canonical: `nwn.effect_ultravision`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.effect_visual_effect`
+#### `nwn.effect_visual_effect`
 
 `nwn.effect_visual_effect(visual_effect_id: Int, miss_effect: Int = 0, scale: Float = 1) → Effect`
 
@@ -4709,7 +5932,7 @@ Kind: Value. Canonical: `nwn.effect_visual_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.extraordinary_effect`
+#### `nwn.extraordinary_effect`
 
 `nwn.extraordinary_effect(effect: Effect) → Effect`
 
@@ -4721,7 +5944,7 @@ Kind: Value. Canonical: `nwn.extraordinary_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_caster_level`
+#### `nwn.get_effect_caster_level`
 
 `nwn.get_effect_caster_level(effect: Effect) → Int`
 
@@ -4733,7 +5956,7 @@ Kind: Value. Canonical: `nwn.get_effect_caster_level`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_creator`
+#### `nwn.get_effect_creator`
 
 `nwn.get_effect_creator(effect: Effect) → Object`
 
@@ -4745,7 +5968,7 @@ Kind: Value. Canonical: `nwn.get_effect_creator`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_duration`
+#### `nwn.get_effect_duration`
 
 `nwn.get_effect_duration(effect: Effect) → Int`
 
@@ -4757,7 +5980,7 @@ Kind: Value. Canonical: `nwn.get_effect_duration`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_duration_remaining`
+#### `nwn.get_effect_duration_remaining`
 
 `nwn.get_effect_duration_remaining(effect: Effect) → Int`
 
@@ -4769,7 +5992,7 @@ Kind: Value. Canonical: `nwn.get_effect_duration_remaining`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_duration_type`
+#### `nwn.get_effect_duration_type`
 
 `nwn.get_effect_duration_type(effect: Effect) → Int`
 
@@ -4781,7 +6004,7 @@ Kind: Value. Canonical: `nwn.get_effect_duration_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_float`
+#### `nwn.get_effect_float`
 
 `nwn.get_effect_float(effect: Effect, index: Int) → Float`
 
@@ -4793,7 +6016,7 @@ Kind: Value. Canonical: `nwn.get_effect_float`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_integer`
+#### `nwn.get_effect_integer`
 
 `nwn.get_effect_integer(effect: Effect, index: Int) → Int`
 
@@ -4805,7 +6028,7 @@ Kind: Value. Canonical: `nwn.get_effect_integer`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_link_id`
+#### `nwn.get_effect_link_id`
 
 `nwn.get_effect_link_id(effect: Effect) → String`
 
@@ -4817,7 +6040,7 @@ Kind: Value. Canonical: `nwn.get_effect_link_id`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_object`
+#### `nwn.get_effect_object`
 
 `nwn.get_effect_object(effect: Effect, index: Int) → Object`
 
@@ -4829,7 +6052,7 @@ Kind: Value. Canonical: `nwn.get_effect_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_spell_id`
+#### `nwn.get_effect_spell_id`
 
 `nwn.get_effect_spell_id(spell_effect: Effect) → Int`
 
@@ -4841,7 +6064,7 @@ Kind: Value. Canonical: `nwn.get_effect_spell_id`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_string`
+#### `nwn.get_effect_string`
 
 `nwn.get_effect_string(effect: Effect, index: Int) → String`
 
@@ -4853,7 +6076,7 @@ Kind: Value. Canonical: `nwn.get_effect_string`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_sub_type`
+#### `nwn.get_effect_sub_type`
 
 `nwn.get_effect_sub_type(effect: Effect) → Int`
 
@@ -4865,7 +6088,7 @@ Kind: Value. Canonical: `nwn.get_effect_sub_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_tag`
+#### `nwn.get_effect_tag`
 
 `nwn.get_effect_tag(effect: Effect) → String`
 
@@ -4877,7 +6100,7 @@ Kind: Value. Canonical: `nwn.get_effect_tag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_effect_type`
+#### `nwn.get_effect_type`
 
 `nwn.get_effect_type(effect: Effect, all_types: Bool = false) → Int`
 
@@ -4889,7 +6112,7 @@ Kind: Value. Canonical: `nwn.get_effect_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_has_feat_effect`
+#### `nwn.get_has_feat_effect`
 
 `nwn.get_has_feat_effect(feat: Int, object: Object = 2130706432) → Bool`
 
@@ -4901,7 +6124,7 @@ Kind: Value. Canonical: `nwn.get_has_feat_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_has_spell_effect`
+#### `nwn.get_has_spell_effect`
 
 `nwn.get_has_spell_effect(spell: Int, object: Object = 2130706432) → Bool`
 
@@ -4913,7 +6136,7 @@ Kind: Value. Canonical: `nwn.get_has_spell_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_effect_valid`
+#### `nwn.get_is_effect_valid`
 
 `nwn.get_is_effect_valid(effect: Effect) → Bool`
 
@@ -4925,7 +6148,7 @@ Kind: Value. Canonical: `nwn.get_is_effect_valid`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.magical_effect`
+#### `nwn.magical_effect`
 
 `nwn.magical_effect(effect: Effect) → Effect`
 
@@ -4937,7 +6160,7 @@ Kind: Value. Canonical: `nwn.magical_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.remove_effect`
+#### `nwn.remove_effect`
 
 `nwn.remove_effect(creature: Object, effect: Effect) → Void`
 
@@ -4949,7 +6172,7 @@ Kind: Action. Canonical: `nwn.remove_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_effect_creator`
+#### `nwn.set_effect_creator`
 
 `nwn.set_effect_creator(effect: Effect, creator: Object) → Effect`
 
@@ -4961,7 +6184,7 @@ Kind: Action. Canonical: `nwn.set_effect_creator`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_effect_spell_id`
+#### `nwn.set_effect_spell_id`
 
 `nwn.set_effect_spell_id(effect: Effect, spell_id: Int) → Effect`
 
@@ -4973,7 +6196,7 @@ Kind: Action. Canonical: `nwn.set_effect_spell_id`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.supernatural_effect`
+#### `nwn.supernatural_effect`
 
 `nwn.supernatural_effect(effect: Effect) → Effect`
 
@@ -4985,7 +6208,7 @@ Kind: Value. Canonical: `nwn.supernatural_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.tag_effect`
+#### `nwn.tag_effect`
 
 `nwn.tag_effect(effect: Effect, new_tag: String) → Effect`
 
@@ -4997,7 +6220,7 @@ Kind: Action. Canonical: `nwn.tag_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.versus_alignment_effect`
+#### `nwn.versus_alignment_effect`
 
 `nwn.versus_alignment_effect(effect: Effect, law_chaos: Int = 0, good_evil: Int = 0) → Effect`
 
@@ -5009,7 +6232,7 @@ Kind: Value. Canonical: `nwn.versus_alignment_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.versus_racial_type_effect`
+#### `nwn.versus_racial_type_effect`
 
 `nwn.versus_racial_type_effect(effect: Effect, racial_type: Int) → Effect`
 
@@ -5021,7 +6244,7 @@ Kind: Value. Canonical: `nwn.versus_racial_type_effect`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.versus_trap_effect`
+#### `nwn.versus_trap_effect`
 
 `nwn.versus_trap_effect(effect: Effect) → Effect`
 
@@ -5033,9 +6256,9 @@ Kind: Value. Canonical: `nwn.versus_trap_effect`.
 
 Available in: all Glyph events/stages.
 
-## NWN / Items
+### NWN / Items
 
-### `nwn.copy_item`
+#### `nwn.copy_item`
 
 `nwn.copy_item(item: Object, target_inventory: Object = 2130706432, copy_vars: Bool = false) → Object`
 
@@ -5047,7 +6270,7 @@ Kind: Action. Canonical: `nwn.copy_item`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.copy_item_and_modify`
+#### `nwn.copy_item_and_modify`
 
 `nwn.copy_item_and_modify(item: Object, type: Int, index: Int, new_value: Int, copy_vars: Bool = false) → Object`
 
@@ -5059,7 +6282,7 @@ Kind: Action. Canonical: `nwn.copy_item_and_modify`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.create_item_on_object`
+#### `nwn.create_item_on_object`
 
 `nwn.create_item_on_object(item_template: String, target: Object = 2130706432, stack_size: Int = 1, new_tag: String = ) → Object`
 
@@ -5071,7 +6294,7 @@ Kind: Action. Canonical: `nwn.create_item_on_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_base_item_type`
+#### `nwn.get_base_item_type`
 
 `nwn.get_base_item_type(item: Object) → Int`
 
@@ -5083,7 +6306,7 @@ Kind: Value. Canonical: `nwn.get_base_item_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_has_inventory`
+#### `nwn.get_has_inventory`
 
 `nwn.get_has_inventory(object: Object) → Bool`
 
@@ -5095,7 +6318,7 @@ Kind: Value. Canonical: `nwn.get_has_inventory`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_item_ac_value`
+#### `nwn.get_item_ac_value`
 
 `nwn.get_item_ac_value(item: Object) → Int`
 
@@ -5107,7 +6330,7 @@ Kind: Value. Canonical: `nwn.get_item_ac_value`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_item_charges`
+#### `nwn.get_item_charges`
 
 `nwn.get_item_charges(item: Object) → Int`
 
@@ -5119,7 +6342,7 @@ Kind: Value. Canonical: `nwn.get_item_charges`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_item_cursed_flag`
+#### `nwn.get_item_cursed_flag`
 
 `nwn.get_item_cursed_flag(item: Object) → Bool`
 
@@ -5131,7 +6354,7 @@ Kind: Value. Canonical: `nwn.get_item_cursed_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_item_in_slot`
+#### `nwn.get_item_in_slot`
 
 `nwn.get_item_in_slot(inventory_slot: Int, creature: Object = 2130706432) → Object`
 
@@ -5143,7 +6366,7 @@ Kind: Value. Canonical: `nwn.get_item_in_slot`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_item_possessor`
+#### `nwn.get_item_possessor`
 
 `nwn.get_item_possessor(item: Object, return_bags: Bool = false) → Object`
 
@@ -5155,7 +6378,7 @@ Kind: Value. Canonical: `nwn.get_item_possessor`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_item_stack_size`
+#### `nwn.get_item_stack_size`
 
 `nwn.get_item_stack_size(item: Object) → Int`
 
@@ -5167,7 +6390,7 @@ Kind: Value. Canonical: `nwn.get_item_stack_size`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_store_gold`
+#### `nwn.get_store_gold`
 
 `nwn.get_store_gold(oid_store: Object) → Int`
 
@@ -5179,7 +6402,7 @@ Kind: Value. Canonical: `nwn.get_store_gold`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_store_identify_cost`
+#### `nwn.get_store_identify_cost`
 
 `nwn.get_store_identify_cost(oid_store: Object) → Int`
 
@@ -5191,7 +6414,7 @@ Kind: Value. Canonical: `nwn.get_store_identify_cost`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_store_max_buy_price`
+#### `nwn.get_store_max_buy_price`
 
 `nwn.get_store_max_buy_price(oid_store: Object) → Int`
 
@@ -5203,7 +6426,7 @@ Kind: Value. Canonical: `nwn.get_store_max_buy_price`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_item_charges`
+#### `nwn.set_item_charges`
 
 `nwn.set_item_charges(item: Object, charges: Int) → Void`
 
@@ -5215,7 +6438,7 @@ Kind: Action. Canonical: `nwn.set_item_charges`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_item_cursed_flag`
+#### `nwn.set_item_cursed_flag`
 
 `nwn.set_item_cursed_flag(item: Object, cursed: Int) → Void`
 
@@ -5227,7 +6450,7 @@ Kind: Action. Canonical: `nwn.set_item_cursed_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_item_stack_size`
+#### `nwn.set_item_stack_size`
 
 `nwn.set_item_stack_size(item: Object, size: Int) → Void`
 
@@ -5239,7 +6462,7 @@ Kind: Action. Canonical: `nwn.set_item_stack_size`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_store_gold`
+#### `nwn.set_store_gold`
 
 `nwn.set_store_gold(oid_store: Object, gold: Int) → Void`
 
@@ -5251,7 +6474,7 @@ Kind: Action. Canonical: `nwn.set_store_gold`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_store_identify_cost`
+#### `nwn.set_store_identify_cost`
 
 `nwn.set_store_identify_cost(oid_store: Object, cost: Int) → Void`
 
@@ -5263,7 +6486,7 @@ Kind: Action. Canonical: `nwn.set_store_identify_cost`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_store_max_buy_price`
+#### `nwn.set_store_max_buy_price`
 
 `nwn.set_store_max_buy_price(oid_store: Object, max_buy: Int) → Void`
 
@@ -5275,9 +6498,9 @@ Kind: Action. Canonical: `nwn.set_store_max_buy_price`.
 
 Available in: all Glyph events/stages.
 
-## NWN / Locals
+### NWN / Locals
 
-### `nwn.delete_local_float`
+#### `nwn.delete_local_float`
 
 `nwn.delete_local_float(object: Object, var_name: String) → Void`
 
@@ -5289,7 +6512,7 @@ Kind: Action. Canonical: `nwn.delete_local_float`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.delete_local_int`
+#### `nwn.delete_local_int`
 
 `nwn.delete_local_int(object: Object, var_name: String) → Void`
 
@@ -5301,7 +6524,7 @@ Kind: Action. Canonical: `nwn.delete_local_int`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.delete_local_location`
+#### `nwn.delete_local_location`
 
 `nwn.delete_local_location(object: Object, var_name: String) → Void`
 
@@ -5313,7 +6536,7 @@ Kind: Action. Canonical: `nwn.delete_local_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.delete_local_object`
+#### `nwn.delete_local_object`
 
 `nwn.delete_local_object(object: Object, var_name: String) → Void`
 
@@ -5325,7 +6548,7 @@ Kind: Action. Canonical: `nwn.delete_local_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.delete_local_string`
+#### `nwn.delete_local_string`
 
 `nwn.delete_local_string(object: Object, var_name: String) → Void`
 
@@ -5337,7 +6560,7 @@ Kind: Action. Canonical: `nwn.delete_local_string`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_local_float`
+#### `nwn.get_local_float`
 
 `nwn.get_local_float(object: Object, var_name: String) → Float`
 
@@ -5349,7 +6572,7 @@ Kind: Value. Canonical: `nwn.get_local_float`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_local_int`
+#### `nwn.get_local_int`
 
 `nwn.get_local_int(object: Object, var_name: String) → Int`
 
@@ -5361,7 +6584,7 @@ Kind: Value. Canonical: `nwn.get_local_int`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_local_location`
+#### `nwn.get_local_location`
 
 `nwn.get_local_location(object: Object, var_name: String) → Location`
 
@@ -5373,7 +6596,7 @@ Kind: Value. Canonical: `nwn.get_local_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_local_object`
+#### `nwn.get_local_object`
 
 `nwn.get_local_object(object: Object, var_name: String) → Object`
 
@@ -5385,7 +6608,7 @@ Kind: Value. Canonical: `nwn.get_local_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_local_string`
+#### `nwn.get_local_string`
 
 `nwn.get_local_string(object: Object, var_name: String) → String`
 
@@ -5397,7 +6620,7 @@ Kind: Value. Canonical: `nwn.get_local_string`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_local_float`
+#### `nwn.set_local_float`
 
 `nwn.set_local_float(object: Object, var_name: String, value: Float) → Void`
 
@@ -5409,7 +6632,7 @@ Kind: Action. Canonical: `nwn.set_local_float`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_local_int`
+#### `nwn.set_local_int`
 
 `nwn.set_local_int(object: Object, var_name: String, value: Int) → Void`
 
@@ -5421,7 +6644,7 @@ Kind: Action. Canonical: `nwn.set_local_int`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_local_location`
+#### `nwn.set_local_location`
 
 `nwn.set_local_location(object: Object, var_name: String, value: Location) → Void`
 
@@ -5433,7 +6656,7 @@ Kind: Action. Canonical: `nwn.set_local_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_local_object`
+#### `nwn.set_local_object`
 
 `nwn.set_local_object(object: Object, var_name: String, value: Object) → Void`
 
@@ -5445,7 +6668,7 @@ Kind: Action. Canonical: `nwn.set_local_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_local_string`
+#### `nwn.set_local_string`
 
 `nwn.set_local_string(object: Object, var_name: String, value: String) → Void`
 
@@ -5457,9 +6680,9 @@ Kind: Action. Canonical: `nwn.set_local_string`.
 
 Available in: all Glyph events/stages.
 
-## NWN / Objects
+### NWN / Objects
 
-### `nwn.add_henchman`
+#### `nwn.add_henchman`
 
 `nwn.add_henchman(master: Object, henchman: Object = 2130706432) → Void`
 
@@ -5471,7 +6694,7 @@ Kind: Action. Canonical: `nwn.add_henchman`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.add_journal_quest_entry`
+#### `nwn.add_journal_quest_entry`
 
 `nwn.add_journal_quest_entry(sz_plot_id: String, state: Int, creature: Object, all_party_members: Bool = true, all_players: Bool = false, allow_override_higher: Bool = false) → Void`
 
@@ -5483,7 +6706,7 @@ Kind: Action. Canonical: `nwn.add_journal_quest_entry`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.adjust_reputation`
+#### `nwn.adjust_reputation`
 
 `nwn.adjust_reputation(target: Object, source_faction_member: Object, adjustment: Int) → Void`
 
@@ -5495,7 +6718,7 @@ Kind: Action. Canonical: `nwn.adjust_reputation`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.black_screen`
+#### `nwn.black_screen`
 
 `nwn.black_screen(creature: Object) → Void`
 
@@ -5507,7 +6730,7 @@ Kind: Action. Canonical: `nwn.black_screen`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.copy_object`
+#### `nwn.copy_object`
 
 `nwn.copy_object(source: Object, loc_location: Location, owner: Object = 2130706432, new_tag: String = , copy_local_state: Bool = false) → Object`
 
@@ -5519,7 +6742,7 @@ Kind: Action. Canonical: `nwn.copy_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.create_object`
+#### `nwn.create_object`
 
 `nwn.create_object(object_type: Int, template: String, location: Location, use_appear_animation: Bool = false, new_tag: String = ) → Object`
 
@@ -5531,7 +6754,7 @@ Kind: Action. Canonical: `nwn.create_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.create_trap_at_location`
+#### `nwn.create_trap_at_location`
 
 `nwn.create_trap_at_location(trap_type: Int, location: Location, size: Float = 2, tag: String = , faction: Int = 0, on_disarm_script: String = , on_trap_triggered_script: String = ) → Object`
 
@@ -5543,7 +6766,7 @@ Kind: Action. Canonical: `nwn.create_trap_at_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.create_trap_on_object`
+#### `nwn.create_trap_on_object`
 
 `nwn.create_trap_on_object(trap_type: Int, object: Object, faction: Int = 0, on_disarm_script: String = , on_trap_triggered_script: String = ) → Void`
 
@@ -5555,7 +6778,7 @@ Kind: Action. Canonical: `nwn.create_trap_on_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.do_door_action`
+#### `nwn.do_door_action`
 
 `nwn.do_door_action(target_door: Object, door_action: Int) → Void`
 
@@ -5567,7 +6790,7 @@ Kind: Action. Canonical: `nwn.do_door_action`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.do_placeable_object_action`
+#### `nwn.do_placeable_object_action`
 
 `nwn.do_placeable_object_action(placeable: Object, placeable_action: Int) → Void`
 
@@ -5579,7 +6802,7 @@ Kind: Action. Canonical: `nwn.do_placeable_object_action`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.fade_from_black`
+#### `nwn.fade_from_black`
 
 `nwn.fade_from_black(creature: Object, speed: Float = 0.01) → Void`
 
@@ -5591,7 +6814,7 @@ Kind: Action. Canonical: `nwn.fade_from_black`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.fade_to_black`
+#### `nwn.fade_to_black`
 
 `nwn.fade_to_black(creature: Object, speed: Float = 0.01) → Void`
 
@@ -5603,7 +6826,7 @@ Kind: Action. Canonical: `nwn.fade_to_black`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.force_rest`
+#### `nwn.force_rest`
 
 `nwn.force_rest(creature: Object) → Void`
 
@@ -5615,7 +6838,7 @@ Kind: Action. Canonical: `nwn.force_rest`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_action_mode`
+#### `nwn.get_action_mode`
 
 `nwn.get_action_mode(creature: Object, mode: Int) → Int`
 
@@ -5627,7 +6850,7 @@ Kind: Value. Canonical: `nwn.get_action_mode`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_age`
+#### `nwn.get_age`
 
 `nwn.get_age(creature: Object) → Int`
 
@@ -5639,7 +6862,7 @@ Kind: Value. Canonical: `nwn.get_age`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_ai_level`
+#### `nwn.get_ai_level`
 
 `nwn.get_ai_level(target: Object) → Int`
 
@@ -5651,7 +6874,7 @@ Kind: Value. Canonical: `nwn.get_ai_level`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_animal_companion_name`
+#### `nwn.get_animal_companion_name`
 
 `nwn.get_animal_companion_name(target: Object) → String`
 
@@ -5663,7 +6886,7 @@ Kind: Value. Canonical: `nwn.get_animal_companion_name`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_appearance_type`
+#### `nwn.get_appearance_type`
 
 `nwn.get_appearance_type(creature: Object) → Int`
 
@@ -5675,7 +6898,7 @@ Kind: Value. Canonical: `nwn.get_appearance_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_caster_level`
+#### `nwn.get_caster_level`
 
 `nwn.get_caster_level(object: Object) → Int`
 
@@ -5687,7 +6910,7 @@ Kind: Value. Canonical: `nwn.get_caster_level`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_challenge_rating`
+#### `nwn.get_challenge_rating`
 
 `nwn.get_challenge_rating(creature: Object) → Float`
 
@@ -5699,7 +6922,7 @@ Kind: Value. Canonical: `nwn.get_challenge_rating`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_color`
+#### `nwn.get_color`
 
 `nwn.get_color(object: Object, color_channel: Int) → Int`
 
@@ -5711,7 +6934,7 @@ Kind: Value. Canonical: `nwn.get_color`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_commandable`
+#### `nwn.get_commandable`
 
 `nwn.get_commandable(target: Object) → Bool`
 
@@ -5723,7 +6946,7 @@ Kind: Value. Canonical: `nwn.get_commandable`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_current_action`
+#### `nwn.get_current_action`
 
 `nwn.get_current_action(object: Object) → Int`
 
@@ -5735,7 +6958,7 @@ Kind: Value. Canonical: `nwn.get_current_action`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_deity`
+#### `nwn.get_deity`
 
 `nwn.get_deity(creature: Object) → String`
 
@@ -5747,7 +6970,7 @@ Kind: Value. Canonical: `nwn.get_deity`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_description`
+#### `nwn.get_description`
 
 `nwn.get_description(object: Object, original_description: Bool = false, identified_description: Bool = true) → String`
 
@@ -5759,7 +6982,7 @@ Kind: Value. Canonical: `nwn.get_description`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_distance_between_locations`
+#### `nwn.get_distance_between_locations`
 
 `nwn.get_distance_between_locations(location_a: Location, location_b: Location) → Float`
 
@@ -5771,7 +6994,7 @@ Kind: Value. Canonical: `nwn.get_distance_between_locations`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_droppable_flag`
+#### `nwn.get_droppable_flag`
 
 `nwn.get_droppable_flag(item: Object) → Bool`
 
@@ -5783,7 +7006,7 @@ Kind: Value. Canonical: `nwn.get_droppable_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_facing`
+#### `nwn.get_facing`
 
 `nwn.get_facing(target: Object) → Float`
 
@@ -5795,7 +7018,7 @@ Kind: Value. Canonical: `nwn.get_facing`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_facing_from_location`
+#### `nwn.get_facing_from_location`
 
 `nwn.get_facing_from_location(location: Location) → Float`
 
@@ -5807,7 +7030,7 @@ Kind: Value. Canonical: `nwn.get_facing_from_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_familiar_name`
+#### `nwn.get_familiar_name`
 
 `nwn.get_familiar_name(creature: Object) → String`
 
@@ -5819,7 +7042,7 @@ Kind: Value. Canonical: `nwn.get_familiar_name`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_good_evil_value`
+#### `nwn.get_good_evil_value`
 
 `nwn.get_good_evil_value(creature: Object) → Int`
 
@@ -5831,7 +7054,7 @@ Kind: Value. Canonical: `nwn.get_good_evil_value`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_hardness`
+#### `nwn.get_hardness`
 
 `nwn.get_hardness(object: Object) → Int`
 
@@ -5843,7 +7066,7 @@ Kind: Value. Canonical: `nwn.get_hardness`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_identified`
+#### `nwn.get_identified`
 
 `nwn.get_identified(item: Object) → Bool`
 
@@ -5855,7 +7078,7 @@ Kind: Value. Canonical: `nwn.get_identified`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_infinite_flag`
+#### `nwn.get_infinite_flag`
 
 `nwn.get_infinite_flag(item: Object) → Bool`
 
@@ -5867,7 +7090,7 @@ Kind: Value. Canonical: `nwn.get_infinite_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_dawn`
+#### `nwn.get_is_dawn`
 
 `nwn.get_is_dawn() → Bool`
 
@@ -5879,7 +7102,7 @@ Kind: Value. Canonical: `nwn.get_is_dawn`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_day`
+#### `nwn.get_is_day`
 
 `nwn.get_is_day() → Bool`
 
@@ -5891,7 +7114,7 @@ Kind: Value. Canonical: `nwn.get_is_day`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_dead`
+#### `nwn.get_is_dead`
 
 `nwn.get_is_dead(creature: Object) → Bool`
 
@@ -5903,7 +7126,7 @@ Kind: Value. Canonical: `nwn.get_is_dead`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_dm`
+#### `nwn.get_is_dm`
 
 `nwn.get_is_dm(creature: Object) → Bool`
 
@@ -5915,7 +7138,7 @@ Kind: Value. Canonical: `nwn.get_is_dm`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_dm_possessed`
+#### `nwn.get_is_dm_possessed`
 
 `nwn.get_is_dm_possessed(creature: Object) → Bool`
 
@@ -5927,7 +7150,7 @@ Kind: Value. Canonical: `nwn.get_is_dm_possessed`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_door_action_possible`
+#### `nwn.get_is_door_action_possible`
 
 `nwn.get_is_door_action_possible(target_door: Object, door_action: Int) → Bool`
 
@@ -5939,7 +7162,7 @@ Kind: Value. Canonical: `nwn.get_is_door_action_possible`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_dusk`
+#### `nwn.get_is_dusk`
 
 `nwn.get_is_dusk() → Bool`
 
@@ -5951,7 +7174,7 @@ Kind: Value. Canonical: `nwn.get_is_dusk`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_enemy`
+#### `nwn.get_is_enemy`
 
 `nwn.get_is_enemy(target: Object, source: Object = 2130706432) → Bool`
 
@@ -5963,7 +7186,7 @@ Kind: Value. Canonical: `nwn.get_is_enemy`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_friend`
+#### `nwn.get_is_friend`
 
 `nwn.get_is_friend(target: Object, source: Object = 2130706432) → Bool`
 
@@ -5975,7 +7198,7 @@ Kind: Value. Canonical: `nwn.get_is_friend`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_immune`
+#### `nwn.get_is_immune`
 
 `nwn.get_is_immune(creature: Object, immunity_type: Int, versus: Object = 2130706432) → Bool`
 
@@ -5987,7 +7210,7 @@ Kind: Value. Canonical: `nwn.get_is_immune`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_in_combat`
+#### `nwn.get_is_in_combat`
 
 `nwn.get_is_in_combat(creature: Object) → Bool`
 
@@ -5999,7 +7222,7 @@ Kind: Value. Canonical: `nwn.get_is_in_combat`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_neutral`
+#### `nwn.get_is_neutral`
 
 `nwn.get_is_neutral(target: Object, source: Object = 2130706432) → Bool`
 
@@ -6011,7 +7234,7 @@ Kind: Value. Canonical: `nwn.get_is_neutral`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_night`
+#### `nwn.get_is_night`
 
 `nwn.get_is_night() → Bool`
 
@@ -6023,7 +7246,7 @@ Kind: Value. Canonical: `nwn.get_is_night`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_object_valid`
+#### `nwn.get_is_object_valid`
 
 `nwn.get_is_object_valid(object: Object) → Bool`
 
@@ -6035,7 +7258,7 @@ Kind: Value. Canonical: `nwn.get_is_object_valid`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_open`
+#### `nwn.get_is_open`
 
 `nwn.get_is_open(object: Object) → Bool`
 
@@ -6047,7 +7270,7 @@ Kind: Value. Canonical: `nwn.get_is_open`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_placeable_object_action_possible`
+#### `nwn.get_is_placeable_object_action_possible`
 
 `nwn.get_is_placeable_object_action_possible(placeable: Object, placeable_action: Int) → Bool`
 
@@ -6059,7 +7282,7 @@ Kind: Value. Canonical: `nwn.get_is_placeable_object_action_possible`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_player_dm`
+#### `nwn.get_is_player_dm`
 
 `nwn.get_is_player_dm(creature: Object) → Bool`
 
@@ -6071,7 +7294,7 @@ Kind: Value. Canonical: `nwn.get_is_player_dm`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_is_resting`
+#### `nwn.get_is_resting`
 
 `nwn.get_is_resting(creature: Object) → Bool`
 
@@ -6083,7 +7306,7 @@ Kind: Value. Canonical: `nwn.get_is_resting`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_law_chaos_value`
+#### `nwn.get_law_chaos_value`
 
 `nwn.get_law_chaos_value(creature: Object) → Int`
 
@@ -6095,7 +7318,7 @@ Kind: Value. Canonical: `nwn.get_law_chaos_value`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_location`
+#### `nwn.get_location`
 
 `nwn.get_location(object: Object) → Location`
 
@@ -6107,7 +7330,7 @@ Kind: Value. Canonical: `nwn.get_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_lock_key_required`
+#### `nwn.get_lock_key_required`
 
 `nwn.get_lock_key_required(object: Object) → Bool`
 
@@ -6119,7 +7342,7 @@ Kind: Value. Canonical: `nwn.get_lock_key_required`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_lock_key_tag`
+#### `nwn.get_lock_key_tag`
 
 `nwn.get_lock_key_tag(object: Object) → String`
 
@@ -6131,7 +7354,7 @@ Kind: Value. Canonical: `nwn.get_lock_key_tag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_lock_lock_dc`
+#### `nwn.get_lock_lock_dc`
 
 `nwn.get_lock_lock_dc(object: Object) → Int`
 
@@ -6143,7 +7366,7 @@ Kind: Value. Canonical: `nwn.get_lock_lock_dc`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_lock_lockable`
+#### `nwn.get_lock_lockable`
 
 `nwn.get_lock_lockable(object: Object) → Bool`
 
@@ -6155,7 +7378,7 @@ Kind: Value. Canonical: `nwn.get_lock_lockable`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_lock_unlock_dc`
+#### `nwn.get_lock_unlock_dc`
 
 `nwn.get_lock_unlock_dc(object: Object) → Int`
 
@@ -6167,7 +7390,7 @@ Kind: Value. Canonical: `nwn.get_lock_unlock_dc`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_locked`
+#### `nwn.get_locked`
 
 `nwn.get_locked(target: Object) → Bool`
 
@@ -6179,7 +7402,7 @@ Kind: Value. Canonical: `nwn.get_locked`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_module`
+#### `nwn.get_module`
 
 `nwn.get_module() → Object`
 
@@ -6191,7 +7414,7 @@ Kind: Value. Canonical: `nwn.get_module`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_module_name`
+#### `nwn.get_module_name`
 
 `nwn.get_module_name() → String`
 
@@ -6203,7 +7426,7 @@ Kind: Value. Canonical: `nwn.get_module_name`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_movement_rate`
+#### `nwn.get_movement_rate`
 
 `nwn.get_movement_rate(creature: Object) → Int`
 
@@ -6215,7 +7438,7 @@ Kind: Value. Canonical: `nwn.get_movement_rate`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_nearest_object_by_tag`
+#### `nwn.get_nearest_object_by_tag`
 
 `nwn.get_nearest_object_by_tag(tag: String, target: Object = 2130706432, nth: Int = 1) → Object`
 
@@ -6227,7 +7450,7 @@ Kind: Value. Canonical: `nwn.get_nearest_object_by_tag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_nearest_object_to_location`
+#### `nwn.get_nearest_object_to_location`
 
 `nwn.get_nearest_object_to_location(object_type: Int, location: Location, nth: Int = 1) → Object`
 
@@ -6239,7 +7462,7 @@ Kind: Value. Canonical: `nwn.get_nearest_object_to_location`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_nearest_trap_to_object`
+#### `nwn.get_nearest_trap_to_object`
 
 `nwn.get_nearest_trap_to_object(target: Object, trap_detected: Int = 1) → Object`
 
@@ -6251,7 +7474,7 @@ Kind: Value. Canonical: `nwn.get_nearest_trap_to_object`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_object_by_tag`
+#### `nwn.get_object_by_tag`
 
 `nwn.get_object_by_tag(tag: String, nth: Int = 0) → Object`
 
@@ -6263,7 +7486,7 @@ Kind: Value. Canonical: `nwn.get_object_by_tag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_object_by_uuid`
+#### `nwn.get_object_by_uuid`
 
 `nwn.get_object_by_uuid(uuid: String) → Object`
 
@@ -6275,7 +7498,7 @@ Kind: Value. Canonical: `nwn.get_object_by_uuid`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_object_type`
+#### `nwn.get_object_type`
 
 `nwn.get_object_type(target: Object) → Int`
 
@@ -6287,7 +7510,7 @@ Kind: Value. Canonical: `nwn.get_object_type`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_object_visual_transform`
+#### `nwn.get_object_visual_transform`
 
 `nwn.get_object_visual_transform(object: Object, transform: Int, current_lerp: Bool = false, scope: Int = 0) → Float`
 
@@ -6299,7 +7522,7 @@ Kind: Value. Canonical: `nwn.get_object_visual_transform`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_pickpocketable_flag`
+#### `nwn.get_pickpocketable_flag`
 
 `nwn.get_pickpocketable_flag(item: Object) → Bool`
 
@@ -6311,7 +7534,7 @@ Kind: Value. Canonical: `nwn.get_pickpocketable_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_plot_flag`
+#### `nwn.get_plot_flag`
 
 `nwn.get_plot_flag(target: Object) → Bool`
 
@@ -6323,7 +7546,7 @@ Kind: Value. Canonical: `nwn.get_plot_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_portrait_id`
+#### `nwn.get_portrait_id`
 
 `nwn.get_portrait_id(target: Object) → Int`
 
@@ -6335,7 +7558,7 @@ Kind: Value. Canonical: `nwn.get_portrait_id`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_portrait_res_ref`
+#### `nwn.get_portrait_res_ref`
 
 `nwn.get_portrait_res_ref(target: Object) → String`
 
@@ -6347,7 +7570,7 @@ Kind: Value. Canonical: `nwn.get_portrait_res_ref`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_stolen_flag`
+#### `nwn.get_stolen_flag`
 
 `nwn.get_stolen_flag(stolen: Object) → Bool`
 
@@ -6359,7 +7582,7 @@ Kind: Value. Canonical: `nwn.get_stolen_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_sub_race`
+#### `nwn.get_sub_race`
 
 `nwn.get_sub_race(target: Object) → String`
 
@@ -6371,7 +7594,7 @@ Kind: Value. Canonical: `nwn.get_sub_race`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_transition_target`
+#### `nwn.get_transition_target`
 
 `nwn.get_transition_target(transition: Object) → Object`
 
@@ -6383,7 +7606,7 @@ Kind: Value. Canonical: `nwn.get_transition_target`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_useable_flag`
+#### `nwn.get_useable_flag`
 
 `nwn.get_useable_flag(object: Object) → Bool`
 
@@ -6395,7 +7618,7 @@ Kind: Value. Canonical: `nwn.get_useable_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_waypoint_by_tag`
+#### `nwn.get_waypoint_by_tag`
 
 `nwn.get_waypoint_by_tag(waypoint_tag: String) → Object`
 
@@ -6407,7 +7630,7 @@ Kind: Value. Canonical: `nwn.get_waypoint_by_tag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.get_weight`
+#### `nwn.get_weight`
 
 `nwn.get_weight(target: Object) → Int`
 
@@ -6419,7 +7642,7 @@ Kind: Value. Canonical: `nwn.get_weight`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.is_in_conversation`
+#### `nwn.is_in_conversation`
 
 `nwn.is_in_conversation(object: Object) → Bool`
 
@@ -6431,7 +7654,7 @@ Kind: Value. Canonical: `nwn.is_in_conversation`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.play_sound`
+#### `nwn.play_sound`
 
 `nwn.play_sound(actor: Object, sound_name: String) → Void`
 
@@ -6445,7 +7668,7 @@ Kind: Action. Canonical: `nwn.play_sound`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.remove_henchman`
+#### `nwn.remove_henchman`
 
 `nwn.remove_henchman(master: Object, henchman: Object = 2130706432) → Void`
 
@@ -6457,7 +7680,7 @@ Kind: Action. Canonical: `nwn.remove_henchman`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.remove_journal_quest_entry`
+#### `nwn.remove_journal_quest_entry`
 
 `nwn.remove_journal_quest_entry(sz_plot_id: String, creature: Object, all_party_members: Bool = true, all_players: Bool = false) → Void`
 
@@ -6469,7 +7692,7 @@ Kind: Action. Canonical: `nwn.remove_journal_quest_entry`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.restore_camera_facing`
+#### `nwn.restore_camera_facing`
 
 `nwn.restore_camera_facing() → Void`
 
@@ -6481,7 +7704,7 @@ Kind: Action. Canonical: `nwn.restore_camera_facing`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.send_message_to_all_d_ms`
+#### `nwn.send_message_to_all_d_ms`
 
 `nwn.send_message_to_all_d_ms(sz_message: String) → Void`
 
@@ -6493,7 +7716,7 @@ Kind: Action. Canonical: `nwn.send_message_to_all_d_ms`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.send_message_to_pc`
+#### `nwn.send_message_to_pc`
 
 `nwn.send_message_to_pc(player: Object, sz_message: String) → Void`
 
@@ -6505,7 +7728,7 @@ Kind: Action. Canonical: `nwn.send_message_to_pc`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_action_mode`
+#### `nwn.set_action_mode`
 
 `nwn.set_action_mode(creature: Object, mode: Int, status: Int) → Void`
 
@@ -6517,7 +7740,7 @@ Kind: Action. Canonical: `nwn.set_action_mode`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_ai_level`
+#### `nwn.set_ai_level`
 
 `nwn.set_ai_level(target: Object, ai_level: Int) → Void`
 
@@ -6529,7 +7752,7 @@ Kind: Action. Canonical: `nwn.set_ai_level`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_camera_facing`
+#### `nwn.set_camera_facing`
 
 `nwn.set_camera_facing(direction: Float, distance: Float = -1, pitch: Float = -1, transition_type: Int = 0) → Void`
 
@@ -6541,7 +7764,7 @@ Kind: Action. Canonical: `nwn.set_camera_facing`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_camera_height`
+#### `nwn.set_camera_height`
 
 `nwn.set_camera_height(player: Object, height: Float = 0) → Void`
 
@@ -6553,7 +7776,7 @@ Kind: Action. Canonical: `nwn.set_camera_height`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_camera_mode`
+#### `nwn.set_camera_mode`
 
 `nwn.set_camera_mode(player: Object, camera_mode: Int) → Void`
 
@@ -6565,7 +7788,7 @@ Kind: Action. Canonical: `nwn.set_camera_mode`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_color`
+#### `nwn.set_color`
 
 `nwn.set_color(object: Object, color_channel: Int, color_value: Int) → Void`
 
@@ -6577,7 +7800,7 @@ Kind: Action. Canonical: `nwn.set_color`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_commandable`
+#### `nwn.set_commandable`
 
 `nwn.set_commandable(commandable: Bool, target: Object = 2130706432) → Void`
 
@@ -6589,7 +7812,7 @@ Kind: Action. Canonical: `nwn.set_commandable`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_description`
+#### `nwn.set_description`
 
 `nwn.set_description(object: Object, new_description: String = , identified_description: Bool = true) → Void`
 
@@ -6601,7 +7824,7 @@ Kind: Action. Canonical: `nwn.set_description`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_droppable_flag`
+#### `nwn.set_droppable_flag`
 
 `nwn.set_droppable_flag(item: Object, droppable: Bool) → Void`
 
@@ -6613,7 +7836,7 @@ Kind: Action. Canonical: `nwn.set_droppable_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_encounter_active`
+#### `nwn.set_encounter_active`
 
 `nwn.set_encounter_active(new_value: Int, encounter: Object = 2130706432) → Void`
 
@@ -6625,7 +7848,7 @@ Kind: Action. Canonical: `nwn.set_encounter_active`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_encounter_difficulty`
+#### `nwn.set_encounter_difficulty`
 
 `nwn.set_encounter_difficulty(encounter_difficulty: Int, encounter: Object = 2130706432) → Void`
 
@@ -6637,7 +7860,7 @@ Kind: Action. Canonical: `nwn.set_encounter_difficulty`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_encounter_spawns_current`
+#### `nwn.set_encounter_spawns_current`
 
 `nwn.set_encounter_spawns_current(new_value: Int, encounter: Object = 2130706432) → Void`
 
@@ -6649,7 +7872,7 @@ Kind: Action. Canonical: `nwn.set_encounter_spawns_current`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_encounter_spawns_max`
+#### `nwn.set_encounter_spawns_max`
 
 `nwn.set_encounter_spawns_max(new_value: Int, encounter: Object = 2130706432) → Void`
 
@@ -6661,7 +7884,7 @@ Kind: Action. Canonical: `nwn.set_encounter_spawns_max`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_facing`
+#### `nwn.set_facing`
 
 `nwn.set_facing(direction: Float, object: Object = 2130706432) → Void`
 
@@ -6673,7 +7896,7 @@ Kind: Action. Canonical: `nwn.set_facing`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_hardness`
+#### `nwn.set_hardness`
 
 `nwn.set_hardness(hardness: Int, object: Object = 2130706432) → Void`
 
@@ -6685,7 +7908,7 @@ Kind: Action. Canonical: `nwn.set_hardness`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_identified`
+#### `nwn.set_identified`
 
 `nwn.set_identified(item: Object, identified: Bool) → Void`
 
@@ -6697,7 +7920,7 @@ Kind: Action. Canonical: `nwn.set_identified`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_immortal`
+#### `nwn.set_immortal`
 
 `nwn.set_immortal(creature: Object, immortal: Bool) → Void`
 
@@ -6709,7 +7932,7 @@ Kind: Action. Canonical: `nwn.set_immortal`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_infinite_flag`
+#### `nwn.set_infinite_flag`
 
 `nwn.set_infinite_flag(item: Object, infinite: Bool = true) → Void`
 
@@ -6721,7 +7944,7 @@ Kind: Action. Canonical: `nwn.set_infinite_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_is_destroyable`
+#### `nwn.set_is_destroyable`
 
 `nwn.set_is_destroyable(destroyable: Bool, raiseable: Bool = true, selectable_when_dead: Bool = false, object: Object = 2130706432) → Void`
 
@@ -6733,7 +7956,7 @@ Kind: Action. Canonical: `nwn.set_is_destroyable`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_lock_key_required`
+#### `nwn.set_lock_key_required`
 
 `nwn.set_lock_key_required(object: Object, key_required: Int = 1) → Void`
 
@@ -6745,7 +7968,7 @@ Kind: Action. Canonical: `nwn.set_lock_key_required`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_lock_key_tag`
+#### `nwn.set_lock_key_tag`
 
 `nwn.set_lock_key_tag(object: Object, new_key_tag: String) → Void`
 
@@ -6757,7 +7980,7 @@ Kind: Action. Canonical: `nwn.set_lock_key_tag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_lock_lock_dc`
+#### `nwn.set_lock_lock_dc`
 
 `nwn.set_lock_lock_dc(object: Object, new_lock_dc: Int) → Void`
 
@@ -6769,7 +7992,7 @@ Kind: Action. Canonical: `nwn.set_lock_lock_dc`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_lock_lockable`
+#### `nwn.set_lock_lockable`
 
 `nwn.set_lock_lockable(object: Object, lockable: Int = 1) → Void`
 
@@ -6781,7 +8004,7 @@ Kind: Action. Canonical: `nwn.set_lock_lockable`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_lock_unlock_dc`
+#### `nwn.set_lock_unlock_dc`
 
 `nwn.set_lock_unlock_dc(object: Object, new_unlock_dc: Int) → Void`
 
@@ -6793,7 +8016,7 @@ Kind: Action. Canonical: `nwn.set_lock_unlock_dc`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_locked`
+#### `nwn.set_locked`
 
 `nwn.set_locked(target: Object, locked: Bool) → Void`
 
@@ -6805,7 +8028,7 @@ Kind: Action. Canonical: `nwn.set_locked`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_map_pin_enabled`
+#### `nwn.set_map_pin_enabled`
 
 `nwn.set_map_pin_enabled(map_pin: Object, enabled: Int) → Void`
 
@@ -6817,7 +8040,7 @@ Kind: Action. Canonical: `nwn.set_map_pin_enabled`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_object_visual_transform`
+#### `nwn.set_object_visual_transform`
 
 `nwn.set_object_visual_transform(object: Object, transform: Int, value: Float, lerp_type: Int = 0, lerp_duration: Float = 0, pause_with_game: Bool = true, scope: Int = 0, behavior_flags: Int = 0, repeats: Int = 0) → Float`
 
@@ -6829,7 +8052,7 @@ Kind: Action. Canonical: `nwn.set_object_visual_transform`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_pickpocketable_flag`
+#### `nwn.set_pickpocketable_flag`
 
 `nwn.set_pickpocketable_flag(item: Object, pickpocketable: Bool) → Void`
 
@@ -6841,7 +8064,7 @@ Kind: Action. Canonical: `nwn.set_pickpocketable_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_plot_flag`
+#### `nwn.set_plot_flag`
 
 `nwn.set_plot_flag(target: Object, plot_flag: Int) → Void`
 
@@ -6853,7 +8076,7 @@ Kind: Action. Canonical: `nwn.set_plot_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_portrait_id`
+#### `nwn.set_portrait_id`
 
 `nwn.set_portrait_id(target: Object, portrait_id: Int) → Void`
 
@@ -6865,7 +8088,7 @@ Kind: Action. Canonical: `nwn.set_portrait_id`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_portrait_res_ref`
+#### `nwn.set_portrait_res_ref`
 
 `nwn.set_portrait_res_ref(target: Object, portrait_res_ref: String) → Void`
 
@@ -6877,7 +8100,7 @@ Kind: Action. Canonical: `nwn.set_portrait_res_ref`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_stolen_flag`
+#### `nwn.set_stolen_flag`
 
 `nwn.set_stolen_flag(item: Object, stolen_flag: Int) → Void`
 
@@ -6889,7 +8112,7 @@ Kind: Action. Canonical: `nwn.set_stolen_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_tag`
+#### `nwn.set_tag`
 
 `nwn.set_tag(object: Object, new_tag: String) → Void`
 
@@ -6901,7 +8124,7 @@ Kind: Action. Canonical: `nwn.set_tag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_trap_active`
+#### `nwn.set_trap_active`
 
 `nwn.set_trap_active(trap_object: Object, active: Int = 1) → Void`
 
@@ -6913,7 +8136,7 @@ Kind: Action. Canonical: `nwn.set_trap_active`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_trap_detect_dc`
+#### `nwn.set_trap_detect_dc`
 
 `nwn.set_trap_detect_dc(trap_object: Object, detect_dc: Int) → Void`
 
@@ -6925,7 +8148,7 @@ Kind: Action. Canonical: `nwn.set_trap_detect_dc`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_trap_detectable`
+#### `nwn.set_trap_detectable`
 
 `nwn.set_trap_detectable(trap_object: Object, detectable: Int = 1) → Void`
 
@@ -6937,7 +8160,7 @@ Kind: Action. Canonical: `nwn.set_trap_detectable`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_trap_detected_by`
+#### `nwn.set_trap_detected_by`
 
 `nwn.set_trap_detected_by(trap: Object, detector: Object, detected: Bool = true) → Int`
 
@@ -6949,7 +8172,7 @@ Kind: Action. Canonical: `nwn.set_trap_detected_by`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_trap_disarm_dc`
+#### `nwn.set_trap_disarm_dc`
 
 `nwn.set_trap_disarm_dc(trap_object: Object, disarm_dc: Int) → Void`
 
@@ -6961,7 +8184,7 @@ Kind: Action. Canonical: `nwn.set_trap_disarm_dc`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_trap_disarmable`
+#### `nwn.set_trap_disarmable`
 
 `nwn.set_trap_disarmable(trap_object: Object, disarmable: Int = 1) → Void`
 
@@ -6973,7 +8196,7 @@ Kind: Action. Canonical: `nwn.set_trap_disarmable`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_trap_key_tag`
+#### `nwn.set_trap_key_tag`
 
 `nwn.set_trap_key_tag(trap_object: Object, key_tag: String) → Void`
 
@@ -6985,7 +8208,7 @@ Kind: Action. Canonical: `nwn.set_trap_key_tag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_trap_one_shot`
+#### `nwn.set_trap_one_shot`
 
 `nwn.set_trap_one_shot(trap_object: Object, one_shot: Int = 1) → Void`
 
@@ -6997,7 +8220,7 @@ Kind: Action. Canonical: `nwn.set_trap_one_shot`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.set_useable_flag`
+#### `nwn.set_useable_flag`
 
 `nwn.set_useable_flag(target: Object, useable_flag: Int) → Void`
 
@@ -7009,7 +8232,7 @@ Kind: Action. Canonical: `nwn.set_useable_flag`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.summon_animal_companion`
+#### `nwn.summon_animal_companion`
 
 `nwn.summon_animal_companion(master: Object) → Void`
 
@@ -7021,7 +8244,7 @@ Kind: Action. Canonical: `nwn.summon_animal_companion`.
 
 Available in: all Glyph events/stages.
 
-### `nwn.summon_familiar`
+#### `nwn.summon_familiar`
 
 `nwn.summon_familiar(master: Object) → Void`
 
@@ -7033,9 +8256,9 @@ Kind: Action. Canonical: `nwn.summon_familiar`.
 
 Available in: all Glyph events/stages.
 
-## Traits
+### Traits
 
-### `has_trait`
+#### `has_trait`
 
 `has_trait(trait_tag: String = ) → Bool`
 
@@ -7045,7 +8268,7 @@ Kind: Value. Canonical: `has_trait`.
 
 Available in: all Glyph events/stages.
 
-## Constants
+### Constants
 
 Constants are available automatically. Domains currently use Int values; OBJECT.INVALID uses Object.
 
@@ -10643,12 +11866,102 @@ Constants are available automatically. Domains currently use Int values; OBJECT.
 
 </details>
 
-## Receiver methods
+### Receiver methods
 
 These deliberately classified methods belong to known Glyph value types or explicit domain abstractions. Object is an opaque NWN handle; engine procedures use `nwn.*`.
 
 | Receiver | Policy | Method | Parameters | Returns | Canonical | Availability |
 | --- | --- | --- | --- | --- | --- | --- |
+| List<Bool> | None | append | value: Bool | List<Bool> | collection.append_list_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Float> | None | append | value: Float | List<Float> | collection.append_list_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Int> | None | append | value: Int | List<Int> | collection.append_list_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Object> | None | append | value: Object | List<Object> | collection.append_list_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<String> | None | append | value: String | List<String> | collection.append_list_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Bool> | None | contains | value: Bool | Bool | collection.contains_list_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Float> | None | contains | value: Float | Bool | collection.contains_list_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Int> | None | contains | value: Int | Bool | collection.contains_list_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Object> | None | contains | value: Object | Bool | collection.contains_list_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<String> | None | contains | value: String | Bool | collection.contains_list_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Bool> | None | contains_key | key: Bool | Bool | collection.contains_key_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Float> | None | contains_key | key: Bool | Bool | collection.contains_key_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Int> | None | contains_key | key: Bool | Bool | collection.contains_key_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Object> | None | contains_key | key: Bool | Bool | collection.contains_key_dictionary_bool_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, String> | None | contains_key | key: Bool | Bool | collection.contains_key_dictionary_bool_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Bool> | None | contains_key | key: Float | Bool | collection.contains_key_dictionary_float_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Float> | None | contains_key | key: Float | Bool | collection.contains_key_dictionary_float_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Int> | None | contains_key | key: Float | Bool | collection.contains_key_dictionary_float_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Object> | None | contains_key | key: Float | Bool | collection.contains_key_dictionary_float_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, String> | None | contains_key | key: Float | Bool | collection.contains_key_dictionary_float_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Bool> | None | contains_key | key: Int | Bool | collection.contains_key_dictionary_int_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Float> | None | contains_key | key: Int | Bool | collection.contains_key_dictionary_int_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Int> | None | contains_key | key: Int | Bool | collection.contains_key_dictionary_int_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Object> | None | contains_key | key: Int | Bool | collection.contains_key_dictionary_int_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, String> | None | contains_key | key: Int | Bool | collection.contains_key_dictionary_int_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Bool> | None | contains_key | key: Object | Bool | collection.contains_key_dictionary_nwobject_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Float> | None | contains_key | key: Object | Bool | collection.contains_key_dictionary_nwobject_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Int> | None | contains_key | key: Object | Bool | collection.contains_key_dictionary_nwobject_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Object> | None | contains_key | key: Object | Bool | collection.contains_key_dictionary_nwobject_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, String> | None | contains_key | key: Object | Bool | collection.contains_key_dictionary_nwobject_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Bool> | None | contains_key | key: String | Bool | collection.contains_key_dictionary_string_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Float> | None | contains_key | key: String | Bool | collection.contains_key_dictionary_string_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Int> | None | contains_key | key: String | Bool | collection.contains_key_dictionary_string_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Object> | None | contains_key | key: String | Bool | collection.contains_key_dictionary_string_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, String> | None | contains_key | key: String | Bool | collection.contains_key_dictionary_string_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Bool> | None | count |  | Int | collection.count_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Float> | None | count |  | Int | collection.count_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Int> | None | count |  | Int | collection.count_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Object> | None | count |  | Int | collection.count_dictionary_bool_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, String> | None | count |  | Int | collection.count_dictionary_bool_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Bool> | None | count |  | Int | collection.count_dictionary_float_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Float> | None | count |  | Int | collection.count_dictionary_float_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Int> | None | count |  | Int | collection.count_dictionary_float_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Object> | None | count |  | Int | collection.count_dictionary_float_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, String> | None | count |  | Int | collection.count_dictionary_float_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Bool> | None | count |  | Int | collection.count_dictionary_int_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Float> | None | count |  | Int | collection.count_dictionary_int_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Int> | None | count |  | Int | collection.count_dictionary_int_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Object> | None | count |  | Int | collection.count_dictionary_int_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, String> | None | count |  | Int | collection.count_dictionary_int_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Bool> | None | count |  | Int | collection.count_dictionary_nwobject_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Float> | None | count |  | Int | collection.count_dictionary_nwobject_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Int> | None | count |  | Int | collection.count_dictionary_nwobject_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Object> | None | count |  | Int | collection.count_dictionary_nwobject_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, String> | None | count |  | Int | collection.count_dictionary_nwobject_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Bool> | None | count |  | Int | collection.count_dictionary_string_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Float> | None | count |  | Int | collection.count_dictionary_string_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Int> | None | count |  | Int | collection.count_dictionary_string_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Object> | None | count |  | Int | collection.count_dictionary_string_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, String> | None | count |  | Int | collection.count_dictionary_string_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Bool> | None | count |  | Int | collection.count_list_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Float> | None | count |  | Int | collection.count_list_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Int> | None | count |  | Int | collection.count_list_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Object> | None | count |  | Int | collection.count_list_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<String> | None | count |  | Int | collection.count_list_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Bool> | None | get | key: Bool, fallback: Bool | Bool | collection.get_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Float> | None | get | key: Bool, fallback: Float | Float | collection.get_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Int> | None | get | key: Bool, fallback: Int | Int | collection.get_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Object> | None | get | key: Bool, fallback: Object | Object | collection.get_dictionary_bool_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, String> | None | get | key: Bool, fallback: String | String | collection.get_dictionary_bool_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Bool> | None | get | key: Float, fallback: Bool | Bool | collection.get_dictionary_float_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Float> | None | get | key: Float, fallback: Float | Float | collection.get_dictionary_float_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Int> | None | get | key: Float, fallback: Int | Int | collection.get_dictionary_float_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Object> | None | get | key: Float, fallback: Object | Object | collection.get_dictionary_float_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, String> | None | get | key: Float, fallback: String | String | collection.get_dictionary_float_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Bool> | None | get | key: Int, fallback: Bool | Bool | collection.get_dictionary_int_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Float> | None | get | key: Int, fallback: Float | Float | collection.get_dictionary_int_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Int> | None | get | key: Int, fallback: Int | Int | collection.get_dictionary_int_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Object> | None | get | key: Int, fallback: Object | Object | collection.get_dictionary_int_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, String> | None | get | key: Int, fallback: String | String | collection.get_dictionary_int_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Bool> | None | get | key: Object, fallback: Bool | Bool | collection.get_dictionary_nwobject_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Float> | None | get | key: Object, fallback: Float | Float | collection.get_dictionary_nwobject_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Int> | None | get | key: Object, fallback: Int | Int | collection.get_dictionary_nwobject_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Object> | None | get | key: Object, fallback: Object | Object | collection.get_dictionary_nwobject_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, String> | None | get | key: Object, fallback: String | String | collection.get_dictionary_nwobject_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Bool> | None | get | key: String, fallback: Bool | Bool | collection.get_dictionary_string_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Float> | None | get | key: String, fallback: Float | Float | collection.get_dictionary_string_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Int> | None | get | key: String, fallback: Int | Int | collection.get_dictionary_string_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Object> | None | get | key: String, fallback: Object | Object | collection.get_dictionary_string_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, String> | None | get | key: String, fallback: String | String | collection.get_dictionary_string_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Location | LanguageValue | get_area |  | Object | nwn.get_area_from_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Location | LanguageValue | get_distance_between_locations | location_b: Location | Float | nwn.get_distance_between_locations | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Effect | LanguageValue | get_effect_caster_level |  | Int | nwn.get_effect_caster_level | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
@@ -10670,10 +11983,120 @@ These deliberately classified methods belong to known Glyph value types or expli
 | Location | LanguageValue | get_x |  | Float | nwn.location_x | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Location | LanguageValue | get_y |  | Float | nwn.location_y | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Location | LanguageValue | get_z |  | Float | nwn.location_z | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Bool> | None | keys |  | List<Bool> | collection.keys_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Float> | None | keys |  | List<Bool> | collection.keys_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Int> | None | keys |  | List<Bool> | collection.keys_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Object> | None | keys |  | List<Bool> | collection.keys_dictionary_bool_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, String> | None | keys |  | List<Bool> | collection.keys_dictionary_bool_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Bool> | None | keys |  | List<Float> | collection.keys_dictionary_float_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Float> | None | keys |  | List<Float> | collection.keys_dictionary_float_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Int> | None | keys |  | List<Float> | collection.keys_dictionary_float_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Object> | None | keys |  | List<Float> | collection.keys_dictionary_float_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, String> | None | keys |  | List<Float> | collection.keys_dictionary_float_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Bool> | None | keys |  | List<Int> | collection.keys_dictionary_int_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Float> | None | keys |  | List<Int> | collection.keys_dictionary_int_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Int> | None | keys |  | List<Int> | collection.keys_dictionary_int_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Object> | None | keys |  | List<Int> | collection.keys_dictionary_int_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, String> | None | keys |  | List<Int> | collection.keys_dictionary_int_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Bool> | None | keys |  | List<Object> | collection.keys_dictionary_nwobject_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Float> | None | keys |  | List<Object> | collection.keys_dictionary_nwobject_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Int> | None | keys |  | List<Object> | collection.keys_dictionary_nwobject_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Object> | None | keys |  | List<Object> | collection.keys_dictionary_nwobject_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, String> | None | keys |  | List<Object> | collection.keys_dictionary_nwobject_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Bool> | None | keys |  | List<String> | collection.keys_dictionary_string_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Float> | None | keys |  | List<String> | collection.keys_dictionary_string_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Int> | None | keys |  | List<String> | collection.keys_dictionary_string_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Object> | None | keys |  | List<String> | collection.keys_dictionary_string_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, String> | None | keys |  | List<String> | collection.keys_dictionary_string_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Bool> | None | remove_at | index: Int | List<Bool> | collection.remove_at_list_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Float> | None | remove_at | index: Int | List<Float> | collection.remove_at_list_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Int> | None | remove_at | index: Int | List<Int> | collection.remove_at_list_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Object> | None | remove_at | index: Int | List<Object> | collection.remove_at_list_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<String> | None | remove_at | index: Int | List<String> | collection.remove_at_list_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Bool> | None | values |  | List<Bool> | collection.values_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Float> | None | values |  | List<Float> | collection.values_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Int> | None | values |  | List<Int> | collection.values_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Object> | None | values |  | List<Object> | collection.values_dictionary_bool_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, String> | None | values |  | List<String> | collection.values_dictionary_bool_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Bool> | None | values |  | List<Bool> | collection.values_dictionary_float_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Float> | None | values |  | List<Float> | collection.values_dictionary_float_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Int> | None | values |  | List<Int> | collection.values_dictionary_float_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Object> | None | values |  | List<Object> | collection.values_dictionary_float_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, String> | None | values |  | List<String> | collection.values_dictionary_float_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Bool> | None | values |  | List<Bool> | collection.values_dictionary_int_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Float> | None | values |  | List<Float> | collection.values_dictionary_int_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Int> | None | values |  | List<Int> | collection.values_dictionary_int_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Object> | None | values |  | List<Object> | collection.values_dictionary_int_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, String> | None | values |  | List<String> | collection.values_dictionary_int_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Bool> | None | values |  | List<Bool> | collection.values_dictionary_nwobject_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Float> | None | values |  | List<Float> | collection.values_dictionary_nwobject_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Int> | None | values |  | List<Int> | collection.values_dictionary_nwobject_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Object> | None | values |  | List<Object> | collection.values_dictionary_nwobject_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, String> | None | values |  | List<String> | collection.values_dictionary_nwobject_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Bool> | None | values |  | List<Bool> | collection.values_dictionary_string_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Float> | None | values |  | List<Float> | collection.values_dictionary_string_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Int> | None | values |  | List<Int> | collection.values_dictionary_string_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Object> | None | values |  | List<Object> | collection.values_dictionary_string_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, String> | None | values |  | List<String> | collection.values_dictionary_string_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Bool> | None | with | key: Bool, value: Bool | Dictionary<Bool, Bool> | collection.with_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Float> | None | with | key: Bool, value: Float | Dictionary<Bool, Float> | collection.with_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Int> | None | with | key: Bool, value: Int | Dictionary<Bool, Int> | collection.with_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Object> | None | with | key: Bool, value: Object | Dictionary<Bool, Object> | collection.with_dictionary_bool_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, String> | None | with | key: Bool, value: String | Dictionary<Bool, String> | collection.with_dictionary_bool_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Bool> | None | with | key: Float, value: Bool | Dictionary<Float, Bool> | collection.with_dictionary_float_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Float> | None | with | key: Float, value: Float | Dictionary<Float, Float> | collection.with_dictionary_float_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Int> | None | with | key: Float, value: Int | Dictionary<Float, Int> | collection.with_dictionary_float_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Object> | None | with | key: Float, value: Object | Dictionary<Float, Object> | collection.with_dictionary_float_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, String> | None | with | key: Float, value: String | Dictionary<Float, String> | collection.with_dictionary_float_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Bool> | None | with | key: Int, value: Bool | Dictionary<Int, Bool> | collection.with_dictionary_int_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Float> | None | with | key: Int, value: Float | Dictionary<Int, Float> | collection.with_dictionary_int_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Int> | None | with | key: Int, value: Int | Dictionary<Int, Int> | collection.with_dictionary_int_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Object> | None | with | key: Int, value: Object | Dictionary<Int, Object> | collection.with_dictionary_int_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, String> | None | with | key: Int, value: String | Dictionary<Int, String> | collection.with_dictionary_int_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Bool> | None | with | key: Object, value: Bool | Dictionary<Object, Bool> | collection.with_dictionary_nwobject_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Float> | None | with | key: Object, value: Float | Dictionary<Object, Float> | collection.with_dictionary_nwobject_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Int> | None | with | key: Object, value: Int | Dictionary<Object, Int> | collection.with_dictionary_nwobject_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Object> | None | with | key: Object, value: Object | Dictionary<Object, Object> | collection.with_dictionary_nwobject_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, String> | None | with | key: Object, value: String | Dictionary<Object, String> | collection.with_dictionary_nwobject_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Bool> | None | with | key: String, value: Bool | Dictionary<String, Bool> | collection.with_dictionary_string_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Float> | None | with | key: String, value: Float | Dictionary<String, Float> | collection.with_dictionary_string_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Int> | None | with | key: String, value: Int | Dictionary<String, Int> | collection.with_dictionary_string_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Object> | None | with | key: String, value: Object | Dictionary<String, Object> | collection.with_dictionary_string_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, String> | None | with | key: String, value: String | Dictionary<String, String> | collection.with_dictionary_string_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Bool> | None | with | index: Int, value: Bool | List<Bool> | collection.with_list_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Float> | None | with | index: Int, value: Float | List<Float> | collection.with_list_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Int> | None | with | index: Int, value: Int | List<Int> | collection.with_list_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<Object> | None | with | index: Int, value: Object | List<Object> | collection.with_list_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<String> | None | with | index: Int, value: String | List<String> | collection.with_list_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Bool> | None | without | key: Bool | Dictionary<Bool, Bool> | collection.without_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Float> | None | without | key: Bool | Dictionary<Bool, Float> | collection.without_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Int> | None | without | key: Bool | Dictionary<Bool, Int> | collection.without_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, Object> | None | without | key: Bool | Dictionary<Bool, Object> | collection.without_dictionary_bool_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Bool, String> | None | without | key: Bool | Dictionary<Bool, String> | collection.without_dictionary_bool_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Bool> | None | without | key: Float | Dictionary<Float, Bool> | collection.without_dictionary_float_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Float> | None | without | key: Float | Dictionary<Float, Float> | collection.without_dictionary_float_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Int> | None | without | key: Float | Dictionary<Float, Int> | collection.without_dictionary_float_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, Object> | None | without | key: Float | Dictionary<Float, Object> | collection.without_dictionary_float_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Float, String> | None | without | key: Float | Dictionary<Float, String> | collection.without_dictionary_float_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Bool> | None | without | key: Int | Dictionary<Int, Bool> | collection.without_dictionary_int_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Float> | None | without | key: Int | Dictionary<Int, Float> | collection.without_dictionary_int_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Int> | None | without | key: Int | Dictionary<Int, Int> | collection.without_dictionary_int_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, Object> | None | without | key: Int | Dictionary<Int, Object> | collection.without_dictionary_int_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Int, String> | None | without | key: Int | Dictionary<Int, String> | collection.without_dictionary_int_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Bool> | None | without | key: Object | Dictionary<Object, Bool> | collection.without_dictionary_nwobject_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Float> | None | without | key: Object | Dictionary<Object, Float> | collection.without_dictionary_nwobject_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Int> | None | without | key: Object | Dictionary<Object, Int> | collection.without_dictionary_nwobject_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, Object> | None | without | key: Object | Dictionary<Object, Object> | collection.without_dictionary_nwobject_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<Object, String> | None | without | key: Object | Dictionary<Object, String> | collection.without_dictionary_nwobject_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Bool> | None | without | key: String | Dictionary<String, Bool> | collection.without_dictionary_string_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Float> | None | without | key: String | Dictionary<String, Float> | collection.without_dictionary_string_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Int> | None | without | key: String | Dictionary<String, Int> | collection.without_dictionary_string_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, Object> | None | without | key: String | Dictionary<String, Object> | collection.without_dictionary_string_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Dictionary<String, String> | None | without | key: String | Dictionary<String, String> | collection.without_dictionary_string_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 
-## Context and property aliases
+### Context and property aliases
 
-### encounter.after_group_spawn
+#### encounter.after_group_spawn
 
 | Spelling | Type | Canonical field/function | Setter | Description |
 | --- | --- | --- | --- | --- |
@@ -10719,7 +12142,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | time.hour | Float | game_time |  | Game Time (hours) |
 | triggering_player | Object | triggering_player |  | Triggering Player |
 
-### encounter.before_group_spawn
+#### encounter.before_group_spawn
 
 | Spelling | Type | Canonical field/function | Setter | Description |
 | --- | --- | --- | --- | --- |
@@ -10768,7 +12191,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | time.hour | Float | game_time |  | Game Time (hours) |
 | triggering_player | Object | triggering_player |  | Triggering Player |
 
-### encounter.on_boss_spawn
+#### encounter.on_boss_spawn
 
 | Spelling | Type | Canonical field/function | Setter | Description |
 | --- | --- | --- | --- | --- |
@@ -10806,7 +12229,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | profile_name | String | profile_name |  | Profile Name |
 | triggering_player | Object | triggering_player |  | Triggering Player |
 
-### encounter.on_creature_death
+#### encounter.on_creature_death
 
 | Spelling | Type | Canonical field/function | Setter | Description |
 | --- | --- | --- | --- | --- |
@@ -10847,7 +12270,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | profile_name | String | profile_name |  | Profile Name |
 | triggering_player | Object | triggering_player |  | Triggering Player |
 
-### encounter.on_creature_spawn
+#### encounter.on_creature_spawn
 
 | Spelling | Type | Canonical field/function | Setter | Description |
 | --- | --- | --- | --- | --- |
@@ -10901,7 +12324,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | total_count | Int | total_count |  | Total Count |
 | triggering_player | Object | triggering_player |  | Triggering Player |
 
-### interaction/attempted
+#### interaction/attempted
 
 | Spelling | Type | Canonical field/function | Setter | Description |
 | --- | --- | --- | --- | --- |
@@ -10928,7 +12351,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | target_id | String | target_id |  | Target ID |
 | target_mode | String | target_mode |  | Target Mode |
 
-### interaction/completed
+#### interaction/completed
 
 | Spelling | Type | Canonical field/function | Setter | Description |
 | --- | --- | --- | --- | --- |
@@ -10958,7 +12381,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | session_id | String | session_id |  | Session ID |
 | target_id | String | target_id |  | Target ID |
 
-### interaction/started
+#### interaction/started
 
 | Spelling | Type | Canonical field/function | Setter | Description |
 | --- | --- | --- | --- | --- |
@@ -10991,7 +12414,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | target_id | String | target_id |  | Target ID |
 | target_mode | String | target_mode |  | Target Mode |
 
-### interaction/tick
+#### interaction/tick
 
 | Spelling | Type | Canonical field/function | Setter | Description |
 | --- | --- | --- | --- | --- |
@@ -11024,7 +12447,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | session_id | String | session_id |  | Session ID |
 | target_id | String | target_id |  | Target ID |
 
-### trait.on_granted
+#### trait.on_granted
 
 | Spelling | Type | Canonical field/function | Setter | Description |
 | --- | --- | --- | --- | --- |
@@ -11039,7 +12462,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | target_creature | Object | target_creature |  | Target Creature |
 | trait_tag | String | trait_tag |  | Trait Tag |
 
-### trait.on_removed
+#### trait.on_removed
 
 | Spelling | Type | Canonical field/function | Setter | Description |
 | --- | --- | --- | --- | --- |
@@ -11054,7 +12477,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | target_creature | Object | target_creature |  | Target Creature |
 | trait_tag | String | trait_tag |  | Trait Tag |
 
-## Writable state
+### Writable state
 
 | Name | Type | Setter | Availability |
 | --- | --- | --- | --- |
@@ -11062,8 +12485,1233 @@ These deliberately classified methods belong to known Glyph value types or expli
 | required_rounds | Int | set_required_rounds | interaction/started, interaction/tick |
 | status | String | set_status | interaction/started, interaction/tick, interaction/completed |
 
-## Indexers
+### Indexers
 
 | Name | Getter | Setter |
 | --- | --- | --- |
 | metadata[index] | metadata | set_metadata |
+
+## NWScript binding coverage
+
+
+Generated by Glyph.Docs. Do not edit.
+
+API: `NWN.Core, Version=8193.37.4.0, Culture=neutral, PublicKeyToken=null`
+
+### adapted (70)
+
+| NWScript member | Glyph | Reason / signature |
+| --- | --- | --- |
+| `ActionAttack` | nwn.action_attack | Attack oAttackee. - bPassive: If this is TRUE, attack is in passive mode. |
+| `ActionCastFakeSpellAtLocation` | nwn.action_cast_fake_spell_at_location | The action subject will fake casting a spell at lLocation; the conjure and cast animations and visuals will occur, nothing else. - nSpell - lTarget - nProjectilePathType: PROJECTILE_PATH_TYPE_* |
+| `ActionCastFakeSpellAtObject` | nwn.action_cast_fake_spell_at_object | The action subject will fake casting a spell at oTarget; the conjure and cast animations and visuals will occur, nothing else. - nSpell - oTarget - nProjectilePathType: PROJECTILE_PATH_TYPE_* |
+| `ActionCastSpellAtLocation` | nwn.action_cast_spell_at_location | Cast spell nSpell at lTargetLocation. - nSpell: SPELL_* - lTargetLocation - nMetaMagic: METAMAGIC_*. If nClass is specified, cannot be METAMAGIC_ANY. - bCheat: If this is TRUE, then the executor of the action doesn't have to be able to cast the spell. Ignored if nClass is specified. - bCheat: If this is TRUE, then the executor of the action doesn't have to be able to cast the spell. - nProjectilePathType: PROJECTILE_PATH_TYPE_* - bInstantSpell: If this is TRUE, the spell is cast immediately; this allows the end-user to simulate a high-level magic user having lots of advance warning of impending trouble. - nClass: If set to a CLASS_TYPE_* it will cast using that class specifically. CLASS_TYPE_INVALID will use spell abilities. - bSpontaneousCast: If set to TRUE will attempt to cast the given spell spontaneously, ie a Cleric casting Cure Light Wounds using any level 1 slot. Needs a valid nClass set. - nDomainLevel: The level of the spell if cast from a domain slot. eg SPELL_HEAL can be spell level 5 on a cleric. Use 0 for no domain slot. |
+| `ActionCastSpellAtObject` | nwn.action_cast_spell_at_object | This action casts a spell at oTarget. - nSpell: SPELL_* - oTarget: Target for the spell - nMetaMagic: METAMAGIC_*. If nClass is specified, cannot be METAMAGIC_ANY. - bCheat: If this is TRUE, then the executor of the action doesn't have to be able to cast the spell. Ignored if nClass is specified. - bCheat: If this is TRUE, then the executor of the action doesn't have to be able to cast the spell. - nDomainLevel: The level of the spell if cast from a domain slot. eg SPELL_HEAL can be spell level 5 on a cleric. Use 0 for no domain slot. - nProjectilePathType: PROJECTILE_PATH_TYPE_* - bInstantSpell: If this is TRUE, the spell is cast immediately. This allows the end-user to simulate a high-level magic-user having lots of advance warning of impending trouble - nClass: If set to a CLASS_TYPE_* it will cast using that class specifically. CLASS_TYPE_INVALID will use spell abilities. - bSpontaneousCast: If set to TRUE will attempt to cast the given spell spontaneously, ie a Cleric casting Cure Light Wounds using any level 1 slot. Needs a valid nClass set. |
+| `ActionCloseDoor` | nwn.action_close_door | Cause the action subject to close oDoor - bRun: If TRUE, subject will run to the door instead of walking |
+| `ActionCounterSpell` | nwn.action_counter_spell | Counterspell oCounterSpellTarget. |
+| `ActionEquipItem` | nwn.action_equip_item | Equip oItem into nInventorySlot. - nInventorySlot: INVENTORY_SLOT_* * No return value, but if an error occurs the log file will contain "ActionEquipItem failed." Note: If the creature already has an item equipped in the slot specified, it will be unequipped automatically by the call to ActionEquipItem. In order for ActionEquipItem to succeed the creature must be able to equip the item oItem normally. This means that: 1) The item is in the creature's inventory. 2) The item must already be identified (if magical). 3) The creature has the level required to equip the item (if magical and ILR is on). 4) The creature possesses the required feats to equip the item (such as weapon proficiencies). |
+| `ActionEquipMostDamagingMelee` | nwn.action_equip_most_damaging_melee | The creature will equip the melee weapon in its possession that can do the most damage. If no valid melee weapon is found, it will equip the most damaging range weapon. This function should only ever be called in the EndOfCombatRound scripts, because otherwise it would have to stop the combat round to run simulation. - oVersus: You can try to get the most damaging weapon against oVersus - bOffHand |
+| `ActionEquipMostDamagingRanged` | nwn.action_equip_most_damaging_ranged | The creature will equip the range weapon in its possession that can do the most damage. If no valid range weapon can be found, it will equip the most damaging melee weapon. - oVersus: You can try to get the most damaging weapon against oVersus |
+| `ActionEquipMostEffectiveArmor` | nwn.action_equip_most_effective_armor | The creature will equip the armour in its possession that has the highest armour class. |
+| `ActionExamine` | nwn.action_examine | Makes a player examine the object oExamine. This causes the examination pop-up box to appear for the object specified. |
+| `ActionForceFollowObject` | nwn.action_force_follow_object | The action subject will follow oFollow until a ClearAllActions() is called. - oFollow: this is the object to be followed - fFollowDistance: follow distance in metres * No return value |
+| `ActionForceMoveToLocation` | nwn.action_force_move_to_location | Force the action subject to move to lDestination. |
+| `ActionForceMoveToObject` | nwn.action_force_move_to_object | Force the action subject to move to oMoveTo. |
+| `ActionGiveItem` | nwn.action_give_item | Give oItem to oGiveTo If oItem is not a valid item, or oGiveTo is not a valid object, nothing will happen. |
+| `ActionInteractObject` | nwn.action_interact_object | Use oPlaceable. |
+| `ActionJumpToLocation` | nwn.action_jump_to_location | The subject will jump to lLocation instantly (even between areas). If lLocation is invalid, nothing will happen. |
+| `ActionJumpToObject` | nwn.action_jump_to_object | Jump to an object ID, or as near to it as possible. |
+| `ActionLockObject` | nwn.action_lock_object | The action subject will lock oTarget, which can be a door or a placeable object. |
+| `ActionMoveAwayFromLocation` | nwn.action_move_away_from_location | Causes the action subject to move away from lMoveAwayFrom. |
+| `ActionMoveAwayFromObject` | nwn.action_move_away_from_object | Cause the action subject to move to a certain distance away from oFleeFrom. - oFleeFrom: This is the object we wish the action subject to move away from. If oFleeFrom is not in the same area as the action subject, nothing will happen. - bRun: If this is TRUE, the action subject will run rather than walk - fMoveAwayRange: This is the distance we wish the action subject to put between themselves and oFleeFrom * No return value, but if an error occurs the log file will contain "ActionMoveAwayFromObject failed." |
+| `ActionMoveToLocation` | nwn.action_move_to_location | The action subject will move to lDestination. - lDestination: The object will move to this location. If the location is invalid or a path cannot be found to it, the command does nothing. - bRun: If this is TRUE, the action subject will run rather than walk * No return value, but if an error occurs the log file will contain "MoveToPoint failed." |
+| `ActionMoveToObject` | nwn.action_move_to_object | Cause the action subject to move to a certain distance from oMoveTo. If there is no path to oMoveTo, this command will do nothing. - oMoveTo: This is the object we wish the action subject to move to - bRun: If this is TRUE, the action subject will run rather than walk - fRange: This is the desired distance between the action subject and oMoveTo * No return value, but if an error occurs the log file will contain "ActionMoveToObject failed." |
+| `ActionOpenDoor` | nwn.action_open_door | Cause the action subject to open oDoor - bRun: If TRUE, subject will run to the door instead of walking |
+| `ActionPauseConversation` | nwn.action_pause_conversation | Pause the current conversation. |
+| `ActionPickUpItem` | nwn.action_pick_up_item | Pick up oItem from the ground. * No return value, but if an error occurs the log file will contain "ActionPickUpItem failed." |
+| `ActionPlayAnimation` | nwn.action_play_animation | Cause the action subject to play an animation - nAnimation: ANIMATION_* - fSpeed: Speed of the animation - fDurationSeconds: Duration of the animation (this is not used for Fire and Forget animations) |
+| `ActionPutDownItem` | nwn.action_put_down_item | Put down oItem on the ground. * No return value, but if an error occurs the log file will contain "ActionPutDownItem failed." |
+| `ActionRandomWalk` | nwn.action_random_walk | The action subject will generate a random location near its current location and pathfind to it. ActionRandomwalk never ends, which means it is neccessary to call ClearAllActions in order to allow a creature to perform any other action once ActionRandomWalk has been called. * No return value, but if an error occurs the log file will contain "ActionRandomWalk failed." |
+| `ActionRest` | nwn.action_rest | The creature will rest if not in combat and no enemies are nearby. - bCreatureToEnemyLineOfSightCheck: TRUE to allow the creature to rest if enemies are nearby, but the creature can't see the enemy. FALSE the creature will not rest if enemies are nearby regardless of whether or not the creature can see them, such as if an enemy is close by, but is in a different room behind a closed door. |
+| `ActionResumeConversation` | nwn.action_resume_conversation | Resume a conversation after it has been paused. |
+| `ActionSit` | nwn.action_sit | Sit in oChair. Note: Not all creatures will be able to sit and not all objects can be sat on. The object oChair must also be marked as usable in the toolset. For Example: To get a player to sit in oChair when they click on it, place the following script in the OnUsed event for the object oChair. void main() { object oChair = OBJECT_SELF; AssignCommand(GetLastUsedBy(),ActionSit(oChair)); } |
+| `ActionSpeakString` | nwn.action_speak_string | Add a speak action to the action subject. - sStringToSpeak: String to be spoken - nTalkVolume: TALKVOLUME_* |
+| `ActionSpeakStringByStrRef` | nwn.action_speak_string_by_str_ref | Causes the creature to speak a translated string. - nStrRef: Reference of the string in the talk table - nTalkVolume: TALKVOLUME_* |
+| `ActionStartConversation` | nwn.action_start_conversation | Starts a conversation with oObjectToConverseWith - this will cause their OnDialog event to fire. - oObjectToConverseWith - sDialogResRef: If this is blank, the creature's own dialogue file will be used - bPrivateConversation Turn off bPlayHello if you don't want the initial greeting to play |
+| `ActionTakeItem` | nwn.action_take_item | Take oItem from oTakeFrom If oItem is not a valid item, or oTakeFrom is not a valid object, nothing will happen. |
+| `ActionUnequipItem` | nwn.action_unequip_item | Unequip oItem from whatever slot it is currently in. |
+| `ActionUnlockObject` | nwn.action_unlock_object | The action subject will unlock oTarget, which can be a door or a placeable object. |
+| `ActionUseFeat` | nwn.action_use_feat | Use nFeat on oTarget. - nFeat: FEAT_* - oTarget: Target of the feat. Must be OBJECT_INVALID if lTarget is used. - nSubFeat: - For feats with subdial options, use either: - SUBFEAT_* for some specific feats like called shot - spells.2da line of the subdial spell, eg 708 for Dragon Shape: Blue Dragon when using FEAT_EPIC_WILD_SHAPE_DRAGON - lTarget: The location to use the feat at. oTarget must be OBJECT_INVALID for this to be used. |
+| `ActionUseSkill` | nwn.action_use_skill | Runs the action "UseSkill" on the current creature Use nSkill on oTarget. - nSkill: SKILL_* - oTarget - nSubSkill: SUBSKILL_* - oItemUsed: Item to use in conjunction with the skill |
+| `ActionWait` | nwn.action_wait | Do nothing for fSeconds seconds. |
+| `ApplyEffectToObject` | nwn.apply_effect_to_object | Explicit adapter preserving runtime semantics and published identities. |
+| `ClearAllActions` | nwn.clear_all_actions | Clear all the actions of oObject. * No return value, but if an error occurs, the log file will contain "ClearAllActions failed.". - nClearCombatState: if true, this will immediately clear the combat state on a creature, which will stop the combat music and allow them to rest, engage in dialog, or other actions that they would normally have to wait for. |
+| `DestroyObject` | nwn.destroy_object | Explicit adapter preserving runtime semantics and published identities. |
+| `GetAC` | nwn.get_ac | Explicit adapter preserving runtime semantics and published identities. |
+| `GetCurrentHitPoints` | nwn.get_current_hit_points | Explicit adapter preserving runtime semantics and published identities. |
+| `GetDistanceBetween` | nwn.get_distance_between | Explicit adapter preserving runtime semantics and published identities. |
+| `GetFirstArea` | nwn.areas | Explicit adapter preserving runtime semantics and published identities. |
+| `GetFirstEffect` | nwn.effects | Explicit adapter preserving runtime semantics and published identities. |
+| `GetFirstFactionMember` | nwn.faction_members | Explicit adapter preserving runtime semantics and published identities. |
+| `GetFirstItemInInventory` | nwn.inventory | Explicit adapter preserving runtime semantics and published identities. |
+| `GetFirstObjectInArea` | nwn.objects_in_area | Explicit adapter preserving runtime semantics and published identities. |
+| `GetFirstPC` | nwn.players | Explicit adapter preserving runtime semantics and published identities. |
+| `GetHitDice` | nwn.get_hit_dice | Explicit adapter preserving runtime semantics and published identities. |
+| `GetIsPC` | nwn.is_player | Explicit adapter preserving runtime semantics and published identities. |
+| `GetMaxHitPoints` | nwn.get_max_hit_points | Explicit adapter preserving runtime semantics and published identities. |
+| `GetName` | nwn.get_name | Explicit adapter preserving runtime semantics and published identities. |
+| `GetNearestObject` | nwn.get_nearest_object_by_type | Explicit origin and OBJECT_TYPE mask, with the curated string-filter adapter exposed separately as nwn.nearest_object_by_kind. |
+| `GetPositionFromLocation` | nwn.location_x | Explicit adapter preserving runtime semantics and published identities. |
+| `GetRacialType` | nwn.get_racial_type | Explicit adapter preserving runtime semantics and published identities. |
+| `GetResRef` | nwn.get_resref | Explicit adapter preserving runtime semantics and published identities. |
+| `GetTag` | nwn.get_tag | Explicit adapter preserving runtime semantics and published identities. |
+| `JumpToLocation` | nwn.jump_to_location | Jump to lDestination. The action is added to the TOP of the action queue. |
+| `JumpToObject` | nwn.jump_to_object | Jump to oToJumpTo (the action is added to the top of the action queue). |
+| `Location` | nwn.location | Explicit adapter preserving runtime semantics and published identities. |
+| `PlayAnimation` | nwn.play_animation | Play nAnimation immediately. - nAnimation: ANIMATION_* - fSpeed - fSeconds |
+| `PlaySound` | nwn.play_sound | Play sSoundName - sSoundName: TBD - SS This will play a mono sound from the location of the object running the command. |
+| `SetName` | nwn.set_name | Explicit adapter preserving runtime semantics and published identities. |
+| `SpeakString` | nwn.speak_string | The caller will immediately speak sStringToSpeak (this is different from ActionSpeakString) - sStringToSpeak - nTalkVolume: TALKVOLUME_* |
+
+### bound (386)
+
+| NWScript member | Glyph | Reason / signature |
+| --- | --- | --- |
+| `AddHenchman` | nwn.add_henchman | Add oHenchman as a henchman to oMaster If oHenchman is either a DM or a player character, this will have no effect. |
+| `AddJournalQuestEntry` | nwn.add_journal_quest_entry | Add a journal quest entry to oCreature. - szPlotID: the plot identifier used in the toolset's Journal Editor - nState: the state of the plot as seen in the toolset's Journal Editor - oCreature - bAllPartyMembers: If this is TRUE, the entry will show up in the journal of everyone in the party - bAllPlayers: If this is TRUE, the entry will show up in the journal of everyone in the world - bAllowOverrideHigher: If this is TRUE, you can set the state to a lower number than the one it is currently on |
+| `AdjustAlignment` | nwn.adjust_alignment | Adjust the alignment of oSubject. - oSubject - nAlignment: -> ALIGNMENT_LAWFUL/ALIGNMENT_CHAOTIC/ALIGNMENT_GOOD/ALIGNMENT_EVIL: oSubject's alignment will be shifted in the direction specified -> ALIGNMENT_ALL: nShift will be added to oSubject's law/chaos and good/evil alignment values -> ALIGNMENT_NEUTRAL: nShift is applied to oSubject's law/chaos and good/evil alignment values in the direction which is towards neutrality. e.g. If oSubject has a law/chaos value of 10 (i.e. chaotic) and a good/evil value of 80 (i.e. good) then if nShift is 15, the law/chaos value will become (10+15)=25 and the good/evil value will become (80-25)=55 Furthermore, the shift will at most take the alignment value to 50 and not beyond. e.g. If oSubject has a law/chaos value of 40 and a good/evil value of 70, then if nShift is 15, the law/chaos value will become 50 and the good/evil value will become 55 - nShift: this is the desired shift in alignment - bAllPartyMembers: when TRUE the alignment shift of oSubject also has a diminished affect all members of oSubject's party (if oSubject is a Player). When FALSE the shift only affects oSubject. * No return value |
+| `AdjustReputation` | nwn.adjust_reputation | Adjust how oSourceFactionMember's faction feels about oTarget by the specified amount. Note: This adjusts Faction Reputation, how the entire faction that oSourceFactionMember is in, feels about oTarget. * No return value Note: You can't adjust a player character's (PC) faction towards NPCs, so attempting to make an NPC hostile by passing in a PC object as oSourceFactionMember in the following call will fail: AdjustReputation(oNPC,oPC,-100); Instead you should pass in the PC object as the first parameter as in the following call which should succeed: AdjustReputation(oPC,oNPC,-100); Note: Will fail if oSourceFactionMember is a plot object. |
+| `AmbientSoundChangeDay` | nwn.ambient_sound_change_day | Change the ambient day track for oArea to nTrack. - oArea - nTrack |
+| `AmbientSoundChangeNight` | nwn.ambient_sound_change_night | Change the ambient night track for oArea to nTrack. - oArea - nTrack |
+| `AmbientSoundPlay` | nwn.ambient_sound_play | Play the ambient sound for oArea. |
+| `AmbientSoundSetDayVolume` | nwn.ambient_sound_set_day_volume | Set the ambient day volume for oArea to nVolume. - oArea - nVolume: 0 - 100 |
+| `AmbientSoundSetNightVolume` | nwn.ambient_sound_set_night_volume | Set the ambient night volume for oArea to nVolume. - oArea - nVolume: 0 - 100 |
+| `AmbientSoundStop` | nwn.ambient_sound_stop | Stop the ambient sound for oArea. |
+| `ApplyEffectAtLocation` | nwn.apply_effect_at_location | Apply eEffect at lLocation. |
+| `BlackScreen` | nwn.black_screen | Sets the screen to black. Can be used in preparation for a fade-in (FadeFromBlack) Can be cleared by either doing a FadeFromBlack, or by calling StopFade. - oCreature: creature controlled by player that should see black screen |
+| `ChangeFaction` | nwn.change_faction | Make oObjectToChangeFaction join the faction of oMemberOfFactionToJoin. NB. ** This will only work for two NPCs ** |
+| `ChangeToStandardFaction` | nwn.change_to_standard_faction | Make oCreatureToChange join one of the standard factions. ** This will only work on an NPC ** - nStandardFaction: STANDARD_FACTION_* |
+| `CopyArea` | nwn.copy_area | Creates a copy of a existing area, including everything inside of it (except players). Will optionally set a new area tag and displayed name. The new area is accessible immediately, but initialisation scripts for the area and all contained creatures will only run after the current script finishes (so you can clean up objects before returning). This is similar to CreateArea, except this variant will copy all changes made to the source area since it has spawned. CreateArea() will instance the area from the .are and .git data as it was at creation. Returns the new area, or OBJECT_INVALID on error. Note: You will have to manually adjust all transitions (doors, triggers) with the relevant script commands, or players might end up in the wrong area. Note: Areas cannot have duplicate ResRefs, so your new area will have a autogenerated, sequential resref starting with "nw_"; for example: nw_5. You cannot influence this resref. If you destroy an area, that resref will be come free for reuse for the next area created. If you need to know the resref of your new area, you can call GetResRef on it. |
+| `CopyItem` | nwn.copy_item | duplicates the item and returns a new object oItem - item to copy oTargetInventory - create item in this object's inventory. If this parameter is not valid, the item will be created in oItem's location bCopyVars - copy the local variables from the old item to the new one * returns the new item * returns OBJECT_INVALID for non-items. * can only copy empty item containers. will return OBJECT_INVALID if oItem contains other items. * if it is possible to merge this item with any others in the target location, then it will do so and return the merged object. |
+| `CopyItemAndModify` | nwn.copy_item_and_modify | Creates a new copy of an item, while making a single change to the appearance of the item. Helmet models and simple items ignore iIndex. iType iIndex iNewValue ITEM_APPR_TYPE_SIMPLE_MODEL [Ignored] Model # ITEM_APPR_TYPE_WEAPON_COLOR ITEM_APPR_WEAPON_COLOR_* 1-4 ITEM_APPR_TYPE_WEAPON_MODEL ITEM_APPR_WEAPON_MODEL_* Model # ITEM_APPR_TYPE_ARMOR_MODEL ITEM_APPR_ARMOR_MODEL_* Model # ITEM_APPR_TYPE_ARMOR_COLOR ITEM_APPR_ARMOR_COLOR_* [0] 0-175 [1] [0] Alternatively, where ITEM_APPR_TYPE_ARMOR_COLOR is specified, if per-part coloring is desired, the following equation can be used for nIndex to achieve that: ITEM_APPR_ARMOR_NUM_COLORS + (ITEM_APPR_ARMOR_MODEL_ * ITEM_APPR_ARMOR_NUM_COLORS) + ITEM_APPR_ARMOR_COLOR_ For example, to change the CLOTH1 channel of the torso, nIndex would be: 6 + (7 * 6) + 2 = 50 [1] When specifying per-part coloring, the value 255 is allowed and corresponds with the logical function 'clear colour override', which clears the per-part override for that part. |
+| `CopyObject` | nwn.copy_object | Duplicates the object specified by oSource. NOTE: this command can be used for copying Creatures, Items, Placeables, Waypoints, Stores, Doors, Triggers, Encounters. If an owner is specified and the object is an item, it will be put into their inventory Otherwise, it will be created at the location. If a new tag is specified, it will be assigned to the new object. If bCopyLocalState is TRUE, local vars, effects, action queue, and transition info (triggers, doors) are copied over. |
+| `CreateArea` | nwn.create_area | Instances a new area from the given sSourceResRef, which needs to be a existing module area. Will optionally set a new area tag and displayed name. The new area is accessible immediately, but initialisation scripts for the area and all contained creatures will only run after the current script finishes (so you can clean up objects before returning). Returns the new area, or OBJECT_INVALID on failure. Note: When spawning a second instance of a existing area, you will have to manually adjust all transitions (doors, triggers) with the relevant script commands, or players might end up in the wrong area. Note: Areas cannot have duplicate ResRefs, so your new area will have a autogenerated, sequential resref starting with "nw_"; for example: nw_5. You cannot influence this resref. If you destroy an area, that resref will be come free for reuse for the next area created. If you need to know the resref of your new area, you can call GetResRef on it. Note: When instancing an area from a loaded savegame, it will spawn the area as it was at time of save, NOT at module creation. This is because the savegame replaces the module data. Due to technical limitations, polymorphed creatures, personal reputation, and associates will currently fail to restore correctly. |
+| `CreateItemOnObject` | nwn.create_item_on_object | Create an item with the template sItemTemplate in oTarget's inventory. - nStackSize: This is the stack size of the item to be created - sNewTag: If this string is not empty, it will replace the default tag from the template * Return value: The object that has been created. On error, this returns OBJECT_INVALID. If the item created was merged into an existing stack of similar items, the function will return the merged stack object. If the merged stack overflowed, the function will return the overflowed stack that was created. |
+| `CreateObject` | nwn.create_object | Create an object of the specified type at lLocation. - nObjectType: OBJECT_TYPE_ITEM, OBJECT_TYPE_CREATURE, OBJECT_TYPE_PLACEABLE, OBJECT_TYPE_STORE, OBJECT_TYPE_WAYPOINT - sTemplate - lLocation - bUseAppearAnimation - sNewTag - if this string is not empty, it will replace the default tag from the template |
+| `CreateTrapAtLocation` | nwn.create_trap_at_location | Creates a square Trap object. - nTrapType: The base type of trap (TRAP_BASE_TYPE_*) - lLocation: The location and orientation that the trap will be created at. - fSize: The size of the trap. Minimum size allowed is 1.0f. - sTag: The tag of the trap being created. - nFaction: The faction of the trap (STANDARD_FACTION_*). - sOnDisarmScript: The OnDisarm script that will fire when the trap is disarmed. If "" no script will fire. - sOnTrapTriggeredScript: The OnTrapTriggered script that will fire when the trap is triggered. If "" the default OnTrapTriggered script for the trap type specified will fire instead (as specified in the traps.2da). |
+| `CreateTrapOnObject` | nwn.create_trap_on_object | Creates a Trap on the object specified. - nTrapType: The base type of trap (TRAP_BASE_TYPE_*) - oObject: The object that the trap will be created on. Works only on Doors and Placeables. - nFaction: The faction of the trap (STANDARD_FACTION_*). - sOnDisarmScript: The OnDisarm script that will fire when the trap is disarmed. If "" no script will fire. - sOnTrapTriggeredScript: The OnTrapTriggered script that will fire when the trap is triggered. If "" the default OnTrapTriggered script for the trap type specified will fire instead (as specified in the traps.2da). Note: After creating a trap on an object, you can change the trap's properties using the various SetTrap* scripting commands by passing in the object that the trap was created on (i.e. oObject) to any subsequent SetTrap* commands. |
+| `DeleteLocalFloat` | nwn.delete_local_float | Delete oObject's local float variable sVarName |
+| `DeleteLocalInt` | nwn.delete_local_int | Delete oObject's local integer variable sVarName |
+| `DeleteLocalLocation` | nwn.delete_local_location | Delete oObject's local location variable sVarName |
+| `DeleteLocalObject` | nwn.delete_local_object | Delete oObject's local object variable sVarName |
+| `DeleteLocalString` | nwn.delete_local_string | Delete oObject's local string variable sVarName |
+| `DestroyArea` | nwn.destroy_area | Destroys the given area object and everything in it. If the area is in a module, the .are and .git data is left behind and you can spawn from it again. If the area is a temporary copy, the data will be deleted and you cannot spawn it again via the resref. Return values: 0: Object not an area or invalid. -1: Area contains spawn location and removal would leave module without entrypoint. -2: Players in area. 1: Area destroyed successfully. |
+| `DoDoorAction` | nwn.do_door_action | Perform nDoorAction on oTargetDoor. |
+| `DoPlaceableObjectAction` | nwn.do_placeable_object_action | The caller performs nPlaceableAction on oPlaceable. - oPlaceable - nPlaceableAction: PLACEABLE_ACTION_* |
+| `EffectACDecrease` | nwn.effect_ac_decrease | Create an AC Decrease effect. - nValue - nModifyType: AC_* - nDamageType: DAMAGE_TYPE_* * Default value for nDamageType should only ever be used in this function prototype. |
+| `EffectACIncrease` | nwn.effect_ac_increase | Create an AC Increase effect - nValue: size of AC increase - nModifyType: AC_*_BONUS - nDamageType: DAMAGE_TYPE_* * Default value for nDamageType should only ever be used in this function prototype. |
+| `EffectAbilityDecrease` | nwn.effect_ability_decrease | Create an Ability Decrease effect. - nAbility: ABILITY_* - nModifyBy: This is the amount by which to decrement the ability |
+| `EffectAbilityIncrease` | nwn.effect_ability_increase | Create an Ability Increase effect - bAbilityToIncrease: ABILITY_* |
+| `EffectAppear` | nwn.effect_appear | Create an Appear effect to make the object "fly in". - nAnimation determines which appear and disappear animations to use. Most creatures only have animation 1, although a few have 2 (like beholders) |
+| `EffectAttackDecrease` | nwn.effect_attack_decrease | Create an Attack Decrease effect. - nPenalty - nModifierType: ATTACK_BONUS_* |
+| `EffectAttackIncrease` | nwn.effect_attack_increase | Create an Attack Increase effect - nBonus: size of attack bonus - nModifierType: ATTACK_BONUS_* |
+| `EffectBeam` | nwn.effect_beam | Create a Beam effect. - nBeamVisualEffect: VFX_BEAM_* - oEffector: the beam is emitted from this creature - nBodyPart: BODY_NODE_* - bMissEffect: If this is TRUE, the beam will fire to a random vector near or past the target * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nBeamVisualEffect is not valid. |
+| `EffectBlindness` | nwn.effect_blindness | Create a Blindness effect. |
+| `EffectBonusFeat` | nwn.effect_bonus_feat | Creates a bonus feat effect. These act like the Bonus Feat item property, and do not work as feat prerequisites for levelup purposes. - nFeat: FEAT_* |
+| `EffectCharmed` | nwn.effect_charmed | Create a Charm effect |
+| `EffectConcealment` | nwn.effect_concealment | Create a Concealment effect. - nPercentage: 1-100 inclusive - nMissChanceType: MISS_CHANCE_TYPE_* * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nPercentage < 1 or nPercentage > 100. |
+| `EffectConfused` | nwn.effect_confused | Create a Confuse effect |
+| `EffectCurse` | nwn.effect_curse | Create a Curse effect. - nStrMod: strength modifier - nDexMod: dexterity modifier - nConMod: constitution modifier - nIntMod: intelligence modifier - nWisMod: wisdom modifier - nChaMod: charisma modifier |
+| `EffectCutsceneDominated` | nwn.effect_cutscene_dominated | Returns an effect that is guaranteed to dominate a creature Like EffectDominated but cannot be resisted |
+| `EffectCutsceneGhost` | nwn.effect_cutscene_ghost | Creates a cutscene ghost effect, this will allow creatures to pathfind through other creatures without bumping into them for the duration of the effect. |
+| `EffectCutsceneImmobilize` | nwn.effect_cutscene_immobilize | Returns an effect that when applied will paralyze the target's legs, rendering them unable to walk but otherwise unpenalized. This effect cannot be resisted. |
+| `EffectCutsceneParalyze` | nwn.effect_cutscene_paralyze | returns an effect that is guaranteed to paralyze a creature. this effect is identical to EffectParalyze except that it cannot be resisted. |
+| `EffectDamage` | nwn.effect_damage | Create a Damage effect - nDamageAmount: amount of damage to be dealt. This should be applied as an instantaneous effect. - nDamageType: DAMAGE_TYPE_* - nDamagePower: DAMAGE_POWER_* |
+| `EffectDamageDecrease` | nwn.effect_damage_decrease | Create a Damage Decrease effect. - nPenalty - nDamageType: DAMAGE_TYPE_* |
+| `EffectDamageImmunityDecrease` | nwn.effect_damage_immunity_decrease | Create a Damage Immunity Decrease effect. - nDamageType: DAMAGE_TYPE_* - nPercentImmunity |
+| `EffectDamageImmunityIncrease` | nwn.effect_damage_immunity_increase | Creates a Damage Immunity Increase effect. - nDamageType: DAMAGE_TYPE_* - nPercentImmunity |
+| `EffectDamageIncrease` | nwn.effect_damage_increase | Create a Damage Increase effect - nBonus: DAMAGE_BONUS_* - nDamageType: DAMAGE_TYPE_* NOTE! You *must* use the DAMAGE_BONUS_* constants! Using other values may result in odd behaviour. |
+| `EffectDamageReduction` | nwn.effect_damage_reduction | Create a Damage Reduction effect - nAmount: amount of damage reduction - nDamagePower: DAMAGE_POWER_* - nLimit: How much damage the effect can absorb before disappearing. Set to zero for infinite - bRangedOnly: Set to TRUE to have this reduction only apply to ranged attacks |
+| `EffectDamageResistance` | nwn.effect_damage_resistance | Create a Damage Resistance effect that removes the first nAmount points of damage of type nDamageType, up to nLimit (or infinite if nLimit is 0) - nDamageType: DAMAGE_TYPE_* - nAmount: The amount of damage to soak each time the target is damaged. - nLimit: How much damage the effect can absorb before disappearing. Set to zero for infinite. - bRangedOnly: Set to TRUE to have this resistance only apply to ranged attacks. |
+| `EffectDamageShield` | nwn.effect_damage_shield | Create a Damage Shield effect which does (nDamageAmount + nRandomAmount) damage to any melee attacker on a successful attack of damage type nDamageType. - nDamageAmount: an integer value - nRandomAmount: DAMAGE_BONUS_* - nDamageType: DAMAGE_TYPE_* NOTE! You *must* use the DAMAGE_BONUS_* constants! Using other values may result in odd behaviour. |
+| `EffectDarkness` | nwn.effect_darkness | Create a Darkness effect. |
+| `EffectDazed` | nwn.effect_dazed | Create a Daze effect |
+| `EffectDeaf` | nwn.effect_deaf | Create a Deaf effect |
+| `EffectDeath` | nwn.effect_death | Create a Death effect - nSpectacularDeath: if this is TRUE, the creature to which this effect is applied will die in an extraordinary fashion - nDisplayFeedback |
+| `EffectDisappear` | nwn.effect_disappear | Create a Disappear effect to make the object "fly away" and then destroy itself. - nAnimation determines which appear and disappear animations to use. Most creatures only have animation 1, although a few have 2 (like beholders) |
+| `EffectDisappearAppear` | nwn.effect_disappear_appear | Create a Disappear/Appear effect. The object will "fly away" for the duration of the effect and will reappear at lLocation. - nAnimation determines which appear and disappear animations to use. Most creatures only have animation 1, although a few have 2 (like beholders) |
+| `EffectDisease` | nwn.effect_disease | Create a Disease effect. - nDiseaseType: DISEASE_* |
+| `EffectDispelMagicAll` | nwn.effect_dispel_magic_all | Create a Dispel Magic All effect. If no parameter is specified, USE_CREATURE_LEVEL will be used. This will cause the dispel effect to use the level of the creature that created the effect. |
+| `EffectDispelMagicBest` | nwn.effect_dispel_magic_best | Create a Dispel Magic Best effect. If no parameter is specified, USE_CREATURE_LEVEL will be used. This will cause the dispel effect to use the level of the creature that created the effect. |
+| `EffectDominated` | nwn.effect_dominated | Create a Dominate effect |
+| `EffectEnemyAttackBonus` | nwn.effect_enemy_attack_bonus | Create an Enemy Attack Bonus effect. Creatures attacking the given creature with melee/ranged attacks or touch attacks get a bonus to hit. |
+| `EffectEntangle` | nwn.effect_entangle | Create an Entangle effect When applied, this effect will restrict the creature's movement and apply a (-2) to all attacks and a -4 to AC. |
+| `EffectEthereal` | nwn.effect_ethereal | Returns an effect of type EFFECT_TYPE_ETHEREAL which works just like EffectSanctuary except that the observers get no saving throw |
+| `EffectForceWalk` | nwn.effect_force_walk | Forces the creature to always walk |
+| `EffectFrightened` | nwn.effect_frightened | Create a Frighten effect |
+| `EffectHaste` | nwn.effect_haste | Create a Haste effect. |
+| `EffectHeal` | nwn.effect_heal | Create a Heal effect. This should be applied as an instantaneous effect. * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nDamageToHeal < 0. |
+| `EffectHitPointChangeWhenDying` | nwn.effect_hit_point_change_when_dying | Create a Hit Point Change When Dying effect. - fHitPointChangePerRound: this can be positive or negative, but not zero. * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if fHitPointChangePerRound is 0. |
+| `EffectIcon` | nwn.effect_icon | Create an Icon effect. * nIconID: The effect icon (EFFECT_ICON_*) to display. Using the icon for Poison/Disease will also color the health bar green/brown, useful to simulate custom poisons/diseases. Returns an effect of type EFFECT_TYPE_INVALIDEFFECT when nIconID is < 1 or > 255. |
+| `EffectImmunity` | nwn.effect_immunity | Create an Immunity effect. - nImmunityType: IMMUNITY_TYPE_* |
+| `EffectInvisibility` | nwn.effect_invisibility | Create an Invisibility effect. - nInvisibilityType: INVISIBILITY_TYPE_* * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nInvisibilityType is invalid. |
+| `EffectKnockdown` | nwn.effect_knockdown | Create a Knockdown effect This effect knocks creatures off their feet, they will sit until the effect is removed. This should be applied as a temporary effect with a 3 second duration minimum (1 second to fall, 1 second sitting, 1 second to get up). |
+| `EffectLinkEffects` | nwn.effect_link_effects | Link the two supplied effects, returning eChildEffect as a child of eParentEffect. Note: When applying linked effects if the target is immune to all valid effects all other effects will be removed as well. This means that if you apply a visual effect and a silence effect (in a link) and the target is immune to the silence effect that the visual effect will get removed as well. Visual Effects are not considered "valid" effects for the purposes of determining if an effect will be removed or not and as such should never be packaged *only* with other visual effects in a link. |
+| `EffectMissChance` | nwn.effect_miss_chance | Create a Miss Chance effect. - nPercentage: 1-100 inclusive - nMissChanceType: MISS_CHANCE_TYPE_* * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nPercentage < 1 or nPercentage > 100. |
+| `EffectModifyAttacks` | nwn.effect_modify_attacks | Create a Modify Attacks effect to add attacks. - nAttacks: maximum is 5, even with the effect stacked * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nAttacks > 5. |
+| `EffectMovementSpeedDecrease` | nwn.effect_movement_speed_decrease | Create a Movement Speed Decrease effect. - nPercentChange - range 0 through 99 eg. 0 = no change in speed 50 = 50% slower 99 = almost immobile |
+| `EffectMovementSpeedIncrease` | nwn.effect_movement_speed_increase | Create a Movement Speed Increase effect. - nPercentChange - range 0 through 99 eg. 0 = no change in speed 50 = 50% faster 99 = almost twice as fast |
+| `EffectNegativeLevel` | nwn.effect_negative_level | Create a Negative Level effect. - nNumLevels: the number of negative levels to apply. * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nNumLevels > 100. |
+| `EffectPacified` | nwn.effect_pacified | Create a Pacified effect, making the creature unable to attack anyone |
+| `EffectParalyze` | nwn.effect_paralyze | Create a Paralyze effect |
+| `EffectPetrify` | nwn.effect_petrify | returns an effect that will petrify the target * currently applies EffectParalyze and the stoneskin visual effect. |
+| `EffectPoison` | nwn.effect_poison | Create a Poison effect. - nPoisonType: POISON_* |
+| `EffectPolymorph` | nwn.effect_polymorph | Create a Polymorph effect. - nLocked: If TRUE the creature cannot cancel the polymorph. - nUnpolymorphVFX: If -1 no VFX will play when this polymorph is removed. Else will play the relevant VFX. - nSpellAbilityModifier: Set a custom spell ability modifier for the 3 polymorph spells. Save DC is 10 + Innate spell level + this ability modifier. -1 uses the creators spellcasting/feat using class spellcasting ability modifier. - nSpellAbilityCasterLevel: Set a custom caster level for the 3 polymorph spells. Default (0) is to use the first class slot class level as previously. |
+| `EffectRegenerate` | nwn.effect_regenerate | Create a Regenerate effect. - nAmount: amount of damage to be regenerated per time interval - fIntervalSeconds: length of interval in seconds |
+| `EffectResurrection` | nwn.effect_resurrection | Create a Resurrection effect. This should be applied as an instantaneous effect. |
+| `EffectSanctuary` | nwn.effect_sanctuary | Create a Sanctuary effect. - nDifficultyClass: must be a non-zero, positive number * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nDifficultyClass <= 0. |
+| `EffectSavingThrowDecrease` | nwn.effect_saving_throw_decrease | Create a Saving Throw Decrease effect. - nSave: SAVING_THROW_* (not SAVING_THROW_TYPE_*) SAVING_THROW_ALL SAVING_THROW_FORT SAVING_THROW_REFLEX SAVING_THROW_WILL - nValue: size of the Saving Throw decrease - nSaveType: SAVING_THROW_TYPE_* (e.g. SAVING_THROW_TYPE_ACID ) |
+| `EffectSavingThrowIncrease` | nwn.effect_saving_throw_increase | Create a Saving Throw Increase effect - nSave: SAVING_THROW_* (not SAVING_THROW_TYPE_*) SAVING_THROW_ALL SAVING_THROW_FORT SAVING_THROW_REFLEX SAVING_THROW_WILL - nValue: size of the Saving Throw increase - nSaveType: SAVING_THROW_TYPE_* (e.g. SAVING_THROW_TYPE_ACID ) |
+| `EffectSeeInvisible` | nwn.effect_see_invisible | Create a See Invisible effect. |
+| `EffectSilence` | nwn.effect_silence | Create a Silence effect. |
+| `EffectSkillDecrease` | nwn.effect_skill_decrease | Create a Skill Decrease effect. * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nSkill is invalid. |
+| `EffectSkillIncrease` | nwn.effect_skill_increase | Create a Skill Increase effect. - nSkill: SKILL_* - nValue * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nSkill is invalid. |
+| `EffectSleep` | nwn.effect_sleep | Create a Sleep effect |
+| `EffectSlow` | nwn.effect_slow | Create a Slow effect. |
+| `EffectSpellFailure` | nwn.effect_spell_failure | Creates an effect that inhibits spells - nPercent - percentage of failure - nSpellSchool - the school of spells affected. Only applies to SPELL_FAILURE_TYPE_ALL. - nSpellFailureType - Use SPELL_FAILURE_TYPE_* constants for different spell failure types |
+| `EffectSpellImmunity` | nwn.effect_spell_immunity | Create a Spell Immunity effect. There is a known bug with this function. There *must* be a parameter specified when this is called (even if the desired parameter is SPELL_ALL_SPELLS), otherwise an effect of type EFFECT_TYPE_INVALIDEFFECT will be returned. - nImmunityToSpell: SPELL_* * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nImmunityToSpell is invalid. |
+| `EffectSpellLevelAbsorption` | nwn.effect_spell_level_absorption | Create a Spell Level Absorption effect. - nMaxSpellLevelAbsorbed: maximum spell level that will be absorbed by the effect - nTotalSpellLevelsAbsorbed: maximum number of spell levels that will be absorbed by the effect - nSpellSchool: SPELL_SCHOOL_* * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if: nMaxSpellLevelAbsorbed is not between -1 and 9 inclusive, or nSpellSchool is invalid. |
+| `EffectSpellResistanceDecrease` | nwn.effect_spell_resistance_decrease | Create a Spell Resistance Decrease effect. |
+| `EffectSpellResistanceIncrease` | nwn.effect_spell_resistance_increase | Create a Spell Resistance Increase effect. - nValue: size of spell resistance increase |
+| `EffectStunned` | nwn.effect_stunned | Create a Stun effect |
+| `EffectSummonCreature` | nwn.effect_summon_creature | Create a Summon Creature effect. The creature is created and placed into the caller's party/faction. - sCreatureResref: Identifies the creature to be summoned - nVisualEffectId: VFX_* - fDelaySeconds: There can be delay between the visual effect being played, and the creature being added to the area - nUseAppearAnimation: should this creature play it's "appear" animation when it is summoned. If zero, it will just fade in somewhere near the target. If the value is 1 it will use the appear animation, and if it's 2 it will use appear2 (which doesn't exist for most creatures) - nUnsummonVisualEffectId: VFX_* to apply when the creature is unsummoned - oSummonToAdd: If sCreatureResref is blank, this object (if they have no master) is instead added as the summon, applying nVisualEffectId at their location fDelaySeconds and nUseAppearAnimation are unused, and no "Summoned a creature" feedback is sent, allowing you to do your own. The creature otherwise acts like a summon from then on, including not giving out XP for being killed, and able to be unsummoned by the master or when the effect expires. |
+| `EffectSwarm` | nwn.effect_swarm | Create a Swarm effect. - nLooping: If this is TRUE, for the duration of the effect when one creature created by this effect dies, the next one in the list will be created. If the last creature in the list dies, we loop back to the beginning and sCreatureTemplate1 will be created, and so on... - sCreatureTemplate1 - sCreatureTemplate2 - sCreatureTemplate3 - sCreatureTemplate4 |
+| `EffectTemporaryHitpoints` | nwn.effect_temporary_hitpoints | Create a Temporary Hitpoints effect. - nHitPoints: a positive integer * Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nHitPoints < 0. |
+| `EffectTimeStop` | nwn.effect_time_stop | Create a Time Stop effect. |
+| `EffectTimeStopImmunity` | nwn.effect_time_stop_immunity | Provides immunity to the effects of EffectTimeStop which allows actions during other creatures time stop effects |
+| `EffectTrueSeeing` | nwn.effect_true_seeing | Create a True Seeing effect. |
+| `EffectTurnResistanceDecrease` | nwn.effect_turn_resistance_decrease | Create a Turn Resistance Decrease effect. - nHitDice: a positive number representing the number of hit dice for the / decrease |
+| `EffectTurnResistanceIncrease` | nwn.effect_turn_resistance_increase | Create a Turn Resistance Increase effect. - nHitDice: a positive number representing the number of hit dice for the increase |
+| `EffectTurned` | nwn.effect_turned | Create a Turned effect. Turned effects are supernatural by default. |
+| `EffectUltravision` | nwn.effect_ultravision | Create an Ultravision effect. |
+| `EffectVisualEffect` | nwn.effect_visual_effect | * Create a Visual Effect that can be applied to an object. - nVisualEffectId - nMissEffect: if this is TRUE, a random vector near or past the target will be generated, on which to play the effect |
+| `ExploreAreaForPlayer` | nwn.explore_area_for_player | Expose/Hide the entire map of oArea for oPlayer. - oArea: The area that the map will be exposed/hidden for. - oPlayer: The player the map will be exposed/hidden for. - bExplored: TRUE/FALSE. Whether the map should be completely explored or hidden. |
+| `ExtraordinaryEffect` | nwn.extraordinary_effect | Set the subtype of eEffect to Extraordinary and return eEffect. (Effects default to magical if the subtype is not set) Extraordinary effects are removed by resting, but not by dispel magic |
+| `FadeFromBlack` | nwn.fade_from_black | Fades the screen for the given creature/player from black to regular screen - oCreature: creature controlled by player that should fade from black |
+| `FadeToBlack` | nwn.fade_to_black | Fades the screen for the given creature/player from regular screen to black - oCreature: creature controlled by player that should fade to black |
+| `FloatingTextStrRefOnCreature` | nwn.floating_text_str_ref_on_creature | Display floaty text above the specified creature. The text will also appear in the chat buffer of each player that receives the floaty text. - nStrRefToDisplay: String ref (therefore text is translated) - oCreatureToFloatAbove - bBroadcastToFaction: If this is TRUE then only creatures in the same faction as oCreatureToFloatAbove will see the floaty text, and only if they are within range (30 metres). - bChatWindow: If TRUE, the string reference will be displayed in oCreatureToFloatAbove's chat window |
+| `FloatingTextStringOnCreature` | nwn.floating_text_string_on_creature | Display floaty text above the specified creature. The text will also appear in the chat buffer of each player that receives the floaty text. - sStringToDisplay: String - oCreatureToFloatAbove - bBroadcastToFaction: If this is TRUE then only creatures in the same faction as oCreatureToFloatAbove will see the floaty text, and only if they are within range (30 metres). - bChatWindow: If TRUE, sStringToDisplay will be displayed in oCreatureToFloatAbove's chat window. |
+| `ForceRest` | nwn.force_rest | Instantly gives this creature the benefits of a rest (restored hitpoints, spells, feats, etc..) |
+| `FortitudeSave` | nwn.fortitude_save | Rolls a Fortitude save and returns success, once in execution order. |
+| `GetAILevel` | nwn.get_ai_level | Gets the current AI Level that the creature is running at. Returns one of the following: AI_LEVEL_INVALID, AI_LEVEL_VERY_LOW, AI_LEVEL_LOW, AI_LEVEL_NORMAL, AI_LEVEL_HIGH, AI_LEVEL_VERY_HIGH |
+| `GetAbilityModifier` | nwn.get_ability_modifier | Returns the ability modifier for the specified ability Get oCreature's ability modifier for nAbility. - nAbility: ABILITY_* - oCreature |
+| `GetAbilityScore` | nwn.get_ability_score | Get the ability score of type nAbility for a creature (otherwise 0) - oCreature: the creature whose ability score we wish to find out - nAbilityType: ABILITY_* - nBaseAbilityScore: if set to true will return the base ability score without bonuses (e.g. ability bonuses granted from equipped items). Return value on error: 0 |
+| `GetActionMode` | nwn.get_action_mode | Gets the status of ACTION_MODE_* modes on a creature. |
+| `GetAge` | nwn.get_age | Get oCreature's age. * Returns 0 if oCreature is invalid. |
+| `GetAlignmentGoodEvil` | nwn.get_alignment_good_evil | Return an ALIGNMENT_* constant to represent oCreature's good/evil alignment * Return value if oCreature is not a valid creature: -1 |
+| `GetAlignmentLawChaos` | nwn.get_alignment_law_chaos | Return an ALIGNMENT_* constant to represent oCreature's law/chaos alignment * Return value if oCreature is not a valid creature: -1 |
+| `GetAnimalCompanionCreatureType` | nwn.get_animal_companion_creature_type | Get oCreature's animal companion creature type (ANIMAL_COMPANION_CREATURE_TYPE_*). * Returns ANIMAL_COMPANION_CREATURE_TYPE_NONE if oCreature is invalid or does not currently have an animal companion. |
+| `GetAnimalCompanionName` | nwn.get_animal_companion_name | Get oCreature's animal companion's name. * Returns "" if oCreature is invalid, does not currently have an animal companion or if the animal companion's name is blank. |
+| `GetAppearanceType` | nwn.get_appearance_type | returns the appearance type of the specified creature. * returns a constant APPEARANCE_TYPE_* for valid creatures * returns APPEARANCE_TYPE_INVALID for non creatures/invalid creatures |
+| `GetArcaneSpellFailure` | nwn.get_arcane_spell_failure | Returns the current arcane spell failure factor of a creature |
+| `GetArea` | nwn.get_area | Get the area that oTarget is currently in * Return value on error: OBJECT_INVALID |
+| `GetAreaFromLocation` | nwn.get_area_from_location | Get the area's object ID from lLocation. |
+| `GetAreaLightColor` | nwn.get_area_light_color | Gets the light color in the area specified. nColorType specifies the color type returned. Valid values for nColorType are the AREA_LIGHT_COLOR_* values. If no valid area (or object) is specified, it uses the area of caller. If an object other than an area is specified, will use the area that the object is currently in. |
+| `GetAreaNoRestFlag` | nwn.get_area_no_rest_flag | Gets the NoRest area flag. Returns TRUE if resting is not allowed in the area. Passing in OBJECT_INVALID to parameter oArea will result in operating on the area of the caller. |
+| `GetAreaSize` | nwn.get_area_size | Gets the size of the area. - nAreaDimension: The area dimension that you wish to determine. AREA_HEIGHT AREA_WIDTH - oArea: The area that you wish to get the size of. Returns: The number of tiles that the area is wide/high, or zero on an error. If no valid area (or object) is specified, it uses the area of the caller. If an object other than an area is specified, will use the area that the object is currently in. |
+| `GetAssociate` | nwn.get_associate | Get the associate of type nAssociateType belonging to oMaster. - nAssociateType: ASSOCIATE_TYPE_* - nMaster - nTh: Which associate of the specified type to return * Returns OBJECT_INVALID if no such associate exists. |
+| `GetAssociateType` | nwn.get_associate_type | Returns the associate type of the specified creature. - Returns ASSOCIATE_TYPE_NONE if the creature is not the associate of anyone. |
+| `GetAttackTarget` | nwn.get_attack_target | Get the attack target of oCreature. This only works when oCreature is in combat. |
+| `GetAttacksPerRound` | nwn.get_attacks_per_round | Gets the base number of attacks oCreature can make every round Excludes additional effects such as haste, slow, spells, circle kick, attack modes, etc. * bCheckOverridenValue - Checks for SetBaseAttackBonus() on the creature, if FALSE will return the non-overriden version |
+| `GetBaseAttackBonus` | nwn.get_base_attack_bonus | Returns the base attach bonus for the given creature. |
+| `GetBaseItemType` | nwn.get_base_item_type | Get the base item type (BASE_ITEM_*) of oItem. * Returns BASE_ITEM_INVALID if oItem is an invalid item. |
+| `GetCalendarDay` | nwn.get_calendar_day | Get the current calendar day. |
+| `GetCalendarMonth` | nwn.get_calendar_month | Get the current calendar month. |
+| `GetCalendarYear` | nwn.get_calendar_year | Get the current calendar year. |
+| `GetCasterLevel` | nwn.get_caster_level | Get the caster level of an object. This is consistent with the caster level used when applying effects if OBJECT_SELF is used. - oObject: A creature will return the caster level of their currently cast spell or ability, or the item's caster level if an item was used A placeable will return an automatic caster level: floor(10, (spell innate level * 2) - 1) An Area of Effect object will return the caster level that was used to create the Area of Effect. * Return value on error, or if oObject has not yet cast a spell: 0; |
+| `GetChallengeRating` | nwn.get_challenge_rating | Get oCreature's challenge rating. * Returns 0.0 if oCreature is invalid. |
+| `GetClassByPosition` | nwn.get_class_by_position | A creature can have up to three classes. This function determines the creature's class (CLASS_TYPE_*) based on nClassPosition. - nClassPosition: 1, 2 or 3 - oCreature * Returns CLASS_TYPE_INVALID if the oCreature does not have a class in nClassPosition (i.e. a single-class creature will only have a value in nClassLocation=1) or if oCreature is not a valid creature. |
+| `GetColor` | nwn.get_color | Get the Color of oObject from the color channel specified. - oObject: the object from which you are obtaining the color. Can be a creature that has color information (i.e. the playable races). - nColorChannel: The color channel that you want to get the color value of. COLOR_CHANNEL_SKIN COLOR_CHANNEL_HAIR COLOR_CHANNEL_TATTOO_1 COLOR_CHANNEL_TATTOO_2 * Returns -1 on error. |
+| `GetCommandable` | nwn.get_commandable | Determine whether oTarget's action stack can be modified. |
+| `GetCreatureBodyPart` | nwn.get_creature_body_part | returns the model number being used for the body part and creature specified The model number returned is for the body part when the creature is not wearing armor (i.e. whether or not the creature is wearing armor does not affect the return value). Note: Only works on part based creatures, which is typically restricted to the playable races (unless some new part based custom content has been added to the module). returns CREATURE_PART_INVALID if used on a non-creature object, or if the creature does not use a part based model. - nPart (CREATURE_PART_*) CREATURE_PART_RIGHT_FOOT CREATURE_PART_LEFT_FOOT CREATURE_PART_RIGHT_SHIN CREATURE_PART_LEFT_SHIN CREATURE_PART_RIGHT_THIGH CREATURE_PART_LEFT_THIGH CREATURE_PART_PELVIS CREATURE_PART_TORSO CREATURE_PART_BELT CREATURE_PART_NECK CREATURE_PART_RIGHT_FOREARM CREATURE_PART_LEFT_FOREARM CREATURE_PART_RIGHT_BICEP CREATURE_PART_LEFT_BICEP CREATURE_PART_RIGHT_SHOULDER CREATURE_PART_LEFT_SHOULDER CREATURE_PART_RIGHT_HAND CREATURE_PART_LEFT_HAND CREATURE_PART_HEAD |
+| `GetCreatureSize` | nwn.get_creature_size | Get the size (CREATURE_SIZE_*) of oCreature. |
+| `GetCreatureTailType` | nwn.get_creature_tail_type | returns the Tail type of the creature specified. CREATURE_TAIL_TYPE_NONE CREATURE_TAIL_TYPE_LIZARD CREATURE_TAIL_TYPE_BONE CREATURE_TAIL_TYPE_DEVIL returns CREATURE_TAIL_TYPE_NONE if used on a non-creature object, if the creature has no Tail, or if the creature can not have its Tail type changed in the toolset. |
+| `GetCreatureWingType` | nwn.get_creature_wing_type | returns the Wing type of the creature specified. CREATURE_WING_TYPE_NONE CREATURE_WING_TYPE_DEMON CREATURE_WING_TYPE_ANGEL CREATURE_WING_TYPE_BAT CREATURE_WING_TYPE_DRAGON CREATURE_WING_TYPE_BUTTERFLY CREATURE_WING_TYPE_BIRD returns CREATURE_WING_TYPE_NONE if used on a non-creature object, if the creature has no wings, or if the creature can not have its wing type changed in the toolset. |
+| `GetCurrentAction` | nwn.get_current_action | Get the current action (ACTION_*) that oObject is executing. |
+| `GetDeity` | nwn.get_deity | Get the name of oCreature's deity. * Returns "" if oCreature is invalid (or if the deity name is blank for oCreature). |
+| `GetDescription` | nwn.get_description | Get the description of oObject. - oObject: the object from which you are obtaining the description. Can be a creature, item, placeable, door, trigger or module object. - bOriginalDescription: if set to true any new description specified via a SetDescription scripting command is ignored and the original object's description is returned instead. - bIdentified: If oObject is an item, setting this to TRUE will return the identified description, setting this to FALSE will return the unidentified description. This flag has no effect on objects other than items. |
+| `GetDistanceBetweenLocations` | nwn.get_distance_between_locations | Get the distance between lLocationA and lLocationB. |
+| `GetDroppableFlag` | nwn.get_droppable_flag | returns TRUE if the item CAN be dropped Droppable items will appear on a creature's remains when the creature is killed. |
+| `GetEffectCasterLevel` | nwn.get_effect_caster_level | Returns the caster level of the creature who created the effect. - If not created by a creature, returns 0. - If created by a spell-like ability, returns 0. |
+| `GetEffectCreator` | nwn.get_effect_creator | Get the object that created eEffect. * Returns OBJECT_INVALID if eEffect is not a valid effect. |
+| `GetEffectDuration` | nwn.get_effect_duration | Returns the total duration of the effect in seconds. - Returns 0 if the duration type of the effect is not DURATION_TYPE_TEMPORARY. |
+| `GetEffectDurationRemaining` | nwn.get_effect_duration_remaining | Returns the remaining duration of the effect in seconds. - Returns 0 if the duration type of the effect is not DURATION_TYPE_TEMPORARY. |
+| `GetEffectDurationType` | nwn.get_effect_duration_type | Get the duration type (DURATION_TYPE_*) of eEffect. * Return value if eEffect is not valid: -1 |
+| `GetEffectFloat` | nwn.get_effect_float | Get the float parameter of eEffect at nIndex. * nIndex bounds: 0 >= nIndex < 4. * Some experimentation will be needed to find the right index for the value you wish to determine. Returns: the value or 0.0f on error/when not set. |
+| `GetEffectInteger` | nwn.get_effect_integer | Get the integer parameter of eEffect at nIndex. * nIndex bounds: 0 >= nIndex < 8. * Some experimentation will be needed to find the right index for the value you wish to determine. Returns: the value or 0 on error/when not set. |
+| `GetEffectLinkId` | nwn.get_effect_link_id | Returns the given effects Link ID. There is no guarantees about this identifier other than it is unique and the same for all effects linked to it. |
+| `GetEffectObject` | nwn.get_effect_object | Get the object parameter of eEffect at nIndex. * nIndex bounds: 0 >= nIndex < 4. * Some experimentation will be needed to find the right index for the value you wish to determine. Returns: the value or OBJECT_INVALID on error/when not set. |
+| `GetEffectSpellId` | nwn.get_effect_spell_id | Get the spell (SPELL_*) that applied eSpellEffect. * Returns -1 if eSpellEffect was applied outside a spell script. |
+| `GetEffectString` | nwn.get_effect_string | Get the string parameter of eEffect at nIndex. * nIndex bounds: 0 >= nIndex < 6. * Some experimentation will be needed to find the right index for the value you wish to determine. Returns: the value or "" on error/when not set. |
+| `GetEffectSubType` | nwn.get_effect_sub_type | Get the subtype (SUBTYPE_*) of eEffect. * Return value on error: 0 |
+| `GetEffectTag` | nwn.get_effect_tag | Returns the string tag set for the provided effect. - If no tag has been set, returns an empty string. |
+| `GetEffectType` | nwn.get_effect_type | Get the effect type (EFFECT_TYPE_*) of eEffect. - bAllTypes: Set to TRUE to return additional values the game used to return EFFECT_INVALIDEFFECT for, specifically: EFFECT_TYPE: APPEAR, CUTSCENE_DOMINATED, DAMAGE, DEATH, DISAPPEAR, HEAL, HITPOINTCHANGEWHENDYING, KNOCKDOWN, MODIFYNUMATTACKS, SUMMON_CREATURE, TAUNT, WOUNDING * Return value if eEffect is invalid: EFFECT_INVALIDEFFECT |
+| `GetFacing` | nwn.get_facing | Get the direction in which oTarget is facing, expressed as a float between 0.0f and 360.0f * Return value on error: -1.0f |
+| `GetFacingFromLocation` | nwn.get_facing_from_location | Get the orientation value from lLocation. |
+| `GetFactionAverageGoodEvilAlignment` | nwn.get_faction_average_good_evil_alignment | Get an integer between 0 and 100 (inclusive) that represents the average good/evil alignment of oFactionMember's faction. * Return value on error: -1 |
+| `GetFactionAverageLawChaosAlignment` | nwn.get_faction_average_law_chaos_alignment | Get an integer between 0 and 100 (inclusive) that represents the average law/chaos alignment of oFactionMember's faction. * Return value on error: -1 |
+| `GetFactionAverageLevel` | nwn.get_faction_average_level | Get the average level of the members of the faction. * Return value on error: -1 |
+| `GetFactionAverageReputation` | nwn.get_faction_average_reputation | Get an integer between 0 and 100 (inclusive) that represents how oSourceFactionMember's faction feels about oTarget. * Return value on error: -1 |
+| `GetFactionAverageXP` | nwn.get_faction_average_xp | Get the average XP of the members of the faction. * Return value on error: -1 |
+| `GetFactionBestAC` | nwn.get_faction_best_ac | Get the object faction member with the highest armour class. * Returns OBJECT_INVALID if oFactionMember's faction is invalid. |
+| `GetFactionEqual` | nwn.get_faction_equal | * Returns TRUE if the Faction Ids of the two objects are the same |
+| `GetFactionLeader` | nwn.get_faction_leader | Get the player leader of the faction of which oMemberOfFaction is a member. * Returns OBJECT_INVALID if oMemberOfFaction is not a valid creature, or oMemberOfFaction is a member of a NPC faction. |
+| `GetFactionLeastDamagedMember` | nwn.get_faction_least_damaged_member | Get the member of oFactionMember's faction that has taken the fewest hit points of damage. * Returns OBJECT_INVALID if oFactionMember's faction is invalid. |
+| `GetFactionMostDamagedMember` | nwn.get_faction_most_damaged_member | Get the member of oFactionMember's faction that has taken the most hit points of damage. * Returns OBJECT_INVALID if oFactionMember's faction is invalid. |
+| `GetFactionStrongestMember` | nwn.get_faction_strongest_member | Get the strongest member of oFactionMember's faction. * Returns OBJECT_INVALID if oFactionMember's faction is invalid. |
+| `GetFactionWeakestMember` | nwn.get_faction_weakest_member | Get the weakest member of oFactionMember's faction. * Returns OBJECT_INVALID if oFactionMember's faction is invalid. |
+| `GetFactionWorstAC` | nwn.get_faction_worst_ac | Get the object faction member with the lowest armour class. * Returns OBJECT_INVALID if oFactionMember's faction is invalid. |
+| `GetFamiliarCreatureType` | nwn.get_familiar_creature_type | Get oCreature's familiar creature type (FAMILIAR_CREATURE_TYPE_*). * Returns FAMILIAR_CREATURE_TYPE_NONE if oCreature is invalid or does not currently have a familiar. |
+| `GetFamiliarName` | nwn.get_familiar_name | Get oCreature's familiar's name. * Returns "" if oCreature is invalid, does not currently have a familiar or if the familiar's name is blank. |
+| `GetFogAmount` | nwn.get_fog_amount | Gets the fog amount in the area specified. nFogType = nFogType specifies wether the Sun, or Moon fog type is returned. Valid values for nFogType are FOG_TYPE_SUN or FOG_TYPE_MOON. If no valid area (or object) is specified, it uses the area of caller. If an object other than an area is specified, will use the area that the object is currently in. |
+| `GetFogColor` | nwn.get_fog_color | Gets the fog color in the area specified. nFogType specifies wether the Sun, or Moon fog type is returned. Valid values for nFogType are FOG_TYPE_SUN or FOG_TYPE_MOON. If no valid area (or object) is specified, it uses the area of caller. If an object other than an area is specified, will use the area that the object is currently in. |
+| `GetFortitudeSavingThrow` | nwn.get_fortitude_saving_throw | Get oTarget's base fortitude saving throw value (this will only work for creatures, doors, and placeables). * Returns 0 if oTarget is invalid. |
+| `GetGender` | nwn.get_gender | Get the gender of oCreature. |
+| `GetGold` | nwn.get_gold | Get the amount of gold possessed by oTarget. |
+| `GetGoldPieceValue` | nwn.get_gold_piece_value | Get the gold piece value of oItem. * Returns 0 if oItem is not a valid item. |
+| `GetGoodEvilValue` | nwn.get_good_evil_value | Get an integer between 0 and 100 (inclusive) to represent oCreature's Good/Evil alignment (100=good, 0=evil) * Return value if oCreature is not a valid creature: -1 |
+| `GetHardness` | nwn.get_hardness | returns the Hardness of a Door or Placeable object. - oObject: a door or placeable object. returns -1 on an error or if used on an object that is neither a door nor a placeable object. |
+| `GetHasFeat` | nwn.get_has_feat | Determine whether oCreature has nFeat, optionally if nFeat is useable. - nFeat: FEAT_* - oCreature - bIgnoreUses: Will check if the creature has the given feat even if it has no uses remaining |
+| `GetHasFeatEffect` | nwn.get_has_feat_effect | - nFeat: FEAT_* - oObject * Returns TRUE if oObject has effects on it originating from nFeat. |
+| `GetHasInventory` | nwn.get_has_inventory | Determine whether oObject has an inventory. * Returns TRUE for creatures and stores, and checks to see if an item or placeable object is a container. * Returns FALSE for all other object types. |
+| `GetHasSkill` | nwn.get_has_skill | Determine whether oCreature has nSkill, and nSkill is useable. - nSkill: SKILL_* - oCreature |
+| `GetHasSpell` | nwn.get_has_spell | Determines the number of times that oCreature has nSpell memorised. - nSpell: SPELL_* - oCreature |
+| `GetHasSpellEffect` | nwn.get_has_spell_effect | Determines whether oObject has any effects applied by nSpell - nSpell: SPELL_* - oObject * The spell id on effects is only valid if the effect is created when the spell script runs. If it is created in a delayed command then the spell id on the effect will be invalid. |
+| `GetIdentified` | nwn.get_identified | Determined whether oItem has been identified. |
+| `GetInfiniteFlag` | nwn.get_infinite_flag | returns TRUE if the item is flagged as infinite. - oItem: an item. The infinite property affects the buying/selling behavior of the item in a store. An infinite item will still be available to purchase from a store after a player buys the item (non-infinite items will disappear from the store when purchased). |
+| `GetIsAreaAboveGround` | nwn.get_is_area_above_ground | Returns AREA_ABOVEGROUND if the area oArea is above ground, AREA_UNDERGROUND otherwise. Returns AREA_INVALID, on an error. |
+| `GetIsAreaInterior` | nwn.get_is_area_interior | This will return TRUE if the area is flagged as either interior or underground. |
+| `GetIsAreaNatural` | nwn.get_is_area_natural | Returns AREA_NATURAL if the area oArea is natural, AREA_ARTIFICIAL otherwise. Returns AREA_INVALID, on an error. |
+| `GetIsDM` | nwn.get_is_dm | * Returns TRUE if oCreature is the Dungeon Master. Note: This will return FALSE if oCreature is a DM Possessed creature. To determine if oCreature is a DM Possessed creature, use GetIsDMPossessed() |
+| `GetIsDMPossessed` | nwn.get_is_dm_possessed | Returns TRUE if the creature oCreature is currently possessed by a DM character. Returns FALSE otherwise. Note: GetIsDMPossessed() will return FALSE if oCreature is the DM character. To determine if oCreature is a DM character use GetIsDM() |
+| `GetIsDawn` | nwn.get_is_dawn | * Returns TRUE if it is currently dawn. |
+| `GetIsDay` | nwn.get_is_day | * Returns TRUE if it is currently day. |
+| `GetIsDead` | nwn.get_is_dead | * Returns TRUE if oCreature is a dead NPC, dead PC or a dying PC. |
+| `GetIsDoorActionPossible` | nwn.get_is_door_action_possible | - oTargetDoor - nDoorAction: DOOR_ACTION_* * Returns TRUE if nDoorAction can be performed on oTargetDoor. |
+| `GetIsDusk` | nwn.get_is_dusk | * Returns TRUE if it is currently dusk. |
+| `GetIsEffectValid` | nwn.get_is_effect_valid | * Returns TRUE if eEffect is a valid effect. The effect must have been applied to * an object or else it will return FALSE |
+| `GetIsEnemy` | nwn.get_is_enemy | * Returns TRUE if oSource considers oTarget as an enemy. |
+| `GetIsFriend` | nwn.get_is_friend | * Returns TRUE if oSource considers oTarget as a friend. |
+| `GetIsImmune` | nwn.get_is_immune | - oCreature - nImmunityType: IMMUNITY_TYPE_* - oVersus: if this is specified, then we also check for the race and alignment of oVersus * Returns TRUE if oCreature has immunity of type nImmunity versus oVersus. |
+| `GetIsInCombat` | nwn.get_is_in_combat | * Returns TRUE if oCreature is in combat. |
+| `GetIsNeutral` | nwn.get_is_neutral | * Returns TRUE if oSource considers oTarget as neutral. |
+| `GetIsNight` | nwn.get_is_night | * Returns TRUE if it is currently night. |
+| `GetIsObjectValid` | nwn.get_is_object_valid | * Returns TRUE if oObject is a valid object. |
+| `GetIsOpen` | nwn.get_is_open | * Returns TRUE if oObject (which is a placeable or a door) is currently open. |
+| `GetIsPlaceableObjectActionPossible` | nwn.get_is_placeable_object_action_possible | - oPlaceable - nPlaceableAction: PLACEABLE_ACTION_* * Returns TRUE if nPlacebleAction is valid for oPlaceable. |
+| `GetIsPlayerDM` | nwn.get_is_player_dm | Returns TRUE if the given player-controlled creature has DM privileges gained through a player login (as opposed to the DM client). Note: GetIsDM() also returns TRUE for player creature DMs. |
+| `GetIsResting` | nwn.get_is_resting | * Returns TRUE if oCreature is resting. |
+| `GetItemACValue` | nwn.get_item_ac_value | Get the Armour Class of oItem. * Return 0 if the oItem is not a valid item, or if oItem has no armour value. |
+| `GetItemCharges` | nwn.get_item_charges | Returns charges left on an item - oItem: item to query |
+| `GetItemCursedFlag` | nwn.get_item_cursed_flag | Returns TRUE if the item is cursed and cannot be dropped |
+| `GetItemInSlot` | nwn.get_item_in_slot | Get the object which is in oCreature's specified inventory slot - nInventorySlot: INVENTORY_SLOT_* - oCreature * Returns OBJECT_INVALID if oCreature is not a valid creature or there is no item in nInventorySlot. |
+| `GetItemPossessor` | nwn.get_item_possessor | Get the possessor of oItem - bReturnBags: If TRUE will potentially return a bag container item the item is in, instead of the object holding the bag. Make sure to check the returning item object type with this flag. * Return value on error: OBJECT_INVALID |
+| `GetItemStackSize` | nwn.get_item_stack_size | Returns stack size of an item - oItem: item to query |
+| `GetLawChaosValue` | nwn.get_law_chaos_value | Get an integer between 0 and 100 (inclusive) to represent oCreature's Law/Chaos alignment (100=law, 0=chaos) * Return value if oCreature is not a valid creature: -1 |
+| `GetLevelByClass` | nwn.get_level_by_class | Determine the levels that oCreature holds in nClassType. - nClassType: CLASS_TYPE_* - oCreature |
+| `GetLocalFloat` | nwn.get_local_float | Get oObject's local float variable sVarName * Return value on error: 0.0f |
+| `GetLocalInt` | nwn.get_local_int | Get oObject's local integer variable sVarName * Return value on error: 0 |
+| `GetLocalLocation` | nwn.get_local_location | Get oObject's local location variable sVarname |
+| `GetLocalObject` | nwn.get_local_object | Get oObject's local object variable sVarName * Return value on error: OBJECT_INVALID |
+| `GetLocalString` | nwn.get_local_string | Get oObject's local string variable sVarName * Return value on error: "" |
+| `GetLocation` | nwn.get_location | Get the location of oObject. |
+| `GetLockKeyRequired` | nwn.get_lock_key_required | * Returns TRUE if a specific key is required to open the lock on oObject. |
+| `GetLockKeyTag` | nwn.get_lock_key_tag | Get the tag of the key that will open the lock on oObject. |
+| `GetLockLockDC` | nwn.get_lock_lock_dc | Get the DC for locking oObject. |
+| `GetLockLockable` | nwn.get_lock_lockable | * Returns TRUE if the lock on oObject is lockable. |
+| `GetLockUnlockDC` | nwn.get_lock_unlock_dc | Get the DC for unlocking oObject. |
+| `GetLocked` | nwn.get_locked | Get the locked state of oTarget, which can be a door or a placeable object. |
+| `GetMaster` | nwn.get_master | Get the master of oAssociate. |
+| `GetMemorizedSpellId` | nwn.get_memorized_spell_id | Gets the spell id of a memorized spell slot. - nClassType: a CLASS_TYPE_* constant. Must be a MemorizesSpells class. - nSpellLevel: the spell level, 0-9. - nIndex: the index of the spell slot. Bounds: 0 <= nIndex < GetMemorizedSpellCountByLevel() Returns: a SPELL_* constant or -1 if the slot is not set. |
+| `GetMemorizedSpellReady` | nwn.get_memorized_spell_ready | Gets the ready state of a memorized spell slot. - nClassType: a CLASS_TYPE_* constant. Must be a MemorizesSpells class. - nSpellLevel: the spell level, 0-9. - nIndex: the index of the spell slot. Bounds: 0 <= nIndex < GetMemorizedSpellCountByLevel() Returns: TRUE/FALSE or -1 if the slot is not set. |
+| `GetModule` | nwn.get_module | Get the module. * Return value on error: OBJECT_INVALID |
+| `GetModuleName` | nwn.get_module_name | Get the module's name in the language of the server that's running it. * If there is no entry for the language of the server, it will return an empty string |
+| `GetMovementRate` | nwn.get_movement_rate | Get oCreature's movement rate. * Returns 0 if oCreature is invalid. |
+| `GetNearestCreature` | nwn.get_nearest_creature | Get the creature nearest to oTarget, subject to all the criteria specified. - nFirstCriteriaType: CREATURE_TYPE_* - nFirstCriteriaValue: -> CLASS_TYPE_* if nFirstCriteriaType was CREATURE_TYPE_CLASS -> SPELL_* if nFirstCriteriaType was CREATURE_TYPE_DOES_NOT_HAVE_SPELL_EFFECT or CREATURE_TYPE_HAS_SPELL_EFFECT -> TRUE or FALSE if nFirstCriteriaType was CREATURE_TYPE_IS_ALIVE -> PERCEPTION_* if nFirstCriteriaType was CREATURE_TYPE_PERCEPTION -> PLAYER_CHAR_IS_PC or PLAYER_CHAR_NOT_PC if nFirstCriteriaType was CREATURE_TYPE_PLAYER_CHAR -> RACIAL_TYPE_* if nFirstCriteriaType was CREATURE_TYPE_RACIAL_TYPE -> REPUTATION_TYPE_* if nFirstCriteriaType was CREATURE_TYPE_REPUTATION For example, to get the nearest PC, use: (CREATURE_TYPE_PLAYER_CHAR, PLAYER_CHAR_IS_PC) - oTarget: We're trying to find the creature of the specified type that is nearest to oTarget - nNth: We don't have to find the first nearest: we can find the Nth nearest... - nSecondCriteriaType: This is used in the same way as nFirstCriteriaType to further specify the type of creature that we are looking for. - nSecondCriteriaValue: This is used in the same way as nFirstCriteriaValue to further specify the type of creature that we are looking for. - nThirdCriteriaType: This is used in the same way as nFirstCriteriaType to further specify the type of creature that we are looking for. - nThirdCriteriaValue: This is used in the same way as nFirstCriteriaValue to further specify the type of creature that we are looking for. * Return value on error: OBJECT_INVALID |
+| `GetNearestCreatureToLocation` | nwn.get_nearest_creature_to_location | Get the creature nearest to lLocation, subject to all the criteria specified. - nFirstCriteriaType: CREATURE_TYPE_* - nFirstCriteriaValue: -> CLASS_TYPE_* if nFirstCriteriaType was CREATURE_TYPE_CLASS -> SPELL_* if nFirstCriteriaType was CREATURE_TYPE_DOES_NOT_HAVE_SPELL_EFFECT or CREATURE_TYPE_HAS_SPELL_EFFECT -> TRUE or FALSE if nFirstCriteriaType was CREATURE_TYPE_IS_ALIVE -> PERCEPTION_* if nFirstCriteriaType was CREATURE_TYPE_PERCEPTION -> PLAYER_CHAR_IS_PC or PLAYER_CHAR_NOT_PC if nFirstCriteriaType was CREATURE_TYPE_PLAYER_CHAR -> RACIAL_TYPE_* if nFirstCriteriaType was CREATURE_TYPE_RACIAL_TYPE -> REPUTATION_TYPE_* if nFirstCriteriaType was CREATURE_TYPE_REPUTATION For example, to get the nearest PC, use (CREATURE_TYPE_PLAYER_CHAR, PLAYER_CHAR_IS_PC) - lLocation: We're trying to find the creature of the specified type that is nearest to lLocation - nNth: We don't have to find the first nearest: we can find the Nth nearest.... - nSecondCriteriaType: This is used in the same way as nFirstCriteriaType to further specify the type of creature that we are looking for. - nSecondCriteriaValue: This is used in the same way as nFirstCriteriaValue to further specify the type of creature that we are looking for. - nThirdCriteriaType: This is used in the same way as nFirstCriteriaType to further specify the type of creature that we are looking for. - nThirdCriteriaValue: This is used in the same way as nFirstCriteriaValue to further specify the type of creature that we are looking for. * Return value on error: OBJECT_INVALID |
+| `GetNearestObjectByTag` | nwn.get_nearest_object_by_tag | Get the nth Object nearest to oTarget that has sTag as its tag. * Return value on error: OBJECT_INVALID |
+| `GetNearestObjectToLocation` | nwn.get_nearest_object_to_location | Get the nNth object nearest to lLocation that is of the specified type. - nObjectType: OBJECT_TYPE_* - lLocation - nNth * Return value on error: OBJECT_INVALID |
+| `GetNearestTrapToObject` | nwn.get_nearest_trap_to_object | Get the trap nearest to oTarget. Note : "trap objects" are actually any trigger, placeable or door that is trapped in oTarget's area. - oTarget - nTrapDetected: if this is TRUE, the trap returned has to have been detected by oTarget. |
+| `GetObjectByTag` | nwn.get_object_by_tag | Get the nNth object with the specified tag. - sTag - nNth: the nth object with this tag may be requested * Returns OBJECT_INVALID if the object cannot be found. Note: The module cannot be retrieved by GetObjectByTag(), use GetModule() instead. |
+| `GetObjectByUUID` | nwn.get_object_by_uuid | Looks up a object on the server by it's UUID. Returns OBJECT_INVALID if the UUID is not on the server. |
+| `GetObjectType` | nwn.get_object_type | Get the object type (OBJECT_TYPE_*) of oTarget * Return value if oTarget is not a valid object: -1 |
+| `GetObjectVisualTransform` | nwn.get_object_visual_transform | Gets a visual transform on the given object. - oObject can be any valid Creature, Placeable, Item or Door. - nTransform is one of OBJECT_VISUAL_TRANSFORM_* - nScope is one of OBJECT_VISUAL_TRANSFORM_DATA_SCOPE_* and specific to the object type being VT'ed. Returns the current (or default) value. |
+| `GetPickpocketableFlag` | nwn.get_pickpocketable_flag | returns TRUE if the item CAN be pickpocketed |
+| `GetPlotFlag` | nwn.get_plot_flag | Determine whether oTarget is a plot object. |
+| `GetPortraitId` | nwn.get_portrait_id | Get the PortraitId of oTarget. - oTarget: the object for which you are getting the portrait Id. Returns: The Portrait Id number being used for the object oTarget. The Portrait Id refers to the row number of the Portraits.2da that this portrait is from. If a custom portrait is being used, oTarget is a player object, or on an error returns PORTRAIT_INVALID. In these instances try using GetPortraitResRef() instead. |
+| `GetPortraitResRef` | nwn.get_portrait_res_ref | Get the Portrait ResRef of oTarget. - oTarget: the object for which you are getting the portrait ResRef. Returns: The Portrait ResRef being used for the object oTarget. The Portrait ResRef will not include a trailing size letter. |
+| `GetReflexSavingThrow` | nwn.get_reflex_saving_throw | Get oTarget's base reflex saving throw value (this will only work for creatures, doors, and placeables). * Returns 0 if oTarget is invalid. |
+| `GetSkillRank` | nwn.get_skill_rank | Get the number of ranks that oTarget has in nSkill. - nSkill: SKILL_* - oTarget - nBaseSkillRank: if set to true returns the number of base skill ranks the target has (i.e. not including any bonuses from ability scores, feats, etc). * Returns -1 if oTarget doesn't have nSkill. * Returns 0 if nSkill is untrained. |
+| `GetSpellResistance` | nwn.get_spell_resistance | Returns the spell resistance of the specified creature. - Returns 0 if the creature has no spell resistance or an invalid creature is passed in. |
+| `GetStolenFlag` | nwn.get_stolen_flag | returns TRUE if the item is stolen |
+| `GetStoreGold` | nwn.get_store_gold | Returns the amount of gold a store currently has. -1 indicates it is not using gold. -2 indicates the store could not be located. |
+| `GetStoreIdentifyCost` | nwn.get_store_identify_cost | Gets the amount a store charges for identifying an item. Default is 100. -1 means the store will not identify items. -2 indicates the store could not be located. |
+| `GetStoreMaxBuyPrice` | nwn.get_store_max_buy_price | Gets the maximum amount a store will pay for any item. -1 means price unlimited. -2 indicates the store could not be located. |
+| `GetSubRace` | nwn.get_sub_race | Get the name of oCreature's sub race. * Returns "" if oCreature is invalid (or if sub race is blank for oCreature). |
+| `GetTimeHour` | nwn.get_time_hour | Get the current hour. |
+| `GetTimeMinute` | nwn.get_time_minute | Get the current minute |
+| `GetTimeSecond` | nwn.get_time_second | Get the current second |
+| `GetTransitionTarget` | nwn.get_transition_target | Get the destination object for the given object. All objects can hold a transition target, but only Doors and Triggers will be made clickable by the game engine (This may change in the future). You can set and query transition targets on other objects for your own scripted purposes. * Returns OBJECT_INVALID if oTransition does not hold a target. |
+| `GetUseableFlag` | nwn.get_useable_flag | returns TRUE if the object is usable |
+| `GetWaypointByTag` | nwn.get_waypoint_by_tag | Get the first waypoint with the specified tag. * Returns OBJECT_INVALID if the waypoint cannot be found. |
+| `GetWeather` | nwn.get_weather | Gets the current weather conditions for the area oArea. Returns: WEATHER_CLEAR, WEATHER_RAIN, WEATHER_SNOW, WEATHER_INVALID Note: If called on an Interior area, this will always return WEATHER_CLEAR. |
+| `GetWeight` | nwn.get_weight | Gets the weight of an item, or the total carried weight of a creature in tenths of pounds (as per the baseitems.2da). - oTarget: the item or creature for which the weight is needed |
+| `GetWillSavingThrow` | nwn.get_will_saving_throw | Get oTarget's base will saving throw value (this will only work for creatures, doors, and placeables). * Returns 0 if oTarget is invalid. |
+| `GetXP` | nwn.get_xp | Get oCreature's experience. |
+| `GiveGoldToCreature` | nwn.give_gold_to_creature | Give nGP gold to oCreature. |
+| `GiveXPToCreature` | nwn.give_xp_to_creature | Gives nXpAmount to oCreature. |
+| `IsInConversation` | nwn.is_in_conversation | Returns whether an object is in conversation. |
+| `MagicalEffect` | nwn.magical_effect | Set the subtype of eEffect to Magical and return eEffect. (Effects default to magical if the subtype is not set) Magical effects are removed by resting, and by dispel magic |
+| `MusicBackgroundChangeDay` | nwn.music_background_change_day | Change the background day track for oArea to nTrack. - oArea - nTrack |
+| `MusicBackgroundChangeNight` | nwn.music_background_change_night | Change the background night track for oArea to nTrack. - oArea - nTrack |
+| `MusicBackgroundPlay` | nwn.music_background_play | Play the background music for oArea. |
+| `MusicBackgroundStop` | nwn.music_background_stop | Stop the background music for oArea. |
+| `MusicBattleChange` | nwn.music_battle_change | Change the battle track for oArea. - oArea - nTrack |
+| `MusicBattlePlay` | nwn.music_battle_play | Play the battle music for oArea. |
+| `MusicBattleStop` | nwn.music_battle_stop | Stop the battle music for oArea. |
+| `ReflexSave` | nwn.reflex_save | Rolls a Reflex save and returns success, once in execution order. |
+| `RemoveEffect` | nwn.remove_effect | Remove eEffect from oCreature. * No return value |
+| `RemoveHenchman` | nwn.remove_henchman | Remove oHenchman from the service of oMaster, returning them to their original faction. |
+| `RemoveJournalQuestEntry` | nwn.remove_journal_quest_entry | Remove a journal quest entry from oCreature. - szPlotID: the plot identifier used in the toolset's Journal Editor - oCreature - bAllPartyMembers: If this is TRUE, the entry will be removed from the journal of everyone in the party - bAllPlayers: If this is TRUE, the entry will be removed from the journal of everyone in the world |
+| `RestoreCameraFacing` | nwn.restore_camera_facing | Restores the camera mode and position to what they were last time StoreCameraFacing was called. RestoreCameraFacing can only be called once, and must correspond to a previous call to StoreCameraFacing. |
+| `SendMessageToAllDMs` | nwn.send_message_to_all_d_ms | Sends szMessage to all the Dungeon Masters currently on the server. |
+| `SendMessageToPC` | nwn.send_message_to_pc | Send a server message (szMessage) to the oPlayer. |
+| `SetAILevel` | nwn.set_ai_level | Sets the current AI Level of the creature to the value specified. Does not work on Players. The game by default will choose an appropriate AI level for creatures based on the circumstances that the creature is in. Explicitly setting an AI level will over ride the game AI settings. The new setting will last until SetAILevel is called again with the argument AI_LEVEL_DEFAULT. AI_LEVEL_DEFAULT - Default setting. The game will take over seting the appropriate AI level when required. AI_LEVEL_VERY_LOW - Very Low priority, very stupid, but low CPU usage for AI. Typically used when no players are in the area. AI_LEVEL_LOW - Low priority, mildly stupid, but slightly more CPU usage for AI. Typically used when not in combat, but a player is in the area. AI_LEVEL_NORMAL - Normal priority, average AI, but more CPU usage required for AI. Typically used when creature is in combat. AI_LEVEL_HIGH - High priority, smartest AI, but extremely high CPU usage required for AI. Avoid using this. It is most likely only ever needed for cutscenes. |
+| `SetActionMode` | nwn.set_action_mode | Sets the status of modes ACTION_MODE_* on a creature. |
+| `SetAreaNoRestFlag` | nwn.set_area_no_rest_flag | Sets the NoRest flag on an area. Passing in OBJECT_INVALID to parameter oArea will result in operating on the area of the caller. |
+| `SetBaseAttackBonus` | nwn.set_base_attack_bonus | Sets the number of base attacks each round for the specified creature (PC or NPC). If set on a PC it will not be shown on their character sheet, but will save to BIC/savegame. - nBaseAttackBonus - Number of base attacks per round, 1 to 6 |
+| `SetCalendar` | nwn.set_calendar | Set the calendar to the specified date. - nYear should be from 0 to 32000 inclusive - nMonth should be from 1 to 12 inclusive - nDay should be from 1 to 28 inclusive 1) Time can only be advanced forwards; attempting to set the time backwards will result in no change to the calendar. 2) If values larger than the month or day are specified, they will be wrapped around and the overflow will be used to advance the next field. e.g. Specifying a year of 1350, month of 33 and day of 10 will result in the calender being set to a year of 1352, a month of 9 and a day of 10. |
+| `SetCameraFacing` | nwn.set_camera_facing | Change the direction in which the camera is facing - fDirection is expressed as anticlockwise degrees from Due East. (0.0f=East, 90.0f=North, 180.0f=West, 270.0f=South) A value of -1.0f for any parameter will be ignored and instead it will use the current camera value. This can be used to change the way the camera is facing after the player emerges from an area transition. - nTransitionType: CAMERA_TRANSITION_TYPE_* SNAP will immediately move the camera to the new position, while the other types will result in the camera moving gradually into position Pitch and distance are limited to valid values for the current camera mode: Top Down: Distance = 5-20, Pitch = 1-50 Driving camera: Distance = 6 (can't be changed), Pitch = 1-62 Chase: Distance = 5-20, Pitch = 1-50 *** NOTE *** In NWN:Hordes of the Underdark the camera limits have been relaxed to the following: Distance 1-25 Pitch 1-89 |
+| `SetCameraHeight` | nwn.set_camera_height | Forces this player's camera to be set to this height. Setting this value to zero will restore the camera to the racial default height. |
+| `SetCameraMode` | nwn.set_camera_mode | Set the camera mode for oPlayer. - oPlayer - nCameraMode: CAMERA_MODE_* * If oPlayer is not player-controlled or nCameraMode is invalid, nothing happens. |
+| `SetColor` | nwn.set_color | Set the color channel of oObject to the color specified. - oObject: the object for which you are changing the color. Can be a creature that has color information (i.e. the playable races). - nColorChannel: The color channel that you want to set the color value of. COLOR_CHANNEL_SKIN COLOR_CHANNEL_HAIR COLOR_CHANNEL_TATTOO_1 COLOR_CHANNEL_TATTOO_2 - nColorValue: The color you want to set (0-175). |
+| `SetCommandable` | nwn.set_commandable | Set whether oTarget's action stack can be modified |
+| `SetCreatureAppearanceType` | nwn.set_creature_appearance_type | Sets the creature's appearance type to the value specified (uses the APPEARANCE_TYPE_XXX constants) |
+| `SetCreatureBodyPart` | nwn.set_creature_body_part | Sets the body part model to be used on the creature specified. The model names for parts need to be in the following format: p<m/f><race letter><phenotype>_<body part><model number>.mdl - nPart (CREATURE_PART_*) CREATURE_PART_RIGHT_FOOT CREATURE_PART_LEFT_FOOT CREATURE_PART_RIGHT_SHIN CREATURE_PART_LEFT_SHIN CREATURE_PART_RIGHT_THIGH CREATURE_PART_LEFT_THIGH CREATURE_PART_PELVIS CREATURE_PART_TORSO CREATURE_PART_BELT CREATURE_PART_NECK CREATURE_PART_RIGHT_FOREARM CREATURE_PART_LEFT_FOREARM CREATURE_PART_RIGHT_BICEP CREATURE_PART_LEFT_BICEP CREATURE_PART_RIGHT_SHOULDER CREATURE_PART_LEFT_SHOULDER CREATURE_PART_RIGHT_HAND CREATURE_PART_LEFT_HAND CREATURE_PART_HEAD - nModelNumber: CREATURE_MODEL_TYPE_* CREATURE_MODEL_TYPE_NONE CREATURE_MODEL_TYPE_SKIN (not for use on shoulders, pelvis or head). CREATURE_MODEL_TYPE_TATTOO (for body parts that support tattoos, i.e. not heads/feet/hands). CREATURE_MODEL_TYPE_UNDEAD (undead model only exists for the right arm parts). - oCreature: the creature to change the body part for. Note: Only part based creature appearance types are supported. i.e. The model types for the playable races ('P') in the appearance.2da |
+| `SetCreatureTailType` | nwn.set_creature_tail_type | Sets the Tail type of the creature specified. - nTailType (CREATURE_TAIL_TYPE_*) CREATURE_TAIL_TYPE_NONE CREATURE_TAIL_TYPE_LIZARD CREATURE_TAIL_TYPE_BONE CREATURE_TAIL_TYPE_DEVIL - oCreature: the creature to change the Tail type for. Note: Only two creature model types will support Tails. The MODELTYPE for the part based (playable) races 'P' and MODELTYPE 'T'in the appearance.2da |
+| `SetCreatureWingType` | nwn.set_creature_wing_type | Sets the Wing type of the creature specified. - nWingType (CREATURE_WING_TYPE_*) CREATURE_WING_TYPE_NONE CREATURE_WING_TYPE_DEMON CREATURE_WING_TYPE_ANGEL CREATURE_WING_TYPE_BAT CREATURE_WING_TYPE_DRAGON CREATURE_WING_TYPE_BUTTERFLY CREATURE_WING_TYPE_BIRD - oCreature: the creature to change the wing type for. Note: Only two creature model types will support wings. The MODELTYPE for the part based (playable races) 'P' and MODELTYPE 'W'in the appearance.2da |
+| `SetDescription` | nwn.set_description | Set the description of oObject. - oObject: the object for which you are changing the description Can be a creature, placeable, item, door, or trigger. - sNewDescription: the new description that the object will use. - bIdentified: If oObject is an item, setting this to TRUE will set the identified description, setting this to FALSE will set the unidentified description. This flag has no effect on objects other than items. Note: Setting an object's description to "" will make the object revert to using the description it originally had before any SetDescription() calls were made on the object. |
+| `SetDroppableFlag` | nwn.set_droppable_flag | Sets the droppable flag on an item - oItem: the item to change - bDroppable: TRUE or FALSE, whether the item should be droppable Droppable items will appear on a creature's remains when the creature is killed. |
+| `SetEffectCreator` | nwn.set_effect_creator | Sets the effect creator - oCreator: The creator of the effect. Can be OBJECT_INVALID. |
+| `SetEffectSpellId` | nwn.set_effect_spell_id | Sets the effect spell id - nSpellId: The spell id for the purposes of effect stacking, dispel magic and GetEffectSpellId. Must be >= -1 (-1 being invalid/no spell) |
+| `SetEncounterActive` | nwn.set_encounter_active | Set oEncounter's active state to nNewValue. - nNewValue: TRUE/FALSE - oEncounter |
+| `SetEncounterDifficulty` | nwn.set_encounter_difficulty | Set the difficulty level of oEncounter. - nEncounterDifficulty: ENCOUNTER_DIFFICULTY_* - oEncounter |
+| `SetEncounterSpawnsCurrent` | nwn.set_encounter_spawns_current | Set the number of times that oEncounter has spawned so far |
+| `SetEncounterSpawnsMax` | nwn.set_encounter_spawns_max | Set the maximum number of times that oEncounter can spawn |
+| `SetFacing` | nwn.set_facing | Cause oObject to face fDirection. - fDirection is expressed as anticlockwise degrees from Due East. DIRECTION_EAST, DIRECTION_NORTH, DIRECTION_WEST and DIRECTION_SOUTH are predefined. (0.0f=East, 90.0f=North, 180.0f=West, 270.0f=South) |
+| `SetFogAmount` | nwn.set_fog_amount | Sets the fog amount in the area specified. nFogType = FOG_TYPE_* specifies wether the Sun, Moon, or both fog types are set. nFogAmount = specifies the density that the fog is being set to. If no valid area (or object) is specified, it uses the area of caller. If an object other than an area is specified, will use the area that the object is currently in. |
+| `SetFogColor` | nwn.set_fog_color | Sets the fog color in the area specified. nFogType = FOG_TYPE_* specifies wether the Sun, Moon, or both fog types are set. nFogColor = FOG_COLOR_* specifies the color the fog is being set to. The fog color can also be represented as a hex RGB number if specific color shades are desired. The format of a hex specified color would be 0xFFEEDD where FF would represent the amount of red in the color EE would represent the amount of green in the color DD would represent the amount of blue in the color. If no valid area (or object) is specified, it uses the area of caller. If an object other than an area is specified, will use the area that the object is currently in. If fFadeTime is above 0.0, it will fade to the new color in the amount of seconds specified. |
+| `SetGender` | nwn.set_gender | Set the gender of oCreature. - nGender: a GENDER_* constant. |
+| `SetHardness` | nwn.set_hardness | Sets the Hardness of a Door or Placeable object. - nHardness: must be between 0 and 250. - oObject: a door or placeable object. Does nothing if used on an object that is neither a door nor a placeable. |
+| `SetIdentified` | nwn.set_identified | Set whether oItem has been identified. |
+| `SetImmortal` | nwn.set_immortal | Set a creature's immortality flag. -oCreature: creature affected -bImmortal: TRUE = creature is immortal and cannot be killed (but still takes damage) FALSE = creature is not immortal and is damaged normally. This scripting command only works on Creature objects. |
+| `SetInfiniteFlag` | nwn.set_infinite_flag | Sets the Infinite flag on an item - oItem: the item to change - bInfinite: TRUE or FALSE, whether the item should be Infinite The infinite property affects the buying/selling behavior of the item in a store. An infinite item will still be available to purchase from a store after a player buys the item (non-infinite items will disappear from the store when purchased). |
+| `SetIsDestroyable` | nwn.set_is_destroyable | Set the destroyable status of oObject - bDestroyable: If this is FALSE, the caller does not fade out on death, but sticks around as a corpse. - bRaiseable: If this is TRUE, the caller can be raised via resurrection. - bSelectableWhenDead: If this is TRUE, the caller is selectable after death. - oObject: Object to affect. |
+| `SetItemCharges` | nwn.set_item_charges | Sets charges left on an item. - oItem: item to change - nCharges: number of charges. If value below 0 is passed, # charges will be set to 0. If value greater than maximum is passed, # charges will be set to maximum. If the # charges drops to 0 the item will be destroyed. |
+| `SetItemCursedFlag` | nwn.set_item_cursed_flag | When cursed, items cannot be dropped |
+| `SetItemStackSize` | nwn.set_item_stack_size | Sets stack size of an item. - oItem: item to change - nSize: new size of stack. Will be restricted to be between 1 and the maximum stack size for the item type. If a value less than 1 is passed it will set the stack to 1. If a value greater than the max is passed then it will set the stack to the maximum size |
+| `SetLocalFloat` | nwn.set_local_float | Set oObject's local float variable sVarName to nValue |
+| `SetLocalInt` | nwn.set_local_int | Set oObject's local integer variable sVarName to nValue |
+| `SetLocalLocation` | nwn.set_local_location | Set oObject's local location variable sVarname to lValue |
+| `SetLocalObject` | nwn.set_local_object | Set oObject's local object variable sVarName to nValue |
+| `SetLocalString` | nwn.set_local_string | Set oObject's local string variable sVarName to nValue |
+| `SetLockKeyRequired` | nwn.set_lock_key_required | When set the object can not be opened unless the opener possesses the required key. The key tag required can be specified either in the toolset, or by using the SetLockKeyTag() scripting command. - oObject: a door, or placeable. - nKeyRequired: TRUE/FALSE |
+| `SetLockKeyTag` | nwn.set_lock_key_tag | Set the key tag required to open object oObject. This will only have an effect if the object is set to "Key required to unlock or lock" either in the toolset or by using the scripting command SetLockKeyRequired(). - oObject: a door, placeable or trigger. - sNewKeyTag: the key tag required to open the locked object. |
+| `SetLockLockDC` | nwn.set_lock_lock_dc | Sets the DC for locking the object. - oObject: a door or placeable object. - nNewLockDC: must be between 0 and 250. |
+| `SetLockLockable` | nwn.set_lock_lockable | Sets whether or not the object can be locked. - oObject: a door or placeable. - nLockable: TRUE/FALSE |
+| `SetLockUnlockDC` | nwn.set_lock_unlock_dc | Sets the DC for unlocking the object. - oObject: a door or placeable object. - nNewUnlockDC: must be between 0 and 250. |
+| `SetLocked` | nwn.set_locked | Set the locked state of oTarget, which can be a door or a placeable object. |
+| `SetMapPinEnabled` | nwn.set_map_pin_enabled | Set whether oMapPin is enabled. - oMapPin - nEnabled: 0=Off, 1=On |
+| `SetObjectVisualTransform` | nwn.set_object_visual_transform | Sets a visual transform on the given object. - oObject can be any valid Creature, Placeable, Item or Door. - nTransform is one of OBJECT_VISUAL_TRANSFORM_* - fValue depends on the transformation to apply. - nScope is one of OBJECT_VISUAL_TRANSFORM_DATA_SCOPE_* and specific to the object type being VT'ed. - nBehaviorFlags: bitmask of OBJECT_VISUAL_TRANSFORM_BEHAVIOR_*. - nRepeats: If > 0: N times, jump back to initial/from state after completing the transform. If -1: Do forever. Returns the old/previous value. |
+| `SetPickpocketableFlag` | nwn.set_pickpocketable_flag | Sets the Pickpocketable flag on an item - oItem: the item to change - bPickpocketable: TRUE or FALSE, whether the item can be pickpocketed. |
+| `SetPlotFlag` | nwn.set_plot_flag | Set oTarget's plot object status. |
+| `SetPortraitId` | nwn.set_portrait_id | Change the portrait of oTarget to use the Portrait Id specified. - oTarget: the object for which you are changing the portrait. - nPortraitId: The Id of the new portrait to use. nPortraitId refers to a row in the Portraits.2da Note: Not all portrait Ids are suitable for use with all object types. Setting the portrait Id will also cause the portrait ResRef to be set to the appropriate portrait ResRef for the Id specified. |
+| `SetPortraitResRef` | nwn.set_portrait_res_ref | Change the portrait of oTarget to use the Portrait ResRef specified. - oTarget: the object for which you are changing the portrait. - sPortraitResRef: The ResRef of the new portrait to use. The ResRef should not include any trailing size letter ( e.g. po_el_f_09_ ). Note: Not all portrait ResRefs are suitable for use with all object types. Setting the portrait ResRef will also cause the portrait Id to be set to PORTRAIT_INVALID. |
+| `SetStolenFlag` | nwn.set_stolen_flag | Sets whether this item is 'stolen' or not |
+| `SetStoreGold` | nwn.set_store_gold | Sets the amount of gold a store has. -1 means the store does not use gold. |
+| `SetStoreIdentifyCost` | nwn.set_store_identify_cost | Sets the amount a store charges for identifying an item. Default is 100. -1 means the store will not identify items. |
+| `SetStoreMaxBuyPrice` | nwn.set_store_max_buy_price | Sets the maximum amount a store will pay for any item. -1 means price unlimited. |
+| `SetTag` | nwn.set_tag | Sets a new tag for oObject. Will do nothing for invalid objects or the module object. Note: Care needs to be taken with this function. Changing the tag for creature with waypoints will make them stop walking them. Changing waypoint, door or trigger tags will break their area transitions. |
+| `SetTime` | nwn.set_time | Set the time to the time specified. - nHour should be from 0 to 23 inclusive - nMinute should be from 0 to 59 inclusive - nSecond should be from 0 to 59 inclusive - nMillisecond should be from 0 to 999 inclusive 1) Time can only be advanced forwards; attempting to set the time backwards will result in the day advancing and then the time being set to that specified, e.g. if the current hour is 15 and then the hour is set to 3, the day will be advanced by 1 and the hour will be set to 3. 2) If values larger than the max hour, minute, second or millisecond are specified, they will be wrapped around and the overflow will be used to advance the next field, e.g. specifying 62 hours, 250 minutes, 10 seconds and 10 milliseconds will result in the calendar day being advanced by 2 and the time being set to 18 hours, 10 minutes, 10 milliseconds. |
+| `SetTrapActive` | nwn.set_trap_active | Sets whether or not the trap is an active trap - oTrapObject: a placeable, door or trigger - nActive: TRUE/FALSE Notes: Setting a trap as inactive will not make the trap disappear if it has already been detected. Call SetTrapDetectedBy() to make a detected trap disappear. To make an inactive trap not detectable call SetTrapDetectable() |
+| `SetTrapDetectDC` | nwn.set_trap_detect_dc | Set the DC for detecting oTrapObject. - oTrapObject: a placeable, door or trigger - nDetectDC: must be between 0 and 250. |
+| `SetTrapDetectable` | nwn.set_trap_detectable | Sets whether or not the trapped object can be detected. - oTrapObject: a placeable, door or trigger - nDetectable: TRUE/FALSE Note: Setting a trapped object to not be detectable will not make the trap disappear if it has already been detected. |
+| `SetTrapDetectedBy` | nwn.set_trap_detected_by | Set whether or not the creature oDetector has detected the trapped object oTrap. - oTrap: A trapped trigger, placeable or door object. - oDetector: This is the creature that the detected status of the trap is being adjusted for. - bDetected: A Boolean that sets whether the trapped object has been detected or not. |
+| `SetTrapDisarmDC` | nwn.set_trap_disarm_dc | Set the DC for disarming oTrapObject. - oTrapObject: a placeable, door or trigger - nDisarmDC: must be between 0 and 250. |
+| `SetTrapDisarmable` | nwn.set_trap_disarmable | Sets whether or not the trapped object can be disarmed. - oTrapObject: a placeable, door or trigger - nDisarmable: TRUE/FALSE |
+| `SetTrapKeyTag` | nwn.set_trap_key_tag | Set the tag of the key that will disarm oTrapObject. - oTrapObject: a placeable, door or trigger |
+| `SetTrapOneShot` | nwn.set_trap_one_shot | Sets whether or not the trap is a one-shot trap (i.e. whether or not the trap resets itself after firing). - oTrapObject: a placeable, door or trigger - nOneShot: TRUE/FALSE |
+| `SetUseableFlag` | nwn.set_useable_flag | Set oTarget's useable object status. Note: Only works on non-static placeables, creatures, doors and items. On items, it affects interactivity when they're on the ground, and not useability in inventory. |
+| `SetWeather` | nwn.set_weather | Set the weather for oTarget. - oTarget: if this is GetModule(), all outdoor areas will be modified by the weather constant. If it is an area, oTarget will play the weather only if it is an outdoor area. - nWeather: WEATHER_* -> WEATHER_USER_AREA_SETTINGS will set the area back to random weather. -> WEATHER_CLEAR, WEATHER_RAIN, WEATHER_SNOW will make the weather go to the appropriate precipitation *without stopping*. |
+| `SetXP` | nwn.set_xp | Sets oCreature's experience to nXpAmount. |
+| `SummonAnimalCompanion` | nwn.summon_animal_companion | Summon an Animal Companion |
+| `SummonFamiliar` | nwn.summon_familiar | Summon a Familiar |
+| `SupernaturalEffect` | nwn.supernatural_effect | Set the subtype of eEffect to Supernatural and return eEffect. (Effects default to magical if the subtype is not set) Permanent supernatural effects are not removed by resting |
+| `TagEffect` | nwn.tag_effect | Tags the effect with the provided string. - Any other tags in the link will be overwritten. |
+| `TakeGoldFromCreature` | nwn.take_gold_from_creature | Take nAmount of gold from oCreatureToTakeFrom. - nAmount - oCreatureToTakeFrom: If this is not a valid creature, nothing will happen. - bDestroy: If this is TRUE, the caller will not get the gold. Instead, the gold will be destroyed and will vanish from the game. |
+| `VersusAlignmentEffect` | nwn.versus_alignment_effect | Set eEffect to be versus a specific alignment. - eEffect - nLawChaos: ALIGNMENT_LAWFUL/ALIGNMENT_CHAOTIC/ALIGNMENT_ALL - nGoodEvil: ALIGNMENT_GOOD/ALIGNMENT_EVIL/ALIGNMENT_ALL |
+| `VersusRacialTypeEffect` | nwn.versus_racial_type_effect | Set eEffect to be versus nRacialType. - eEffect - nRacialType: RACIAL_TYPE_* |
+| `VersusTrapEffect` | nwn.versus_trap_effect | Set eEffect to be versus traps. |
+| `WillSave` | nwn.will_save | Rolls a Will save and returns success, once in execution order. |
+
+### deferred (5)
+
+| NWScript member | Glyph | Reason / signature |
+| --- | --- | --- |
+| `ActionDoCommand` |  | Requires a Glyph-native queued command abstraction. |
+| `DelayCommand` |  | Requires Glyph-native scheduled blocks and captured execution context. |
+| `GetLastSpeaker` |  | Requires a corresponding Glyph conversation event context. |
+| `GetSpellTargetObject` |  | Requires a corresponding Glyph spell event context. |
+| `NWNXPushAction` |  | Requires Glyph-native scheduling/control flow; delegates are not Glyph values. |
+
+### excluded (463)
+
+| NWScript member | Glyph | Reason / signature |
+| --- | --- | --- |
+| `AbortRunningScript` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ActivatePortal` |  | Not selected by the reviewed manifest; review before publishing. |
+| `AddToParty` |  | Not selected by the reviewed manifest; review before publishing. |
+| `AssignCommand` |  | Specific generated command adapters assign an explicit actor; arbitrary delegates are not values. |
+| `AttachCamera` |  | Not selected by the reviewed manifest; review before publishing. |
+| `BeginConversation` |  | Not selected by the reviewed manifest; review before publishing. |
+| `BootPC` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ClearMemorizedSpell` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ClearMemorizedSpellBySpellId` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ClearObjectVisualTransform` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ClearPersonalReputation` |  | Not selected by the reviewed manifest; review before publishing. |
+| `CompileScript` |  | Dynamic compiler dispatch is outside the runtime standard library. |
+| `DayToNight` |  | Not selected by the reviewed manifest; review before publishing. |
+| `DecrementRemainingFeatUses` |  | Not selected by the reviewed manifest; review before publishing. |
+| `DecrementRemainingSpellUses` |  | Not selected by the reviewed manifest; review before publishing. |
+| `DeleteCampaignVariable` |  | Not selected by the reviewed manifest; review before publishing. |
+| `DeleteLocalCassowary` |  | Not selected by the reviewed manifest; review before publishing. |
+| `DeleteLocalJson` |  | Not selected by the reviewed manifest; review before publishing. |
+| `DestroyCampaignDatabase` |  | Not selected by the reviewed manifest; review before publishing. |
+| `DoSinglePlayerAutoSave` |  | Not selected by the reviewed manifest; review before publishing. |
+| `DoWhirlwindAttack` |  | Not selected by the reviewed manifest; review before publishing. |
+| `EndGame` |  | Not selected by the reviewed manifest; review before publishing. |
+| `EnterTargetingMode` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ExecuteScript` |  | NWScript script dispatch is outside the explicitly published Glyph operation model. |
+| `ExecuteScriptChunk` |  | Dynamic NWScript execution is outside the explicitly published Glyph operation model. |
+| `ExportAllCharacters` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ExportSingleCharacter` |  | Not selected by the reviewed manifest; review before publishing. |
+| `FeetToMeters` |  | Not selected by the reviewed manifest; review before publishing. |
+| `FindSubString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `FloatToInt` |  | Not selected by the reviewed manifest; review before publishing. |
+| `FloatToString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ForceRefreshObjectUUID` |  | Not selected by the reviewed manifest; review before publishing. |
+| `Get2DAColumn` |  | Not selected by the reviewed manifest; review before publishing. |
+| `Get2DARowCount` |  | Not selected by the reviewed manifest; review before publishing. |
+| `Get2DAString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetAbilityBonusLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetAbilityPenaltyLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetAreaOfEffectCreator` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetAttackBonusLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetAttemptedAttackTarget` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetAttemptedSpellTarget` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetBaseItemFitsInInventory` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetBlockingDoor` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetBodyBag` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetCampaignFloat` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetCampaignInt` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetCampaignString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetClickingObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetCreatureExploresMinimap` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetCreatureStartingPackage` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetCurrentlyRunningEvent` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetCutsceneCameraMoveRate` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetCutsceneMode` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetDamageBonusLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetDamageDealtByType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetDefensiveCastingMode` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetDetectMode` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetDialogSoundLength` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetDistanceToObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetDomain` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetEncounterActive` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetEncounterDifficulty` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetEncounterSpawnsCurrent` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetEncounterSpawnsMax` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetEnteringObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetEventScript` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetExitingObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetFactionGold` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetFactionMostFrequentClass` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetFeatRemainingUses` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetFirstInPersistentObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetFootstepType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetGameDifficulty` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetGamePauseState` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetGoingToBeAttackedBy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetHenchman` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetHiddenWhenEquipped` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetImmortal` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetInventoryDisturbItem` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetInventoryDisturbType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsCreatureDisarmable` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsDestroyable` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsEncounterCreature` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsInKnownSpellList` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsInSubArea` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsListening` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsPlayableRacialType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsPlayerConnectionRelayed` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsPossessedFamiliar` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsRaiseable` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsReactionTypeFriendly` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsReactionTypeHostile` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsReactionTypeNeutral` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsSelectableWhenDead` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsSkillSuccessful` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsTrapped` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsValidJmp` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetIsWeaponEffective` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetItemActivated` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetItemActivatedTarget` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetItemActivator` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetItemAppearance` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetItemHasItemProperty` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetItemPossessedBy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetJournalQuestExperience` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetKeyRequiredFeedback` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetKnownSpellCount` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetKnownSpellId` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastAssociateCommand` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastAttackMode` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastAttackType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastAttacker` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastClosedBy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastDamager` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastDisarmed` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastDisturbed` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastGuiEventInteger` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastGuiEventObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastGuiEventPlayer` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastGuiEventType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastHostileActor` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastKiller` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastLocked` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastOpenedBy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastPCRested` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastPCToCancelCutscene` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastPerceived` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastPerceptionHeard` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastPerceptionInaudible` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastPerceptionSeen` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastPerceptionVanished` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastPlayerDied` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastPlayerDying` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastPlayerToDoTileAction` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastPlayerToSelectTarget` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastRespawnButtonPresser` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastRestEventType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastRunScriptEffectScriptType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastSpell` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastSpellCastClass` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastSpellCaster` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastSpellHarmful` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastSpellLevel` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastTileActionId` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastTrapDetected` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastUnlocked` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastUsedBy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLastWeaponUsed` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLevelByPosition` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetListenPatternNumber` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetLootable` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetMatchedSubstring` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetMatchedSubstringsCount` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetMaxHenchmen` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetMemorizedSpellCountByLevel` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetMemorizedSpellIsDomainSpell` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetMemorizedSpellMetaMagic` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetMetaMagicFeat` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetMicrosecondCounter` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetModuleItemAcquired` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetModuleItemAcquiredBy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetModuleItemAcquiredFrom` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetModuleItemAcquiredStackSize` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetModuleItemLost` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetModuleItemLostBy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetModuleXPScale` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetNextArea` |  | Use nwn.areas snapshot adapter. |
+| `GetNextEffect` |  | Use nwn.effects snapshot adapter. |
+| `GetNextFactionMember` |  | Use nwn.faction_members snapshot adapter. |
+| `GetNextInPersistentObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetNextItemInInventory` |  | Use nwn.inventory snapshot adapter. |
+| `GetNextObjectInArea` |  | Use nwn.objects_in_area snapshot adapter. |
+| `GetNextPC` |  | Use nwn.players snapshot adapter. |
+| `GetNumStackedItems` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetObjectHeard` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetObjectSeen` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetObjectUUID` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetObjectUiDiscoveryMask` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetObjectVisibleDistance` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCChatMessage` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCChatSpeaker` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCChatVolume` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCIPAddress` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCItemLastEquipped` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCItemLastEquippedBy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCItemLastEquippedSlot` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCItemLastUnequipped` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCItemLastUnequippedBy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCItemLastUnequippedSlot` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCLevellingUp` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCPlayerName` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCPublicCDKey` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPCSpeaker` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPhenoType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPlaceableIllumination` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPlaceableLastClickedBy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPlayerBuildVersionCommitSha1` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPlayerBuildVersionMajor` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPlayerBuildVersionMinor` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPlayerBuildVersionPostfix` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPlayerDevicePlatform` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPlayerDeviceProperty` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPlayerLanguage` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetPlayerNetworkLatency` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetRandomUUID` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetReflexAdjustedDamage` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetReputation` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSavingThrowBonusLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetScriptChunk` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetScriptInstructionsRemaining` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetScriptName` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetScriptParam` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetScriptRecursionLevel` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSittingCreature` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSkillBonusLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSkyBox` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSoundset` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpecialization` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpellAbilityCasterLevel` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpellAbilityCount` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpellAbilityReady` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpellAbilitySpell` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpellCastItem` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpellCastSpontaneously` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpellFeatId` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpellId` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpellLevelByClass` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpellSaveDC` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSpellUsesLeft` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetStandardFactionReputation` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetStealthMode` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetStrRefSoundDuration` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetStringByStrRef` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetStringLeft` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetStringLength` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetStringLowerCase` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetStringRight` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetStringUpperCase` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetSubString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTargetingModeSelectedObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTickRate` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTileExplored` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTilesetResRef` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTimeMillisecond` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTotalDamageDealt` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapActive` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapBaseType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapCreator` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapDetectDC` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapDetectable` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapDetectedBy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapDisarmDC` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapDisarmable` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapFlagged` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapKeyTag` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapOneShot` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTrapRecoverable` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetTurnResistanceHD` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetUserDefinedEventNumber` |  | Not selected by the reviewed manifest; review before publishing. |
+| `GetWeaponRanged` |  | Not selected by the reviewed manifest; review before publishing. |
+| `HashString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `HoursToSeconds` |  | Not selected by the reviewed manifest; review before publishing. |
+| `IncrementRemainingFeatUses` |  | Not selected by the reviewed manifest; review before publishing. |
+| `InsertString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `IntToFloat` |  | Not selected by the reviewed manifest; review before publishing. |
+| `IntToHexString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `IntToString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `LevelUpHenchman` |  | Not selected by the reviewed manifest; review before publishing. |
+| `LineOfSightObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `LockCameraDirection` |  | Not selected by the reviewed manifest; review before publishing. |
+| `LockCameraDistance` |  | Not selected by the reviewed manifest; review before publishing. |
+| `LockCameraPitch` |  | Not selected by the reviewed manifest; review before publishing. |
+| `LongJmp` |  | Not selected by the reviewed manifest; review before publishing. |
+| `MusicBackgroundGetBattleTrack` |  | Not selected by the reviewed manifest; review before publishing. |
+| `MusicBackgroundGetDayTrack` |  | Not selected by the reviewed manifest; review before publishing. |
+| `MusicBackgroundGetNightTrack` |  | Not selected by the reviewed manifest; review before publishing. |
+| `MusicBackgroundSetDelay` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NWNXCall` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NWNXGetIsAvailable` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NWNXPopFloat` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NWNXPopInt` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NWNXPopObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NWNXPopString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NWNXPushFloat` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NWNXPushInt` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NWNXPushObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NWNXPushString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NightToDay` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiCreateFromResRef` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiDestroy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiFindWindow` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiGetEventArrayIndex` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiGetEventElement` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiGetEventPlayer` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiGetEventType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiGetEventWindow` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiGetNthBind` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiGetNthWindow` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiGetWindowId` |  | Not selected by the reviewed manifest; review before publishing. |
+| `NuiSetBindWatch` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ObjectToString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `OpenInventory` |  | Not selected by the reviewed manifest; review before publishing. |
+| `OpenStore` |  | Not selected by the reviewed manifest; review before publishing. |
+| `PlaySoundByStrRef` |  | Not selected by the reviewed manifest; review before publishing. |
+| `PlayVoiceChat` |  | Not selected by the reviewed manifest; review before publishing. |
+| `PopUpDeathGUIPanel` |  | Not selected by the reviewed manifest; review before publishing. |
+| `PopUpGUIPanel` |  | Not selected by the reviewed manifest; review before publishing. |
+| `PostString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `PrintFloat` |  | Not selected by the reviewed manifest; review before publishing. |
+| `PrintInteger` |  | Not selected by the reviewed manifest; review before publishing. |
+| `PrintObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `PrintString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `Random` |  | Not selected by the reviewed manifest; review before publishing. |
+| `RandomName` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ReadySpellLevel` |  | Not selected by the reviewed manifest; review before publishing. |
+| `RecomputeStaticLighting` |  | Not selected by the reviewed manifest; review before publishing. |
+| `RegExpReplace` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ReloadAreaBorder` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ReloadAreaGrass` |  | Not selected by the reviewed manifest; review before publishing. |
+| `RemoveAreaGrassOverride` |  | Not selected by the reviewed manifest; review before publishing. |
+| `RemoveFromParty` |  | Not selected by the reviewed manifest; review before publishing. |
+| `RemoveSummonedAssociate` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ReplaceObjectAnimation` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ReplaceObjectTexture` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ResManFindPrefix` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ResManGetAliasFor` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ResManGetFileContents` |  | Not selected by the reviewed manifest; review before publishing. |
+| `Reserved899` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ResetMaterialShaderUniforms` |  | Not selected by the reviewed manifest; review before publishing. |
+| `ResistSpell` |  | Not selected by the reviewed manifest; review before publishing. |
+| `RestoreBaseAttackBonus` |  | Not selected by the reviewed manifest; review before publishing. |
+| `RoundsToSeconds` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SeekAudioStream` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SendMessageToPCByStrRef` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetAbilityBonusLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetAbilityPenaltyLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetAge` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetAreaDefaultGrassDisabled` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetAreaLightColor` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetAreaTileBorderDisabled` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetAreaTransitionBMP` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetAssociateListenPatterns` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetAttackBonusLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetAudioStreamPaused` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetAudioStreamVolume` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetBodyBag` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetCameraFlags` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetCameraLimits` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetCampaignFloat` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetCampaignInt` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetCampaignString` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetCommandingPlayer` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetCreatureExploresMinimap` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetCurrentHitPoints` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetCustomToken` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetCutsceneCameraMoveRate` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetCutsceneMode` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetDamageBonusLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetDeity` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetEffectIconFlashing` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetEnterTargetingModeData` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetEventScript` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetFootstepType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetFortitudeSavingThrow` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetGameActivePause` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetGuiPanelDisabled` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetHiddenWhenEquipped` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetIsTemporaryEnemy` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetIsTemporaryFriend` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetIsTemporaryNeutral` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetJmp` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetKeyRequiredFeedback` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetListenPattern` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetListening` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetLootable` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetMaterialShaderUniformInt` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetMaterialShaderUniformVec4` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetMaxHenchmen` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetMemorizedSpell` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetMemorizedSpellReady` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetModuleXPScale` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetObjectHiliteColor` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetObjectMouseCursor` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetObjectTextBubbleOverride` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetObjectUiDiscoveryMask` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetObjectVisibleDistance` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetPCChatMessage` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetPCChatVolume` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetPCDislike` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetPCLike` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetPanelButtonFlash` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetPhenoType` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetPlaceableIllumination` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetReflexSavingThrow` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetSavingThrowBonusLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetScriptParam` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetShaderUniformFloat` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetShaderUniformInt` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetShaderUniformVec` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetSkillBonusLimit` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetSkyBox` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetSoundset` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetSpellAbilityReady` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetSpellTargetingData` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetStandardFactionReputation` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetSubRace` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetTextureOverride` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetTileExplored` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetTlkOverride` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetTransitionTarget` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetTrapDisabled` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetTrapRecoverable` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SetWillSavingThrow` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SoundObjectPlay` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SoundObjectSetVolume` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SoundObjectStop` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SpawnScriptDebugger` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SpeakOneLinerConversation` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SpeakStringByStrRef` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SpellAbsorptionLimitedCheck` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SpellAbsorptionUnlimitedCheck` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SpellImmunityCheck` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SpellResistanceCheck` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SqlDestroyDatabase` |  | Not selected by the reviewed manifest; review before publishing. |
+| `StartAudioStream` |  | Not selected by the reviewed manifest; review before publishing. |
+| `StartNewModule` |  | Not selected by the reviewed manifest; review before publishing. |
+| `StopAudioStream` |  | Not selected by the reviewed manifest; review before publishing. |
+| `StopFade` |  | Not selected by the reviewed manifest; review before publishing. |
+| `StoreCameraFacing` |  | Not selected by the reviewed manifest; review before publishing. |
+| `StoreCampaignObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `StringToFloat` |  | Not selected by the reviewed manifest; review before publishing. |
+| `StringToInt` |  | Not selected by the reviewed manifest; review before publishing. |
+| `StringToObject` |  | Not selected by the reviewed manifest; review before publishing. |
+| `SurrenderToEnemies` |  | Not selected by the reviewed manifest; review before publishing. |
+| `TestStringAgainstPattern` |  | Not selected by the reviewed manifest; review before publishing. |
+| `TouchAttackMelee` |  | Not selected by the reviewed manifest; review before publishing. |
+| `TouchAttackRanged` |  | Not selected by the reviewed manifest; review before publishing. |
+| `TurnsToSeconds` |  | Not selected by the reviewed manifest; review before publishing. |
+| `UnlockAchievement` |  | Not selected by the reviewed manifest; review before publishing. |
+| `UnpossessFamiliar` |  | Not selected by the reviewed manifest; review before publishing. |
+| `Vibrate` |  | Not selected by the reviewed manifest; review before publishing. |
+| `WriteTimestampedLogEntry` |  | Not selected by the reviewed manifest; review before publishing. |
+| `YardsToMeters` |  | Not selected by the reviewed manifest; review before publishing. |
+| `abs` |  | Not selected by the reviewed manifest; review before publishing. |
+| `acos` |  | Not selected by the reviewed manifest; review before publishing. |
+| `asin` |  | Not selected by the reviewed manifest; review before publishing. |
+| `atan` |  | Not selected by the reviewed manifest; review before publishing. |
+| `cos` |  | Not selected by the reviewed manifest; review before publishing. |
+| `d10` |  | Not selected by the reviewed manifest; review before publishing. |
+| `d100` |  | Not selected by the reviewed manifest; review before publishing. |
+| `d12` |  | Not selected by the reviewed manifest; review before publishing. |
+| `d2` |  | Not selected by the reviewed manifest; review before publishing. |
+| `d20` |  | Not selected by the reviewed manifest; review before publishing. |
+| `d3` |  | Not selected by the reviewed manifest; review before publishing. |
+| `d4` |  | Not selected by the reviewed manifest; review before publishing. |
+| `d6` |  | Not selected by the reviewed manifest; review before publishing. |
+| `d8` |  | Not selected by the reviewed manifest; review before publishing. |
+| `fabs` |  | Not selected by the reviewed manifest; review before publishing. |
+| `log` |  | Not selected by the reviewed manifest; review before publishing. |
+| `pow` |  | Not selected by the reviewed manifest; review before publishing. |
+| `sin` |  | Not selected by the reviewed manifest; review before publishing. |
+| `sqrt` |  | Not selected by the reviewed manifest; review before publishing. |
+| `tan` |  | Not selected by the reviewed manifest; review before publishing. |
+
+### unsupported (263)
+
+| NWScript member | Glyph | Reason / signature |
+| --- | --- | --- |
+| `ActionUseItemAtLocation` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ActionUseItemOnObject` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ActionUseTalentAtLocation` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ActionUseTalentOnObject` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `AddItemProperty` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `AngleToVector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `BadBadReplaceMeThisDoesNothing` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `CassowaryConstrain` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `CassowaryDebug` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `CassowaryGetValue` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `CassowaryReset` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `CassowarySuggestValue` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `EffectAreaOfEffect` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `EffectRunScript` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `EventActivateItem` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `EventConversation` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `EventSpellCastAt` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `EventUserDefined` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetAreaLightDirection` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetCampaignJson` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetCampaignLocation` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetCampaignVector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetCreatureHasTalent` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetCreatureTalentBest` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetCreatureTalentRandom` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetEffectVector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetFirstItemProperty` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetFirstObjectInShape` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetGroundHeight` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetIdFromTalent` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetIsItemPropertyValid` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetIsTalentValid` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemActivatedTargetLocation` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemPropertyCostTable` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemPropertyCostTableValue` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemPropertyDuration` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemPropertyDurationRemaining` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemPropertyDurationType` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemPropertyParam1` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemPropertyParam1Value` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemPropertySubType` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemPropertyTag` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemPropertyType` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetItemPropertyUsesPerDayRemaining` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetLastGuiEventVector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetLastRunScriptEffect` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetLastTileActionPosition` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetLocalCassowary` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetLocalJson` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetNextItemProperty` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetNextObjectInShape` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetPosition` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetScriptBacktrace` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetSpellTargetLocation` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetStartingLocation` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetSurfaceMaterial` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetTargetingModeSelectedPosition` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetTileHeight` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetTileID` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetTileMainLight1Color` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetTileMainLight2Color` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetTileOrientation` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetTileSourceLight1Color` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetTileSourceLight2Color` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `GetTypeFromTalent` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `HideEffectIcon` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `IgnoreEffectImmunity` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyACBonus` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyACBonusVsAlign` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyACBonusVsDmgType` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyACBonusVsRace` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyACBonusVsSAlign` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyAbilityBonus` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyAdditional` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyArcaneSpellFailure` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyAttackBonus` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyAttackBonusVsAlign` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyAttackBonusVsRace` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyAttackBonusVsSAlign` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyAttackPenalty` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyBonusFeat` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyBonusLevelSpell` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyBonusSavingThrow` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyBonusSavingThrowVsX` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyBonusSpellResistance` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyCastSpell` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyContainerReducedWeight` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyCustom` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDamageBonus` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDamageBonusVsAlign` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDamageBonusVsRace` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDamageBonusVsSAlign` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDamageImmunity` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDamagePenalty` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDamageReduction` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDamageResistance` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDamageVulnerability` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDarkvision` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDecreaseAC` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDecreaseAbility` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyDecreaseSkill` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyEnhancementBonus` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyEnhancementBonusVsAlign` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyEnhancementBonusVsRace` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyEnhancementBonusVsSAlign` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyEnhancementPenalty` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyExtraMeleeDamageType` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyExtraRangeDamageType` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyFreeAction` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyHaste` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyHealersKit` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyHolyAvenger` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyImmunityMisc` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyImmunityToSpellLevel` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyImprovedEvasion` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyKeen` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyLight` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyLimitUseByAlign` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyLimitUseByClass` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyLimitUseByRace` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyLimitUseBySAlign` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyMassiveCritical` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyMaterial` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyMaxRangeStrengthMod` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyMonsterDamage` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyNoDamage` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyOnHitCastSpell` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyOnHitProps` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyOnMonsterHitProperties` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyQuality` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyReducedSavingThrow` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyReducedSavingThrowVsX` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyRegeneration` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertySkillBonus` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertySpecialWalk` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertySpellImmunitySchool` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertySpellImmunitySpecific` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyThievesTools` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyTrap` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyTrueSeeing` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyTurnResistance` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyUnlimitedAmmo` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyVampiricRegeneration` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyVisualEffect` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyWeightIncrease` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ItemPropertyWeightReduction` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonArray` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonArrayDel` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonArrayDelInplace` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonArrayGet` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonArrayGetRange` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonArrayInsert` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonArrayInsertInplace` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonArraySet` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonArraySetInplace` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonArrayTransform` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonBool` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonDiff` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonDump` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonFind` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonFloat` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonGetError` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonGetFloat` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonGetInt` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonGetLength` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonGetString` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonGetType` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonInt` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonMerge` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonNull` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonObject` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonObjectDel` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonObjectDelInplace` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonObjectGet` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonObjectKeys` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonObjectSet` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonObjectSetInplace` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonParse` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonPatch` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonPointer` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonSetOp` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonString` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonToObject` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `JsonToTemplate` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `LineOfSightVector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPopCassowary` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPopEffect` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPopEvent` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPopItemProperty` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPopJson` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPopLocation` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPopSqlquery` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPopTalent` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPopVector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPushCassowary` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPushEffect` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPushEvent` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPushItemProperty` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPushJson` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPushLocation` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPushSqlquery` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPushTalent` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NWNXPushVector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NuiCreate` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NuiGetBind` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NuiGetEventPayload` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NuiGetUserData` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NuiSetBind` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NuiSetGroupLayout` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `NuiSetUserData` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `ObjectToJson` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `PrintVector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `RegExpIterate` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `RegExpMatch` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `RemoveItemProperty` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `RetrieveCampaignObject` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetAreaGrassOverride` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetAreaLightDirection` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetAreaWind` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetCampaignJson` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetCampaignLocation` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetCampaignVector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetEffectCasterLevel` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetFacingPoint` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetItemPropertyUsesPerDayRemaining` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetLocalCassowary` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetLocalJson` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetTile` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetTileAnimationLoops` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetTileJson` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetTileMainLightColor` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SetTileSourceLightColor` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SignalEvent` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SoundObjectSetPosition` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlBindFloat` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlBindInt` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlBindJson` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlBindObject` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlBindString` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlBindVector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlGetColumnCount` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlGetColumnName` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlGetError` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlGetFloat` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlGetInt` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlGetJson` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlGetObject` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlGetString` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlGetVector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlPrepareQueryCampaign` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlPrepareQueryObject` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlResetQuery` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `SqlStep` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `TagItemProperty` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `TalentFeat` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `TalentSkill` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `TalentSpell` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `TemplateToJson` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `UnyieldingEffect` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `Vector` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `VectorMagnitude` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `VectorNormalize` |  | Signature needs an explicit semantic adapter/type mapping. |
+| `VectorToAngle` |  | Signature needs an explicit semantic adapter/type mapping. |
+
+### Constants
+
+3265 published constants in 47 domains; 3024 unselected constants.
+
+The complete version, signatures, defaults, binding decisions, constant values and exclusions are in `NWN_API_SNAPSHOT.json`. Compare with `Glyph.Docs --compare-nwn <snapshot>` before updating the baseline.

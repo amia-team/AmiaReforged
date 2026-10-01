@@ -39,7 +39,8 @@ if (compareFile != null)
     if (changes.Count == 0) Console.WriteLine("NWN API and bindings match the reviewed snapshot.");
     if (output == null && metadataFile == null && globalFile == null && coverageFile == null && snapshotFile == null) return changes.Count == 0 ? 0 : 1;
 }
-string markdown = GlyphApiReference.Generate(metadata);
+string? previousReference = output != null && File.Exists(output) ? await File.ReadAllTextAsync(output) : null;
+string markdown = GlyphApiReference.GenerateReference(metadata, previousReference, GlyphNwnCoverage.Report());
 if (output == null) Console.Write(markdown);
 else await File.WriteAllTextAsync(output, markdown);
 if (metadataFile != null)

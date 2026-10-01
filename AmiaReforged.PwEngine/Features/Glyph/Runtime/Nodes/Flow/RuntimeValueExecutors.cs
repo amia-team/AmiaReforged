@@ -8,17 +8,23 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 [GlyphModule]
 public sealed class RuntimeValueModule : IGlyphModule
 {
-    public static string Suffix(GlyphDataType type, GlyphDataType? elementType = null) =>
-        type == GlyphDataType.List ? "list_" + (elementType ?? GlyphDataType.NwObject).ToString().ToLowerInvariant() : type.ToString().ToLowerInvariant();
+    public static string Suffix(GlyphDataType type, GlyphDataType? elementType = null, GlyphDataType? keyType = null, GlyphDataType? valueType = null) =>
+        type == GlyphDataType.List ? "list_" + (elementType ?? GlyphDataType.NwObject).ToString().ToLowerInvariant()
+        : type == GlyphDataType.Dictionary ? "dictionary_" + keyType!.Value.ToString().ToLowerInvariant() + "_" + valueType!.Value.ToString().ToLowerInvariant()
+        : type.ToString().ToLowerInvariant();
 
     public void Configure(GlyphModuleBuilder glyph)
     {
-        foreach (GlyphDataType type in Enum.GetValues<GlyphDataType>().Where(t => t is not (GlyphDataType.Exec or GlyphDataType.List)))
+        foreach (GlyphDataType type in Enum.GetValues<GlyphDataType>().Where(t => t is not (GlyphDataType.Exec or GlyphDataType.List or GlyphDataType.Dictionary)))
         {
             Register(glyph, type, null);
             Register(glyph, GlyphDataType.List, type);
             if (type is not (GlyphDataType.NwObject or GlyphDataType.Effect)) glyph.Add(new TypedForEachExecutor(type));
         }
+        foreach (var key in GlyphCollections.BasicTypes)
+        foreach (var value in GlyphCollections.BasicTypes)
+        foreach (string operation in new[] { "write", "read", "field", "with_field" })
+            glyph.Add(new RuntimeValueExecutor(operation, GlyphDataType.Dictionary, null, key, value));
     }
     private static void Register(GlyphModuleBuilder glyph, GlyphDataType type, GlyphDataType? element)
     {
@@ -33,15 +39,15 @@ public sealed class RuntimeValueModule : IGlyphModule
     }
 }
 
-public sealed class RuntimeValueExecutor(string operation, GlyphDataType type, GlyphDataType? elementType) : GlyphNodeBase
+public sealed class RuntimeValueExecutor(string operation, GlyphDataType type, GlyphDataType? elementType, GlyphDataType? keyType = null, GlyphDataType? valueType = null) : GlyphNodeBase
 {
     public override string TypeId => operation switch
     {
         "write" => "local.write_", "read" => "local.read_", "field" => "aggregate.field_", _ => "aggregate.with_"
-    } + RuntimeValueModule.Suffix(type, elementType);
+    } + RuntimeValueModule.Suffix(type, elementType, keyType, valueType);
 
-    private GlyphPin Input(string name) => Pins.In(name, name, type) with { ElementType = elementType };
-    private GlyphPin Output() => Pins.Out("value", "Value", type) with { ElementType = elementType };
+    private GlyphPin Input(string name) => Pins.In(name, name, type) with { ElementType = elementType, KeyType = keyType, ValueType = valueType };
+    private GlyphPin Output() => Pins.Out("value", "Value", type) with { ElementType = elementType, KeyType = keyType, ValueType = valueType };
     public override GlyphNodeDefinition CreateDefinition() => new()
     {
         TypeId = TypeId, DisplayName = operation, Category = "Compiler",
@@ -66,8 +72,12 @@ public sealed class RuntimeValueExecutor(string operation, GlyphDataType type, G
     {
         GlyphDataType.Int => await cx.InInt(pin), GlyphDataType.Float => await cx.InFloat(pin),
         GlyphDataType.Bool => await cx.InBool(pin), GlyphDataType.String => await cx.InString(pin),
-        GlyphDataType.NwObject => await cx.InObject(pin), _ => await cx.Raw(pin)
+        GlyphDataType.NwObject => await cx.InObject(pin),
+        GlyphDataType.List when elementType is { } element && GlyphCollections.BasicTypes.Contains(element) && cx.Prop("snapshot", false) => GlyphCollections.Snapshot(await cx.Raw(pin), element, cx.Execution),
+        GlyphDataType.Dictionary => DictionaryValue(await cx.Raw(pin)), _ => await cx.Raw(pin)
     };
+    private GlyphDictionaryValue DictionaryValue(object? raw) => raw is GlyphDictionaryValue dictionary && dictionary.KeyType == keyType && dictionary.ValueType == valueType
+        ? dictionary : throw new InvalidOperationException("Dictionary type mismatch.");
     public override async Task<GlyphNodeResult> RunAsync(GlyphNodeContext cx)
     {
         string nominal = cx.Prop("nominal", type.ToString());

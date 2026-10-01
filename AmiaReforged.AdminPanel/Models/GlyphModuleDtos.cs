@@ -17,9 +17,11 @@ public sealed record GlyphModuleMetadataDto(IReadOnlyList<GlyphFunctionMetadataD
     IReadOnlyDictionary<string, GlyphSourceSpanDto> SourceLocations, string RegistryHash,
     IReadOnlyList<GlyphDiagnosticDto> Diagnostics)
 {
+    public IReadOnlyList<GlyphReceiverMethodMetadataDto> ReceiverMethods { get; init; } = [];
     public GlyphLanguageMetadataDto Merge(GlyphLanguageMetadataDto standard) => standard with
     {
         Functions = standard.Functions.Concat(Functions ?? []).GroupBy(f => f.Name).Select(g => g.Last()).ToArray(),
+        ReceiverMethods = standard.ReceiverMethods.Concat(ReceiverMethods ?? []).ToArray(),
         Constants = standard.Constants.Concat(Constants ?? []).ToArray(),
         Types = standard.Types.Concat(Types ?? []).Distinct().ToArray(),
         Aggregates = Aggregates ?? [], Modules = Modules ?? [], SourceLocations = SourceLocations ?? new Dictionary<string, GlyphSourceSpanDto>(),

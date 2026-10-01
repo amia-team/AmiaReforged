@@ -10,7 +10,10 @@ public sealed record GlyphAggregateMetadata(string Name, IReadOnlyList<GlyphFiel
 public sealed record GlyphModuleMetadataDto(IReadOnlyList<GlyphFunctionMetadataDto> Functions,
     IReadOnlyList<GlyphModuleConstantMetadata> Constants, IReadOnlyList<string> Types,
     IReadOnlyList<GlyphAggregateMetadata> Aggregates, IReadOnlyList<string> Modules,
-    IReadOnlyDictionary<string, SourceSpan> SourceLocations, string RegistryHash, IReadOnlyList<GlyphDiagnostic> Diagnostics);
+    IReadOnlyDictionary<string, SourceSpan> SourceLocations, string RegistryHash, IReadOnlyList<GlyphDiagnostic> Diagnostics)
+{
+    public IReadOnlyList<GlyphReceiverMethodMetadataDto> ReceiverMethods { get; init; } = [];
+}
 
 public static class GlyphModuleMetadata
 {
@@ -29,6 +32,7 @@ public static class GlyphModuleMetadata
         var availability = diagnostics.Count == 0 ? binder.ValidateModuleFunctions() : new Dictionary<string, IReadOnlyList<GlyphAvailabilityDto>>();
         diagnostics.AddRange(binder.Diagnostics);
         List<GlyphFunctionMetadataDto> functions = []; List<GlyphModuleConstantMetadata> constants = [];
+        List<GlyphReceiverMethodMetadataDto> methods = [];
         List<string> types = []; List<GlyphAggregateMetadata> aggregates = [];
         Dictionary<string, SourceSpan> locations = new(StringComparer.Ordinal);
         var allScopes = Platform.GlyphEvents.All.SelectMany(e => (e.Stages == null ? new string?[] { null } : e.Stages.Select(s => (string?)s.Name)).Select(s => new GlyphAvailabilityDto(e.Name, s))).ToArray();
@@ -46,6 +50,12 @@ public static class GlyphModuleMetadata
             {
                 case FunctionDeclarationSyntax f:
                     functions.Add(Function(alias.Key, alias.Value, f.ReturnType, f.Parameters.Select(p => Parameter(p.Name, p.TypeName ?? "")).ToArray(), availability.GetValueOrDefault(alias.Value) ?? []));
+                    if (f.IsInstance)
+                    {
+                        int dot = alias.Key.LastIndexOf('.');
+                        methods.Add(new(alias.Key[(dot + 1)..], alias.Key[..dot], alias.Value, description, f.ReturnType, f.ReturnType == "Void" ? "Action" : "Value",
+                            f.Parameters.Skip(1).Select(p => Parameter(p.Name, p.TypeName ?? "")).ToArray(), availability.GetValueOrDefault(alias.Value) ?? []));
+                    }
                     break;
                 case ConstantDeclarationSyntax:
                     if (binding.Environment.GetResolvedConstant(alias.Value) is { } value)
@@ -62,6 +72,6 @@ public static class GlyphModuleMetadata
                     break;
             }
         }
-        return new(functions, constants, types, aggregates, moduleNames, locations, registryHash, diagnostics);
+        return new(functions, constants, types, aggregates, moduleNames, locations, registryHash, diagnostics) { ReceiverMethods = methods };
     }
 }

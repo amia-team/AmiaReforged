@@ -6,9 +6,9 @@
 <div class="glyph-source-editor">
     <div class="glyph-source-toolbar">
         <span>@(LibraryMode ? $"Module: {ModuleName}" : "Glyph source")</span>
-        @if (!LibraryMode && SourceLanguageVersion(_source) < 3)
+        @if (!LibraryMode && SourceLanguageVersion(_source) < 4)
         {
-            <button type="button" class="btn btn-sm btn-secondary" disabled="@(_loading || _busy)" @onclick="UpgradeLanguage">Upgrade to Glyph 3</button>
+            <button type="button" class="btn btn-sm btn-secondary" disabled="@(_loading || _busy)" @onclick="UpgradeLanguage">Upgrade to Glyph 4</button>
         }
         <button type="button" class="btn btn-sm btn-secondary" aria-expanded="@_referenceOpen.ToString().ToLowerInvariant()" aria-controls="glyph-reference"
                 @onclick="() => _referenceOpen = !_referenceOpen">@(_referenceOpen ? "Hide reference" : "Show reference")</button>
@@ -105,7 +105,7 @@
     private GlyphCodeEditor? _editor;
     private GlyphReferencePanel? _reference;
     private string? _pendingDocumentation;
-    private int _documentVersion, _generation, _editRevision, _languageVersion = 3;
+    private int _documentVersion, _generation, _editRevision, _languageVersion = 4;
     private Guid? _id, _loadedParameter, _loadedEndpoint;
     private bool _initialized, _busy, _valid, _loading, _disposed, _metadataUnavailable, _metadataLoading;
     private string _source = "", _validatedSource = "", _diagnosticSource = "";
@@ -128,7 +128,7 @@
         int generation = ++_generation;
         _initialized = true; _loadedParameter = DefinitionId; _id = DefinitionId;
         _loadedEndpoint = Api.SelectedEndpointId;
-        _documentVersion++; _editRevision = 0; _languageVersion = 3; _editor = null; _cursorContext = null; _editorReady = false; _pendingDocumentation = null;
+        _documentVersion++; _editRevision = 0; _languageVersion = 4; _editor = null; _cursorContext = null; _editorReady = false; _pendingDocumentation = null;
         _loading = true; _busy = true; _valid = false;
         _diagnostics = []; _versions = []; _moduleVersions = []; _traces = []; _metadata = null; _standardMetadata = null; _moduleMetadata = null; _moduleMetadataKey = ""; _compilationHash = null;
         _notice = null; _error = null; _metadataUnavailable = false;
@@ -151,7 +151,7 @@
                 CheckCurrent(generation);
                 var versions = await Api.GetVersionsAsync(id);
                 CheckCurrent(generation);
-                _source = definition?.SourceText ?? InitialSource; _languageVersion = definition?.LanguageVersion ?? 3;
+                _source = definition?.SourceText ?? InitialSource; _languageVersion = definition?.LanguageVersion ?? 4;
                 _versions = versions;
                 }
             }
@@ -175,7 +175,7 @@
             var metadata = await Api.GetLanguageMetadataAsync();
             if (IsCurrent(generation))
             {
-                _metadata = metadata is { LanguageVersion: 1 or 2 or 3, Functions: not null, Events: not null, Contexts: not null } ? metadata : null;
+                _metadata = metadata is { LanguageVersion: 1 or 2 or 3 or 4, Functions: not null, Events: not null, Contexts: not null } ? metadata : null;
                 _standardMetadata = _metadata;
                 _metadataUnavailable = _metadata == null;
                 _ = RefreshModuleMetadata(generation, _editRevision, _source);
@@ -199,9 +199,9 @@
     private Task RetryMetadata() => LoadMetadata(_generation);
     private Task UpgradeLanguage()
     {
-        _languageVersion = 3; _editRevision++;
+        _languageVersion = 4; _editRevision++;
         _valid = false; _compilationHash = null; _diagnostics = [];
-        _notice = "Glyph 3 enabled. Compile / validate before activating.";
+        _notice = "Glyph 4 enabled. Compile / validate before activating.";
         _moduleMetadata = null; _metadata = _standardMetadata;
         return RefreshModuleMetadata(_generation, _editRevision, _source);
     }
@@ -350,10 +350,11 @@
     }
     private int SourceLanguageVersion(string source)
     {
-        if (LibraryMode) return 3;
+        if (LibraryMode) return 4;
         var prelude = Prelude(source);
         string code = prelude.Code[..prelude.End];
-        if (System.Text.RegularExpressions.Regex.IsMatch(code, @"\bfn\s+[\p{L}_][\p{L}\p{Nd}_]*\s*\([^)]*\)\s*:\s*[\p{L}_][\p{L}\p{Nd}_.]*\s*\{")) return 3;
+        if (System.Text.RegularExpressions.Regex.IsMatch(prelude.Code, @"\bimpl\s+[\p{L}_]|\b(?:List|Dictionary)\s*<|(?:^|[=(,]|\breturn)\s*\[")) return 4;
+        if (System.Text.RegularExpressions.Regex.IsMatch(code, @"\bfn\s+[\p{L}_][\p{L}\p{Nd}_]*\s*\([^)]*\)\s*:\s*[\p{L}_][\p{L}\p{Nd}_.]*\s*\{")) return Math.Max(3, _languageVersion);
         return System.Text.RegularExpressions.Regex.IsMatch(code, @"\busing\s+[\p{L}_]") ? Math.Max(2, _languageVersion) : _languageVersion;
     }
     private string ModuleMetadataKey(string source) => LibraryMode ? source : source[..Prelude(source).End];

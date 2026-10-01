@@ -105,17 +105,25 @@ public static class GlyphLanguageMetadata
                 scopes.Where(s => Available(symbol, s.Event, s.Stage, null))
                     .Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray()) { Policy = rm.Policy.ToString(), Deprecated = symbol.Definition.Deprecated };
         }).ToArray();
+        var collectionMethods = catalog.Registry.GetAll().Where(d => d.TypeId.StartsWith("collection.", StringComparison.Ordinal) &&
+            d.InputPins.FirstOrDefault()?.Id == "collection" && !d.TypeId.StartsWith("collection.index_", StringComparison.Ordinal))
+            .Select(d => new GlyphReceiverMethodMetadataDto(d.DisplayName, GlyphTypeSymbol.From(d.InputPins[0]).Name, d.TypeId,
+                "Immutable collection operation; updates return a new value.", GlyphTypeSymbol.From(d.OutputPins[0]).Name, "Value",
+                d.InputPins.Skip(1).Select(p => new GlyphParameterMetadataDto(p.Id, p.Name, GlyphTypeSymbol.From(p).Name, true, null)).ToArray(),
+                scopes.Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray())).ToArray();
         return new(GlyphLanguageVersion.Current, functions,
             Platform.GlyphEvents.All.Select(e => new GlyphEventMetadataDto(e.Name, e.EventType.ToString(), e.Category.ToString(),
                 e.Stages?.Select(s => s.Name).ToArray() ?? [])).ToArray(), contexts,
             catalog.Indexers.Select(i => new GlyphIndexerMetadataDto(i.Name, i.Getter, i.Setter)).ToArray(),
-            receiverMethods)
+            receiverMethods.Concat(collectionMethods).ToArray())
         {
             Documentation = Documentation.GlyphLexicon.ForSources(functions.Select(f => f.DocumentationSource ?? f.Source)),
             Constants = Nwn.GlyphNwnSurface.Constants,
             ConstantDomains = Nwn.GlyphNwnSurface.Constants.GroupBy(c => c.Namespace).OrderBy(g => g.Key, StringComparer.Ordinal)
                 .Select(g => new GlyphConstantDomainMetadataDto(g.Key, g.Select(c => c.Type).Distinct().OrderBy(t => t, StringComparer.Ordinal).ToArray(), g.Count())).ToArray(),
-            Types = ["Void", "Bool", "Int", "Float", "String", "Object", "Location", "Effect", "List<Object>", "List<Effect>"],
+            Types = new[] { "Void", "Bool", "Int", "Float", "String", "Object", "Location", "Effect", "List<Effect>" }
+                .Concat(Runtime.GlyphCollections.BasicTypes.Select(t => GlyphTypeSymbol.List(GlyphTypeSymbol.From(t)).Name))
+                .Concat(Runtime.GlyphCollections.BasicTypes.SelectMany(k => Runtime.GlyphCollections.BasicTypes.Select(v => GlyphTypeSymbol.Dictionary(GlyphTypeSymbol.From(k), GlyphTypeSymbol.From(v)).Name))).ToArray(),
             NwnApiVersion = Nwn.GlyphNwnSurface.ApiVersion,
             WritableState = catalog.Setters.Select(pair =>
             {

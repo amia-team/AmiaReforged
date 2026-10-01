@@ -1,0 +1,31 @@
+struct Counts { values: List<Int> }
+impl Counts {
+    fn sum(self): Int {
+        var total = 0
+        for value in self.values { total += value }
+        return total
+    }
+    fn appended(self, value: Int): Self = Counts(values: self.values.append(value))
+    fn empty(): Self = Counts(values: List<Int>())
+}
+
+type Total { Found { value: Int } Missing {} }
+impl Total {
+    fn value_or(self, fallback: Int): Int {
+        match self {
+            Found { value } { return value }
+            Missing {} { return fallback }
+        }
+    }
+}
+
+glyph collection_counts : encounter.before_group_spawn {
+    let original = Counts(values: [1, 2, 3])
+    let expanded = original.appended(4)
+    let limits = Dictionary<String, Int>().with("maximum", 12)
+    var result = Total.Missing()
+    if expanded.sum() <= limits["maximum"] {
+        result = Total.Found(value: expanded.sum())
+    }
+    spawn.modify_count(result.value_or(1))
+}

@@ -6,7 +6,9 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Language.Binding;
 public sealed record GlyphTypeSymbol(
     string Name,
     GlyphDataType? RuntimeType = null,
-    GlyphTypeSymbol? ElementType = null)
+    GlyphTypeSymbol? ElementType = null,
+    GlyphTypeSymbol? KeyType = null,
+    GlyphTypeSymbol? ValueType = null)
 {
     public static readonly GlyphTypeSymbol
         Error = new("Error"),
@@ -23,6 +25,8 @@ public sealed record GlyphTypeSymbol(
 
     public static GlyphTypeSymbol From(GlyphPin pin) => pin.DataType == GlyphDataType.Aggregate && pin.AggregateTypeName != null
         ? new(pin.AggregateTypeName, GlyphDataType.Aggregate)
+        : pin.DataType == GlyphDataType.Dictionary
+        ? Dictionary(From(pin.KeyType!.Value), From(pin.ValueType!.Value))
         : pin.DataType == GlyphDataType.List
         ? new($"List<{From(pin.ElementType ?? GlyphDataType.NwObject).Name}>", GlyphDataType.List, From(pin.ElementType ?? GlyphDataType.NwObject))
         : From(pin.DataType);
@@ -39,6 +43,11 @@ public sealed record GlyphTypeSymbol(
         GlyphDataType.Effect => Effect,
         _ => new(type.ToString(), type)
     };
+
+    public static GlyphTypeSymbol List(GlyphTypeSymbol element) => new($"List<{element.Name}>", GlyphDataType.List, element);
+    public static GlyphTypeSymbol Dictionary(GlyphTypeSymbol key, GlyphTypeSymbol value) => new($"Dictionary<{key.Name}, {value.Name}>", GlyphDataType.Dictionary, null, key, value);
+    public bool IsCollection => RuntimeType is GlyphDataType.List or GlyphDataType.Dictionary;
+    public bool IsBasic => RuntimeType is GlyphDataType.NwObject or GlyphDataType.String or GlyphDataType.Int or GlyphDataType.Float or GlyphDataType.Bool;
 
     public bool IsNumeric => RuntimeType is GlyphDataType.Int or GlyphDataType.Float;
 }
@@ -59,7 +68,7 @@ public sealed record GlyphAdtDefinition(
     GlyphTypeSymbol Type,
     IReadOnlyList<GlyphVariantDefinition> Variants);
 
-public sealed record BoundProgram(string Name, GlyphEventType Event, IReadOnlyList<BoundStage> Stages);
+public sealed record BoundProgram(string Name, GlyphEventType Event, IReadOnlyList<BoundStage> Stages) { public int LanguageVersion { get; init; } = 3; }
 public sealed record BoundStage(string EntryTypeId, BoundBlock Body, SourceSpan Span);
 
 public abstract record BoundStatement(SourceSpan Span);
@@ -90,6 +99,8 @@ public sealed record BoundVariant(
     GlyphVariantDefinition Variant,
     IReadOnlyDictionary<string, BoundExpression> Fields,
     SourceSpan Span) : BoundExpression(Definition.Type, Span);
+
+public sealed record BoundListLiteral(IReadOnlyList<BoundExpression> Values, GlyphTypeSymbol ListType, SourceSpan Span) : BoundExpression(ListType, Span);
 
 public sealed record BoundPlaceholder(
     GlyphTypeSymbol PlaceholderType,

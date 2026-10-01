@@ -1,7 +1,7 @@
-@top Program { ModuleDeclaration | (ImportDeclaration | GlobalDeclaration | TypeDeclaration)* (kw<"glyph"> ProgramName ":" EventName Block)? }
+@top Program { ModuleDeclaration | (ImportDeclaration | GlobalDeclaration | TypeDeclaration | ImplDeclaration)* (kw<"glyph"> ProgramName ":" EventName Block)? }
 ModuleDeclaration { kw<"mod"> ModuleName ModuleBody }
 ModuleName { Identifier }
-ModuleBody { "{" (ImportDeclaration | PublicDeclaration | GlobalDeclaration | TypeDeclaration)* "}" }
+ModuleBody { "{" (ImportDeclaration | PublicDeclaration | GlobalDeclaration | TypeDeclaration | ImplDeclaration)* "}" }
 ImportDeclaration { kw<"using"> ModuleName ";"? }
 PublicDeclaration { kw<"pub"> (GlobalDeclaration | TypeDeclaration) }
 
@@ -21,6 +21,9 @@ FunctionDeclaration { kw<"fn"> FunctionName "(" Parameters ")" ":" TypeName ("="
 Parameters { Parameter* }
 Parameter { ParameterName (":" TypeName)? ("," | ";")? }
 
+ImplDeclaration { kw<"impl"> TypeName "{" (FunctionDeclaration | PublicMethod)* "}" }
+PublicMethod { kw<"pub"> FunctionDeclaration }
+
 StructDeclaration { kw<"struct"> TypeName FieldBlock }
 AdtDeclaration { kw<"type"> TypeName "{" (VariantDeclaration | ";" | ",")* "}" }
 VariantDeclaration { VariantName FieldBlock }
@@ -29,7 +32,11 @@ FieldDeclaration { FieldName ":" TypeName ("," | ";")? }
 ConstantName { Identifier ("." Identifier)* }
 FunctionName { Identifier }
 ParameterName { Identifier }
-TypeName { Identifier ("." Identifier)* }
+TypeName { Identifier ("." Identifier)* | CollectionType }
+CollectionType { CollectionKind "<" TypeName ("," TypeName)? ">" }
+CollectionKind { kw<"List"> | kw<"Dictionary"> }
+CollectionConstructor { CollectionType "(" ")" }
+ListExpression { "[" (expression ("," expression)* ","?)? "]" }
 VariantName { Identifier }
 FieldName { Identifier }
 
@@ -70,7 +77,7 @@ AssignmentStatement { expression AssignmentOperator expression !statement }
 ExpressionStatement { expression !statement }
 
 expression {
-  VariableName | Number | String | UnterminatedString | Boolean | ParenthesizedExpression |
+  CollectionConstructor | ListExpression | VariableName | Number | String | UnterminatedString | Boolean | ParenthesizedExpression |
   UnaryExpression | BinaryExpression | MemberExpression | IndexExpression | CallExpression
 }
 
@@ -98,15 +105,17 @@ ArgumentName {
   Identifier | kw<"mod"> | kw<"using"> | kw<"pub"> | kw<"glyph"> | kw<"struct"> | kw<"type"> | kw<"match"> | kw<"let"> |
   kw<"var"> | kw<"while"> | kw<"for"> | kw<"continue"> | kw<"step"> |
   kw<"if"> | kw<"else"> | kw<"foreach"> | kw<"in"> | kw<"break"> |
-  kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | kw<"fn"> | kw<"const"> | kw<"return">
+  kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | kw<"fn"> | kw<"const"> | kw<"return"> | kw<"impl"> | kw<"List"> | kw<"Dictionary">
 }
 AssignmentOperator { "=" | "+=" | "-=" | "*=" | "/=" }
 kw<term> { @specialize[@name={term}]<Identifier, term> }
 
 @external tokens identifiers from "./glyph-tokens.js" { Identifier }
 
+CompareOperator { "<" | "<=" | ">" | ">=" }
+
 @tokens {
-  "(" ")" "{" "}" "[" "]" "." "," ":" ";"
+  "(" ")" "{" "}" "[" "]" "<" ">" "<=" ">=" "." "," ":" ";"
   "+" "-" "!" "&&" "||" "=" "+=" "-=" "*=" "/=" ".." "..="
   whitespace { $[\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+ }
   LineComment { "//" ![\n]* }
@@ -115,7 +124,6 @@ kw<term> { @specialize[@name={term}]<Identifier, term> }
   @precedence { String, UnterminatedString }
   String { '"' ("\\" _ | !["\\\n\r])* '"' }
   MultiplyOperator { "*" | "/" | "%" }
-  CompareOperator { "<" | "<=" | ">" | ">=" }
   EqualityOperator { "==" | "!=" }
   @precedence { LineComment, MultiplyOperator }
 }

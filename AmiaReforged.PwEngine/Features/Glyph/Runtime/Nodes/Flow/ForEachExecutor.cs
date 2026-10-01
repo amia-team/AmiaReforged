@@ -22,7 +22,7 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 [GlyphNode]
 public partial class ForEachExecutor : IGlyphNodeExecutor
 {
-    private sealed record IterationState(IList<object?> Items, int Index);
+    private sealed record IterationState(IReadOnlyList<object?> Items, int Index);
 
     public const string NodeTypeId = "flow.for_each";
 
@@ -52,8 +52,11 @@ public partial class ForEachExecutor : IGlyphNodeExecutor
         // First call: resolve the list input and initialize iteration state
         object? listValue = await resolveInput("list");
 
-        IList<object?> inputItems;
-        if (listValue is IEnumerable<object?> enumerable)
+        IReadOnlyList<object?> inputItems;
+        var element = CreateDefinition().InputPins.First(p => p.Id == "list").ElementType ?? GlyphDataType.NwObject;
+        if (node.PropertyOverrides.GetValueOrDefault("snapshot") == "true" && GlyphCollections.BasicTypes.Contains(element))
+            inputItems = GlyphCollections.Snapshot(listValue, element, context);
+        else if (listValue is IEnumerable<object?> enumerable)
         {
             inputItems = enumerable.ToList();
         }
