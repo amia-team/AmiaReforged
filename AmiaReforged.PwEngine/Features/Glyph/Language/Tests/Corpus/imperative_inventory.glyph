@@ -1,0 +1,10 @@
+glyph clean_inventory : interaction {
+    completed {
+        for item in player.inventory() {
+            if item.get_tag() == "temporary_item" { item.destroy() }
+        }
+        for effect_value in player.effects() {
+            if nwn.get_effect_type(effect_value) == EFFECT_TYPE.HASTE { player.remove_effect(effect_value) }
+        }
+    }
+}

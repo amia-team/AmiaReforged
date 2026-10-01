@@ -228,11 +228,13 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
             return new StageDeclarationSyntax(stage, Block(), Through(start));
         }
 
-        if (Eat("let"))
+        if (At("let") || At("var"))
         {
+            bool mutable = Take().Kind == "var";
             string name = Expect("identifier").Text;
             Expect("=");
-            return new LetStatementSyntax(name, Expression(), Through(start));
+            ExpressionSyntax initializer = Expression();
+            return mutable ? new VarStatementSyntax(name, initializer, Through(start)) : new LetStatementSyntax(name, initializer, Through(start));
         }
 
         if (Eat("if"))
@@ -245,11 +247,25 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
             return new IfStatementSyntax(condition, then, otherwise, Through(start));
         }
 
-        if (Eat("foreach"))
+        if (Eat("while"))
         {
+            ExpressionSyntax condition = Expression();
+            return new WhileStatementSyntax(condition, Block(), Through(start));
+        }
+
+        if (At("foreach") || At("for"))
+        {
+            bool canonical = Take().Kind == "for";
             string name = Expect("identifier").Text;
             Expect("in");
             ExpressionSyntax list = Expression();
+            if (canonical && (At("..") || At("..=")))
+            {
+                bool inclusive = Take().Kind == "..=";
+                ExpressionSyntax end = Expression();
+                ExpressionSyntax? step = Eat("step") ? Expression() : null;
+                return new ForRangeStatementSyntax(name, list, end, inclusive, step, Block(), Through(start));
+            }
             return new ForeachStatementSyntax(name, list, Block(), Through(start));
         }
 
@@ -262,19 +278,29 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
             while (!At("}") && !At("eof"))
             {
                 SourceSpan armStart = Current.Span;
-                string variant = Expect("identifier").Text;
-
-                Expect("{");
-                List<string> bindings = [];
-                while (!At("}") && !At("eof"))
+                MatchPatternSyntax pattern;
+                if (Current.Text == "_")
                 {
-                    bindings.Add(Expect("identifier").Text);
-                    if (!Eat(",")) break;
+                    Take();
+                    pattern = new WildcardPatternSyntax(armStart);
                 }
-                Expect("}");
+                else if (At("identifier") && LooksLikeVariantPattern())
+                {
+                    string variant = Take().Text;
+                    Expect("{");
+                    List<string> bindings = [];
+                    while (!At("}") && !At("eof"))
+                    {
+                        bindings.Add(Expect("identifier").Text);
+                        if (!Eat(",")) break;
+                    }
+                    Expect("}");
+                    pattern = new VariantPatternSyntax(variant, bindings, Through(armStart));
+                }
+                else pattern = new ValuePatternSyntax(Expression(), Through(armStart));
 
                 BlockStatementSyntax body = Block();
-                arms.Add(new(variant, bindings, body, Through(armStart)));
+                arms.Add(new(pattern, body, Through(armStart)));
                 Eat(",");
                 Eat(";");
             }
@@ -282,6 +308,8 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
             Expect("}");
             return new MatchStatementSyntax(value, arms, Through(start));
         }
+
+        if (Eat("continue")) return new ContinueStatementSyntax(Through(start));
 
         if (Eat("break")) return new BreakStatementSyntax(Through(start));
 
@@ -300,13 +328,28 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
         }
 
         ExpressionSyntax expr = Expression();
-        if (At("=") || At("+=") || At("-="))
+        if (At("=") || At("+=") || At("-=") || At("*=") || At("/="))
         {
             string op = Take().Kind;
             return new AssignmentStatementSyntax(expr, op, Expression(), Through(start));
         }
 
         return new ExpressionStatementSyntax(expr, Through(start));
+    }
+
+    // A variant pattern has a field block followed by a body block. A bare constant
+    // has only its body, so scan the bounded field spelling before choosing the production.
+    private bool LooksLikeVariantPattern()
+    {
+        int i = _position + 1;
+        if (tokens[Math.Min(i++, tokens.Count - 1)].Kind != "{") return false;
+        while (i < tokens.Count && tokens[i].Kind == "identifier")
+        {
+            i++;
+            if (tokens[i].Kind != ",") break;
+            i++;
+        }
+        return i + 1 < tokens.Count && tokens[i].Kind == "}" && tokens[i + 1].Kind == "{";
     }
 
     private ExpressionSyntax Expression(int minimum = 0)

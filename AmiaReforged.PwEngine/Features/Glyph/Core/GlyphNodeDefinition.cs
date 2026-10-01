@@ -17,6 +17,9 @@ public class GlyphNodeDefinition
     public string? Source { get; init; }
     public string? Backend { get; init; }
     public string? Deprecated { get; init; }
+
+    /// <summary>Mutable runtime reads opt out; ordinary data nodes retain output caching.</summary>
+    public bool CacheOutputs { get; init; } = true;
     public GlyphContextSchema? ContextSchema { get; init; }
 
     public required string TypeId { get; init; }

@@ -42,7 +42,7 @@ public sealed class GlyphLexer(string source, string sourceId = "source.glyph")
                 while (char.IsLetterOrDigit(Peek()) || Peek() == '_') Take();
                 string word = source[start.._position];
                 kind = word is "glyph" or "struct" or "type" or "match" or "const" or "fn" or
-                    "let" or "if" or "else" or "foreach" or "in" or "break" or
+                    "var" or "while" or "for" or "continue" or "step" or "let" or "if" or "else" or "foreach" or "in" or "break" or
                     "true" or "false" or "attempted" or "started" or "tick" or "completed"
                     ? word
                     : "identifier";
@@ -96,10 +96,11 @@ public sealed class GlyphLexer(string source, string sourceId = "source.glyph")
             {
                 char first = Take();
                 string pair = $"{first}{Peek()}";
-                if (pair is "==" or "!=" or "<=" or ">=" or "&&" or "||" or "+=" or "-=")
+                if (pair is "==" or "!=" or "<=" or ">=" or "&&" or "||" or "+=" or "-=" or "*=" or "/=" or "..")
                 {
                     Take();
                     kind = pair;
+                    if (pair == ".." && Peek() == '=') { Take(); kind = "..="; }
                 }
                 else if ("{}()[],.:;=<>+-*/%!".Contains(first)) kind = first.ToString();
                 else

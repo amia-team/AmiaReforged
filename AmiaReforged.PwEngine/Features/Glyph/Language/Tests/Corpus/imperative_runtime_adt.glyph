@@ -1,0 +1,19 @@
+struct Request { actor: Object amount: Int }
+type Result {
+    Found { target: Object }
+    Missing { reason: String }
+}
+fn found(request: Request): Result = Result.Found(target: request.actor)
+
+glyph runtime_match : interaction {
+    completed {
+        let target = player.get_nearest_object_by_type("creature")
+        var request = Request(actor: target, amount: 5)
+        var result = Result.Missing(reason: "No nearby creature")
+        if target.is_valid() { result = found(request) }
+        match result {
+            Found { target } { target.set_local_int("found", request.amount) }
+            Missing { reason } { message(player, reason) }
+        }
+    }
+}

@@ -52,5 +52,8 @@ public enum GlyphDataType
     /// A list of values. The element type is inferred from connected pins.
     /// Rendered as an orange circle.
     /// </summary>
-    List
+    List,
+
+    /// <summary>Nominal struct or ADT value; the value retains its declared type and variant.</summary>
+    Aggregate
 }

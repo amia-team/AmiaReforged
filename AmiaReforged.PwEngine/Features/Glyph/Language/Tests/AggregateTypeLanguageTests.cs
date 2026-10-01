@@ -126,7 +126,8 @@ public class AggregateTypeLanguageTests
         int messages = executable.CreateExecutionGraph()
             .Nodes.Count(n => n.TypeId == "action.send_message");
 
-        Assert.That(messages, Is.EqualTo(1));
+        // Runtime dispatch retains both arm bodies in the IR.
+        Assert.That(messages, Is.EqualTo(2));
     }
 
     [Test]

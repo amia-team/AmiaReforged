@@ -9,6 +9,19 @@ public sealed class GlyphIrValidator(IGlyphNodeDefinitionRegistry registry)
     public static bool CanConnect(GlyphDataType from, GlyphDataType to) => from == to ||
         (from is GlyphDataType.Int or GlyphDataType.Float && to is GlyphDataType.Int or GlyphDataType.Float);
 
+    private static string? AggregateIdentity(GlyphNodeInstance node, GlyphPin pin)
+    {
+        if (pin.AggregateTypeName != null) return pin.AggregateTypeName;
+        if (node.TypeId == "aggregate.new" || node.TypeId == "aggregate.is_variant" ||
+            node.TypeId.StartsWith("aggregate.with_", StringComparison.Ordinal) && pin.Id is "aggregate" or "value")
+            return node.PropertyOverrides.GetValueOrDefault("type");
+        if (node.TypeId.StartsWith("aggregate.with_", StringComparison.Ordinal) && pin.Id == "field_value")
+            return node.PropertyOverrides.GetValueOrDefault("nominal");
+        if (node.TypeId.StartsWith("local.", StringComparison.Ordinal) || node.TypeId.StartsWith("aggregate.field_", StringComparison.Ordinal) && pin.Id == "value")
+            return node.PropertyOverrides.GetValueOrDefault("nominal");
+        return null;
+    }
+
     public IReadOnlyList<GlyphIrDiagnostic> Validate(GlyphGraph ir)
     {
         List<GlyphIrDiagnostic> errors = [];
@@ -61,6 +74,10 @@ public sealed class GlyphIrValidator(IGlyphNodeDefinitionRegistry registry)
                 output.DataType == GlyphDataType.List && input.DataType == GlyphDataType.List &&
                 (output.ElementType ?? GlyphDataType.NwObject) != (input.ElementType ?? GlyphDataType.NwObject))
                 errors.Add(new("GLYPH4010", $"Cannot connect {output.DataType} to {input.DataType}.", EdgeId: edge.Id));
+            if (output.DataType == GlyphDataType.Aggregate && input.DataType == GlyphDataType.Aggregate &&
+                AggregateIdentity(ir.GetNode(edge.SourceNodeId)!, output) is { } outputName &&
+                AggregateIdentity(ir.GetNode(edge.TargetNodeId)!, input) is { } inputName && outputName != inputName)
+                errors.Add(new("GLYPH4010", $"Cannot connect aggregate {outputName} to {inputName}.", EdgeId: edge.Id));
             if (input.DataType != GlyphDataType.Exec && !inputs.Add((edge.TargetNodeId, input.Id)))
                 errors.Add(new("GLYPH4011", "Multiple sources for a single-value input.", EdgeId: edge.Id));
             if (output.DataType == GlyphDataType.Exec && !execOutputs.Add((edge.SourceNodeId, output.Id)))

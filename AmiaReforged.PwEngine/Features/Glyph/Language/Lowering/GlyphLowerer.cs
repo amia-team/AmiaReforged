@@ -4,7 +4,7 @@ using AmiaReforged.PwEngine.Features.Glyph.Language.Binding;
 using AmiaReforged.PwEngine.Features.Glyph.Language.Diagnostics;
 namespace AmiaReforged.PwEngine.Features.Glyph.Language.Lowering;
 
-/// <summary>Emits only existing runtime operations. Syntax never reaches the interpreter.</summary>
+/// <summary>Emits registered runtime operations. Syntax never reaches the interpreter.</summary>
 public sealed class GlyphLowerer
 {
     public sealed class LimitExceededException : Exception;
@@ -55,6 +55,36 @@ public sealed class GlyphLowerer
             case BoundLet let:
                 _stored[let.SymbolId] = Expression(let.Value, ref tails);
                 return tails;
+            case BoundVar variable:
+                return Write(variable.SymbolId, variable.Value.Type, variable.Value, variable.Span, tails);
+            case BoundVariableAssignment assignment:
+                return Write(assignment.SymbolId, assignment.ValueType, assignment.Value, assignment.Span, tails);
+            case BoundContinue cont:
+                Connect(tails, Node("flow.continue", cont.Span)); return [];
+            case BoundWhile loop:
+            {
+                GlyphNodeInstance owner = Node("flow.while", loop.Span);
+                Connect(tails, owner);
+                List<Output> conditionTails = [new(owner, "loop_body")];
+                Output condition = Expression(loop.Condition, ref conditionTails);
+                GlyphNodeInstance test = Node("flow.branch", loop.Condition.Span);
+                Wire(condition, test, "condition"); Connect(conditionTails, test);
+                Block(loop.Body, [new(test, "true")]);
+                Connect([new(test, "false")], Node("flow.break", loop.Condition.Span));
+                return [new(owner, "completed")];
+            }
+            case BoundForRange loop:
+            {
+                GlyphNodeInstance range = Node("flow.for_range", loop.Span, new() { ["auto_step"] = loop.Step == null ? "true" : "false", ["inclusive"] = loop.Inclusive ? "true" : "false" });
+                Wire(Expression(loop.Start, ref tails), range, "start");
+                Wire(Expression(loop.End, ref tails), range, "end");
+                if (loop.Step != null) Wire(Expression(loop.Step, ref tails), range, "step");
+                Connect(tails, range); _loops[loop.SymbolId] = range;
+                Block(loop.Body, [new(range, "loop_body")]); _loops.Remove(loop.SymbolId);
+                return [new(range, "completed")];
+            }
+            case BoundMatch match:
+                return Match(match, tails);
             case BoundBreak br:
                 Connect(tails, Node("flow.break", br.Span)); return [];
             case BoundExpressionStatement action:
@@ -72,7 +102,7 @@ public sealed class GlyphLowerer
                 List<Output> falseTails = conditional.Else == null ? [new(branch, no)] : Statement(conditional.Else, [new(branch, no)]);
                 trueTails.AddRange(falseTails); return trueTails;
             case BoundForeach loop:
-                GlyphNodeInstance each = Node(loop.List.Type.ElementType == GlyphTypeSymbol.Effect ? "flow.for_each_effect" : "flow.for_each", loop.Span);
+                GlyphNodeInstance each = Node(loop.List.Type.ElementType == GlyphTypeSymbol.Object ? "flow.for_each" : loop.List.Type.ElementType == GlyphTypeSymbol.Effect ? "flow.for_each_effect" : "flow.for_each_" + Suffix(loop.List.Type.ElementType!), loop.Span);
                 Wire(Expression(loop.List, ref tails), each, "list"); Connect(tails, each);
                 _loops[loop.SymbolId] = each;
                 Block(loop.Body, [new(each, "loop_body")]);
@@ -81,6 +111,62 @@ public sealed class GlyphLowerer
             default: throw new InvalidOperationException($"Unsupported bound statement {statement.GetType().Name}.");
         }
     }
+    private static string Suffix(GlyphTypeSymbol type) => Runtime.Nodes.Flow.RuntimeValueModule.Suffix(type.RuntimeType!.Value, type.ElementType?.RuntimeType);
+    private static Dictionary<string, string> SlotProperties(int id, GlyphTypeSymbol type) => new()
+    { ["slot"] = id.ToString(CultureInfo.InvariantCulture), ["nominal"] = type.Name };
+    private Output Local(int id, GlyphTypeSymbol type, SourceSpan span) =>
+        new(Node("local.read_" + Suffix(type), span, SlotProperties(id, type)), "value");
+    private List<Output> Write(int id, GlyphTypeSymbol type, BoundExpression value, SourceSpan span, List<Output> tails)
+    {
+        Output input = Expression(value, ref tails);
+        GlyphNodeInstance write = Node("local.write_" + Suffix(type), span, SlotProperties(id, type));
+        Wire(input, write, "value"); Connect(tails, write);
+        return [new(write, "exec_out")];
+    }
+    private List<Output> Match(BoundMatch match, List<Output> tails)
+    {
+        List<Output> next = Write(match.SymbolId, match.Value.Type, match.Value, match.Span, tails);
+        List<Output> joined = [];
+        foreach (var arm in match.Arms)
+        {
+            if (arm.Pattern is BoundWildcardPattern)
+            {
+                joined.AddRange(Block(arm.Body, next)); next = []; break;
+            }
+            Output condition;
+            if (arm.Pattern is BoundVariantPattern variant)
+            {
+                GlyphNodeInstance test = Node("aggregate.is_variant", arm.Span, new() { ["type"] = variant.TypeName, ["variant"] = variant.Variant });
+                Wire(Local(match.SymbolId, match.Value.Type, match.Span), test, "aggregate");
+                condition = new(test, "result");
+            }
+            else
+            {
+                var scalar = (BoundValuePattern)arm.Pattern;
+                condition = Expression(new BoundBinary(new BoundVariableRead(match.SymbolId, match.Value.Type, match.Span, false), "==", scalar.Value, GlyphTypeSymbol.Bool, arm.Span), ref next);
+            }
+            GlyphNodeInstance branch = Node("flow.branch", arm.Span);
+            Wire(condition, branch, "condition"); Connect(next, branch);
+            joined.AddRange(Block(arm.Body, [new(branch, "true")]));
+            next = [new(branch, "false")];
+        }
+        // Valid ADT matches are exhaustive; their final false path cannot join.
+        if (match.Value.Type.RuntimeType != GlyphDataType.Aggregate) joined.AddRange(next);
+        return joined;
+    }
+    private Output Aggregate(string type, string? variant, IReadOnlyDictionary<string, BoundExpression> fields, IReadOnlyList<GlyphFieldSymbol> schema, SourceSpan span, ref List<Output> tails)
+    {
+        Output aggregate = new(Node("aggregate.new", span, new() { ["type"] = type, ["variant"] = variant ?? "" }), "value");
+        foreach (var field in fields)
+        {
+            GlyphTypeSymbol fieldType = schema.Single(f => f.Name == field.Key).Type;
+            GlyphNodeInstance add = Node("aggregate.with_" + Suffix(fieldType), field.Value.Span, new() { ["field"] = field.Key, ["nominal"] = fieldType.Name, ["type"] = type });
+            Wire(aggregate, add, "aggregate"); Wire(Expression(field.Value, ref tails), add, "field_value");
+            aggregate = new(add, "value");
+        }
+        return aggregate;
+    }
+
     private GlyphNodeInstance Call(BoundCall call, ref List<Output> tails)
     {
         GlyphNodeInstance node = Node(call.Symbol.Definition.TypeId, call.Span);
@@ -110,6 +196,15 @@ public sealed class GlyphLowerer
     {
         switch (expression)
         {
+            case BoundVariableRead variable: return Local(variable.SymbolId, variable.Type, variable.Span);
+            case BoundStruct structure: return Aggregate(structure.Definition.Name, null, structure.Fields, structure.Definition.Fields, structure.Span, ref tails);
+            case BoundVariant variant: return Aggregate(variant.Definition.Name, variant.Variant.Name, variant.Fields, variant.Variant.Fields, variant.Span, ref tails);
+            case BoundAggregateField field:
+            {
+                GlyphNodeInstance access = Node("aggregate.field_" + Suffix(field.Type), field.Span, new() { ["field"] = field.Field, ["nominal"] = field.Type.Name });
+                Wire(Expression(field.Receiver, ref tails), access, "aggregate");
+                return new(access, "value");
+            }
             case BoundLiteral literal:
                 string type = literal.Type == GlyphTypeSymbol.Int ? "int" : literal.Type == GlyphTypeSymbol.Float ? "float" : literal.Type == GlyphTypeSymbol.Bool ? "bool" : literal.Type == GlyphTypeSymbol.Object ? "object" : "string";
                 string value = Convert.ToString(literal.Value, CultureInfo.InvariantCulture) ?? "";
@@ -130,7 +225,7 @@ public sealed class GlyphLowerer
                 return new(called, call.Symbol.OutputPin!);
             case BoundUnary unary:
                 if (unary.Operator == "+") return Expression(unary.Operand, ref tails);
-                GlyphNodeInstance negation = Node(unary.Operator == "!" ? "math.not" : "math.math_op", unary.Span,
+                GlyphNodeInstance negation = Node(unary.Operator == "!" ? "math.not" : unary.Type == GlyphTypeSymbol.Int ? "math.int_op" : "math.math_op", unary.Span,
                     unary.Operator == "-" ? new() { ["a"] = "0", ["operator"] = "-" } : null);
                 Wire(Expression(unary.Operand, ref tails), negation, unary.Operator == "!" ? "value" : "b");
                 return new(negation, "result");
@@ -140,7 +235,7 @@ public sealed class GlyphLowerer
                 bool boolean = binary.Operator is "&&" or "||";
                 string intrinsic = binary.Operator is "==" or "!=" && binary.Left.Type.RuntimeType is GlyphDataType.String or GlyphDataType.Bool or GlyphDataType.NwObject
                     ? "math.equal_" + (binary.Left.Type.RuntimeType == GlyphDataType.NwObject ? "object" : binary.Left.Type.Name.ToLowerInvariant())
-                    : boolean ? "math.boolean_op" : binary.Type == GlyphTypeSymbol.Bool ? "math.compare" : "math.math_op";
+                    : boolean ? "math.boolean_op" : binary.Type == GlyphTypeSymbol.Bool ? "math.compare" : binary.Type == GlyphTypeSymbol.Int ? "math.int_op" : "math.math_op";
                 string op = binary.Operator switch { "&&" => "AND", "||" => "OR", _ => binary.Operator };
                 GlyphNodeInstance operation = Node(intrinsic, binary.Span, new() { ["operator"] = op });
                 Wire(Expression(binary.Left, ref tails), operation, "a"); Wire(Expression(binary.Right, ref tails), operation, "b");

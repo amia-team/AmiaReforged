@@ -53,7 +53,7 @@ export function completionScope(state, pos, from = pos) {
         blocks.push(node);
         if (node.parent?.name === "StageDeclaration")
           stage = text(state, node.parent.getChild("StageName"));
-        if (node.parent?.name === "ForeachStatement") inLoop = true;
+        if (["ForeachStatement", "ForStatement", "WhileStatement"].includes(node.parent?.name)) inLoop = true;
       }
       if (node.name === "ArgumentList" && inside(node, pos, ")"))
         argumentsNode = node;
@@ -61,7 +61,7 @@ export function completionScope(state, pos, from = pos) {
   });
   const locals = new Map();
   for (const block of blocks) {
-    if (block.parent?.name === "ForeachStatement") {
+    if (["ForeachStatement", "ForStatement"].includes(block.parent?.name)) {
       const name = text(state, block.parent.getChild("BindingName"));
       // Derive the element from the compiler-owned list return type.
       if (name)
@@ -69,13 +69,14 @@ export function completionScope(state, pos, from = pos) {
           label: name,
           type: null,
           init: firstExprChild(block.parent),
-          elementOf: true,
+          elementOf: !block.parent.getChild("RangeOperator"),
+          range: !!block.parent.getChild("RangeOperator"),
           detail: "Loop variable",
           boost: 20,
         });
     }
     for (let child = block.firstChild; child; child = child.nextSibling) {
-      if (child.name !== "LetStatement" || child.to > from) continue;
+      if (!["LetStatement", "VarStatement"].includes(child.name) || child.to > from) continue;
       let incomplete = false;
       child.toTree().iterate({
         enter(ref) {
@@ -89,7 +90,7 @@ export function completionScope(state, pos, from = pos) {
       locals.set(name, {
         label: name,
         type: null,
-        detail: "Local binding",
+        detail: child.name === "VarStatement" ? "Mutable local" : "Local binding",
         boost: 20,
         init: letInitializer(child),
       });
@@ -108,6 +109,10 @@ export function completionScope(state, pos, from = pos) {
 }
 
 const statementSnippets = [
+  snippetCompletion("var ${name} = ${value}", { label: "var", type: "keyword" }),
+  snippetCompletion("while ${condition} {\n\t${}\n}", { label: "while", type: "keyword" }),
+  snippetCompletion("for ${item} in ${values} {\n\t${}\n}", { label: "for", type: "keyword" }),
+  snippetCompletion("match ${value} {\n\t_ {\n\t\t${}\n\t}\n}", { label: "match", type: "keyword" }),
   snippetCompletion("let ${name} = ${value}", {
     label: "let",
     type: "keyword",
@@ -495,7 +500,7 @@ export function glyphCompletions(metadata) {
       for (const local of scope.locals) {
         if (local.init) {
           const type = expressionType(context.state, local.init, resolverScope, metadata);
-          local.type = local.elementOf ? /^List<(.+)>$/.exec(type || "")?.[1] ?? null : type;
+          local.type = local.range ? "Int" : local.elementOf ? /^List<(.+)>$/.exec(type || "")?.[1] ?? null : type;
         }
       }
 
@@ -594,10 +599,7 @@ export function glyphCompletions(metadata) {
         }
 
         if (scope.inLoop) {
-          options.push({
-            label: "break",
-            type: "keyword",
-          });
+          options.push({ label: "break", type: "keyword" }, { label: "continue", type: "keyword" });
         }
       } else {
         const call = scope.argumentsNode.parent;

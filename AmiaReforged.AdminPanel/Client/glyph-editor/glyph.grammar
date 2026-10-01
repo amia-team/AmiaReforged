@@ -1,4 +1,4 @@
-@top Program { GlobalDeclaration* TypeDeclaration* (kw<"glyph"> ProgramName ":" EventName Block)? }
+@top Program { (GlobalDeclaration | TypeDeclaration)* (kw<"glyph"> ProgramName ":" EventName Block)? }
 
 @precedence {
   member @left, call @left, unary @right,
@@ -33,19 +33,28 @@ EventName { Identifier ("." Identifier)* }
 Block { "{" (statement | ";")* "}" }
 
 statement {
-  Block | StageDeclaration | LetStatement | IfStatement | ForeachStatement |
-  MatchStatement | BreakStatement | FailStatement | AssignmentStatement | ExpressionStatement
+  Block | StageDeclaration | LetStatement | VarStatement | IfStatement | WhileStatement | ForeachStatement | ForStatement |
+  MatchStatement | BreakStatement | ContinueStatement | FailStatement | AssignmentStatement | ExpressionStatement
 }
 
 StageDeclaration { StageName Block }
 StageName { kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> }
 LetStatement { kw<"let"> BindingName "=" expression }
+VarStatement { kw<"var"> BindingName "=" expression }
 BindingName { Identifier }
 IfStatement { kw<"if"> expression Block (kw<"else"> (IfStatement | Block))? }
+WhileStatement { kw<"while"> expression Block }
+ForStatement { kw<"for"> BindingName kw<"in"> expression (RangeOperator expression (kw<"step"> expression)?)? Block }
+RangeOperator { ".." | "..=" }
 ForeachStatement { kw<"foreach"> BindingName kw<"in"> expression Block }
 MatchStatement { kw<"match"> expression "{" (MatchArm | ";" | ",")* "}" }
-MatchArm { VariantName "{" (BindingName ("," BindingName)* ","?)? "}" Block }
+MatchArm { MatchPattern Block }
+MatchPattern { VariantPattern | ValuePattern | WildcardPattern }
+VariantPattern { Identifier ~pattern "{" (BindingName ("," BindingName)* ","?)? "}" }
+ValuePattern { Identifier ~pattern ("." PropertyName)* | Number | String | Boolean | ("-" | "+") Number }
+WildcardPattern { kw<"_"> }
 BreakStatement { kw<"break"> }
+ContinueStatement { kw<"continue"> }
 
 FailStatement[@dynamicPrecedence=1] {
   @extend[@name=FailKeyword]<Identifier, "fail"> expression !statement
@@ -81,17 +90,18 @@ ArgumentList { "(" (Argument ("," Argument)* ","?)? ")" }
 Argument { (ArgumentName ":")? expression }
 ArgumentName {
   Identifier | kw<"glyph"> | kw<"struct"> | kw<"type"> | kw<"match"> | kw<"let"> |
+  kw<"var"> | kw<"while"> | kw<"for"> | kw<"continue"> | kw<"step"> |
   kw<"if"> | kw<"else"> | kw<"foreach"> | kw<"in"> | kw<"break"> |
   kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | kw<"fn"> | kw<"const">
 }
-AssignmentOperator { "=" | "+=" | "-=" }
+AssignmentOperator { "=" | "+=" | "-=" | "*=" | "/=" }
 kw<term> { @specialize[@name={term}]<Identifier, term> }
 
 @external tokens identifiers from "./glyph-tokens.js" { Identifier }
 
 @tokens {
   "(" ")" "{" "}" "[" "]" "." "," ":" ";"
-  "+" "-" "!" "&&" "||" "=" "+=" "-="
+  "+" "-" "!" "&&" "||" "=" "+=" "-=" "*=" "/=" ".." "..="
   whitespace { $[\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+ }
   LineComment { "//" ![\n]* }
   Number { @digit+ ("." @digit+)? }

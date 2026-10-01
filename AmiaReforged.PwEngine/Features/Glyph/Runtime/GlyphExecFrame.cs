@@ -10,7 +10,7 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime;
 /// that need to run after the current branch terminates.
 /// </para>
 /// <para>
-/// For <b>ForEach</b>: the frame holds the loop node so the interpreter can re-execute it
+/// For <b>loops</b>: the frame holds the loop node so the interpreter can re-execute it
 /// after each iteration's body completes.
 /// </para>
 /// </summary>
@@ -35,9 +35,12 @@ public class GlyphExecFrame
     /// </summary>
     public bool IsLoop { get; init; }
 
+    /// <summary>Exit continuation selected when this loop receives a break.</summary>
+    public string CompletedPinId { get; init; } = "completed";
+
     /// <summary>
-    /// Tracks all node instance IDs that were executed (or lazily evaluated) inside the
-    /// current loop iteration's body. On each iteration advance, the interpreter clears
+    /// Tracks nodes executed or read lazily in this iteration, including its condition
+    /// prelude and nested loops. On each iteration advance, the interpreter clears
     /// the <see cref="GlyphExecutionContext.PinValueCache"/> entries for these nodes so
     /// that pure-function nodes are re-evaluated with fresh upstream values.
     /// </summary>

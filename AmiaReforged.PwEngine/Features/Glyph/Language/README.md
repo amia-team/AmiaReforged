@@ -58,8 +58,8 @@ Supported declarations:
 - `trait.on_granted`, `trait.on_removed`
 - `interaction` containing independent `attempted`, `started`, `tick`, `completed` blocks
 
-Statements are calls, `let`, `if/else`, `foreach name in expression`, `break`, and supported
-interaction assignments. Semicolons are optional. Line comments begin with `//`.
+Statements are calls, `let`, `var`, `if/else`, `while`, `for name in expression`,
+`foreach name in expression`, integer range loops, `match`, `break`, `continue`, and assignments. Semicolons are optional. Line comments begin with `//`.
 
 ### Global prelude constants
 
@@ -72,9 +72,7 @@ self- or mutual cycle) is rejected, as is any runtime- or context-dependent
 initializer (member access, invocation, arithmetic, etc.), a missing initializer, a
 self- or cross reference that cannot resolve (a cycle), or a reference to an unknown constant is
 rejected with a structured diagnostic (`GLYPH2009` unsupported/missing initializer,
-`GLYPH2012` cyclic/self-referential, `GLYPH2013` unknown constant). The resolved values live
-only in the compiler-side environment; ordinary event programs do not consume them until later
-work wires the global environment into binding.
+`GLYPH2012` cyclic/self-referential, `GLYPH2013` unknown constant). The resolved values are available to event-program expressions and scalar match patterns.
 
 ```glyph
 const OBJECT_TRIGGER = "trigger"
@@ -87,15 +85,120 @@ Numeric operators are `+ - * / % == != < <= > >=`; Boolean operators are `! && |
 Parentheses control precedence. Arguments may be positional followed by named arguments
 using the registered parameter names (for example `dc: 15`).
 
-`let` is an **immutable lazy expression binding**, not a mutable local or an eager snapshot.
-Each reference emits its own expression evaluation. For example, two references to a bound
-`random(...)` expression may roll twice. Unused bindings do not execute. Loop elements are
-immutable `Object` bindings. Assignment to a `let` is diagnosed.
+`let` is immutable. Pure initializers remain lazy: an unused pure binding does not run,
+and each reference emits its own expression evaluation. Impure value-returning calls are
+captured at the declaration and run once, even if unused; references share that result.
+Impure fields in a `let` aggregate are likewise captured. Assignment to `let` is diagnosed.
 
-Arithmetic returns Float through the existing math executor. Numeric arguments use existing
-executor conversions; Float to Int uses .NET `Convert.ToInt32` rounding. Comparisons are
-numeric (the existing comparison executor uses its existing equality tolerance). Boolean
-`&&`/`||` eagerly evaluate both operands. There is no arbitrary member access or .NET call.
+`var` eagerly evaluates its initializer once at the declaration and stores the result in a
+compiler-assigned runtime slot. Reads observe the most recent write. Each slot has one static
+type; existing numeric conversions apply to assignments. Inner blocks may shadow locals;
+duplicate declarations in one block are errors. A block's locals cannot be referenced outside it.
+Loop elements and match pattern bindings are immutable and retain their declared types.
+
+```glyph
+var count = 0
+var distance = 1.5
+count += 1
+count *= 2
+count /= 2
+distance -= 0.5
+```
+
+Ordinary arithmetic retains the existing Float semantics; assigning a Float to an Int
+uses .NET `Convert.ToInt32` rounding. Range bounds and steps additionally retain integer
+`+ - * %` and unary arithmetic when their operands are Int; integer arithmetic wraps at 32 bits. String, Bool and Object support equality.
+Numeric comparison retains the existing comparison executor's tolerance. Boolean `&&`/`||`
+short-circuit: the right operand executes only when needed, including impure calls.
+There is no arbitrary .NET member access or call.
+
+### Branches and loops
+
+`if condition { ... } else if condition { ... } else { ... }` requires Bool conditions.
+`while` checks its Bool condition before every iteration, including runtime queries, mutable
+reads and short-circuit preludes. A false condition skips the body or ends the loop.
+
+```glyph
+var i = 0
+while i < 10 {
+    player.set_local_int("loop_i", i)
+    i += 1
+}
+
+for item in player.inventory() {
+    if item.get_tag() == "keep" { continue }
+    item.destroy()
+}
+```
+
+`for item in list` and the compatible `foreach item in list` share the same runtime loop.
+Lists are evaluated once on entry; the immutable element has the list's element type,
+including Object and Effect.
+
+Integer ranges are loop syntax, not general expressions:
+
+```glyph
+for i in 0..10 { player.set_local_int("index", i) }       // 0 through 9
+for i in 0..=10 { player.set_local_int("index", i) }      // 0 through 10
+for i in 10..0 step -2 { player.set_local_int("index", i) } // 10, 8, 6, 4, 2
+```
+
+Bounds and step must be Int and are evaluated once on entry. The default step is +1 when
+start <= end, otherwise -1. An explicit step pointing away from the end produces no iterations.
+Equal exclusive bounds are empty; equal inclusive bounds produce one iteration. Ranges do not
+allocate lists. Advancing beyond the Int boundary terminates instead of wrapping. A statically
+known zero step is `GLYPH2014`; a dynamic zero step halts execution with a source-aware trace.
+
+`break` exits the nearest loop and continues after it. `continue` skips the remainder of the
+nearest loop's current body and advances to its next iteration. Both require an enclosing loop.
+Nested branches and matches retain these nearest-loop semantics. Every loop uses the existing
+execution-step guard (default 10,000 node executions). `while true {}` is bounded by that guard.
+Body/condition caches are invalidated per iteration; captured values outside the loop survive.
+
+### Scalar and ADT matching
+
+`match` eagerly evaluates its subject once and selects the first matching arm. Scalar subjects
+may be Int, Bool, String or Object; patterns are compatible literals or resolved constants.
+A scalar match with no matching arm and no wildcard falls through without executing an arm.
+`_` matches any value, may occur once, and must be last. Duplicate scalar arms are diagnosed.
+
+```glyph
+let target = player.get_nearest_object_by_type("creature")
+match target.get_object_type() {
+    OBJECT_TYPE.CREATURE { message(player, "Creature") }
+    OBJECT_TYPE.DOOR { message(player, "Door") }
+    _ { message(player, "Other") }
+}
+```
+
+Structs and ADTs retain nominal type identity in runtime storage. Struct fields can be read
+through eager `var` storage or a runtime function result; distinct aggregate types cannot be
+assigned to one another. ADT dispatch inspects the actual runtime variant, and requested
+fields are bound using their declared types. Constructors support dynamic field values.
+
+```glyph
+type Result {
+    Found { target: Object }
+    Missing { reason: String }
+}
+
+glyph lookup : interaction {
+    completed {
+        let target = player.get_nearest_object_by_type("creature")
+        var result = Result.Missing(reason: "Nothing nearby")
+        if target.is_valid() { result = Result.Found(target: target) }
+        match result {
+            Found { target } { target.set_local_int("found", 1) }
+            Missing { reason } { message(player, reason) }
+        }
+    }
+}
+```
+
+ADT matches must cover every variant, or finish with `_`. Unknown variants, duplicate arms,
+unknown fields and duplicate pattern bindings are compile-time `GLYPH2010` diagnostics.
+Pattern bindings are scoped to their arm. Arms may contain loops, nested matches, assignments,
+`break` and `continue`; execution rejoins afterward unless the selected arm terminates flow.
 
 `context.<name>` exposes only the current event/stage's registered data outputs.
 `creature`, `player`, `party.size`, `time.hour`, `spawn.count`, and `chaos.danger`,
@@ -280,5 +383,5 @@ activity. The trace store retains the latest 64 runs, up to 2,000 entries each, 
 
 Syntax nesting, alias expansion, source size, and generated operation count are bounded.
 Synthetic execution can use a candidate's `CreateExecutionGraph()` with a controlled
-`GlyphExecutionContext`; the UI does not yet offer a sandboxed dry-run button. Formatting,
-completion, arbitrary local mutation, and the remaining executor catalog are outside v1.
+`GlyphExecutionContext`; the UI does not yet offer a sandboxed dry-run button. The editor provides syntax highlighting, completion and diagnostics for this language surface.
+The UI does not yet provide automatic formatting.

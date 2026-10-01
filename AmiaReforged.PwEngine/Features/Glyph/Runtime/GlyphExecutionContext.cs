@@ -256,6 +256,12 @@ public class GlyphExecutionContext
     /// Keys are variable names, values are boxed .NET values.
     /// Initialized from the graph's <see cref="GlyphGraph.Variables"/> defaults.
     /// </summary>
+    /// <summary>Compiler-assigned identities isolate lexical locals from graph variables.</summary>
+    public Dictionary<int, GlyphLocalValue> Locals { get; } = new();
+
+    /// <summary>Executor-owned iteration state, keyed by the loop owner.</summary>
+    public Dictionary<Guid, object> LoopStates { get; } = new();
+
     public Dictionary<string, object?> Variables { get; set; } = new();
 
     /// <summary>
@@ -285,6 +291,8 @@ public class GlyphExecutionContext
     /// Number of node executions performed so far in this run.
     /// </summary>
     public int ExecutionStepCount { get; set; }
+
+    internal bool ExecutionHalted { get; set; }
 
     /// <summary>
     /// Execution log entries for debugging. Only populated when <see cref="EnableTracing"/> is true.

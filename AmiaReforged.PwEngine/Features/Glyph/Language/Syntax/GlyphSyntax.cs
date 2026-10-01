@@ -58,6 +58,10 @@ public sealed record GlyphFieldDeclarationSyntax(
 public abstract record StatementSyntax(SourceSpan Span) : GlyphSyntax(Span);
 public sealed record BlockStatementSyntax(IReadOnlyList<StatementSyntax> Statements, SourceSpan Span) : StatementSyntax(Span);
 public sealed record StageDeclarationSyntax(string Name, BlockStatementSyntax Body, SourceSpan Span) : StatementSyntax(Span);
+public sealed record VarStatementSyntax(string Name, ExpressionSyntax Value, SourceSpan Span) : StatementSyntax(Span);
+public sealed record WhileStatementSyntax(ExpressionSyntax Condition, BlockStatementSyntax Body, SourceSpan Span) : StatementSyntax(Span);
+public sealed record ForRangeStatementSyntax(string Name, ExpressionSyntax Start, ExpressionSyntax End, bool Inclusive, ExpressionSyntax? Step, BlockStatementSyntax Body, SourceSpan Span) : StatementSyntax(Span);
+public sealed record ContinueStatementSyntax(SourceSpan Span) : StatementSyntax(Span);
 public sealed record LetStatementSyntax(string Name, ExpressionSyntax Value, SourceSpan Span) : StatementSyntax(Span);
 public sealed record AssignmentStatementSyntax(ExpressionSyntax Target, string Operator, ExpressionSyntax Value, SourceSpan Span) : StatementSyntax(Span);
 public sealed record ExpressionStatementSyntax(ExpressionSyntax Expression, SourceSpan Span) : StatementSyntax(Span);
@@ -70,11 +74,11 @@ public sealed record MatchStatementSyntax(
     IReadOnlyList<MatchArmSyntax> Arms,
     SourceSpan Span) : StatementSyntax(Span);
 
-public sealed record MatchArmSyntax(
-    string Variant,
-    IReadOnlyList<string> Bindings,
-    BlockStatementSyntax Body,
-    SourceSpan Span) : GlyphSyntax(Span);
+public abstract record MatchPatternSyntax(SourceSpan Span) : GlyphSyntax(Span);
+public sealed record VariantPatternSyntax(string Variant, IReadOnlyList<string> Bindings, SourceSpan Span) : MatchPatternSyntax(Span);
+public sealed record ValuePatternSyntax(ExpressionSyntax Value, SourceSpan Span) : MatchPatternSyntax(Span);
+public sealed record WildcardPatternSyntax(SourceSpan Span) : MatchPatternSyntax(Span);
+public sealed record MatchArmSyntax(MatchPatternSyntax Pattern, BlockStatementSyntax Body, SourceSpan Span) : GlyphSyntax(Span);
 
 public abstract record ExpressionSyntax(SourceSpan Span) : GlyphSyntax(Span);
 public sealed record LiteralExpressionSyntax(object Value, SourceSpan Span) : ExpressionSyntax(Span);

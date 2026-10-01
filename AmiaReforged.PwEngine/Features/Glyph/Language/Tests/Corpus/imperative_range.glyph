@@ -1,0 +1,7 @@
+glyph repeat_message : interaction {
+    completed {
+        for i in 0..5 { player.set_local_int("index", i) }
+        for i in 0..=5 step 2 { player.set_local_int("even_index", i) }
+        for i in 10..0 step -1 { player.set_local_int("countdown", i) }
+    }
+}

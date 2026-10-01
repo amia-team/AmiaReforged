@@ -323,3 +323,49 @@ manifest/adapters, run conformance, then commit the regenerated artifacts togeth
 snapshot is also a regression test; the ordinary test suite fails on unreviewed API drift.
 `GLYPHNW001`–`GLYPHNW008` report duplicate source names, parameter/return mapping problems,
 object semantics, receiver/constant collisions, missing adapters and malformed manifest entries.
+
+
+## Imperative language runtime
+
+Language syntax is separate from the registered intrinsic/API catalog. `var`, `while`, `for`,
+`continue` and `match` bind to typed nodes and lower into registered compiler operations;
+control keywords are not API intrinsics. Update both the backend parser and the Lezer grammar
+in `AmiaReforged.AdminPanel/Client/glyph-editor/` when extending the language, regenerate the
+parser and production bundle with `npm run build`, and run `npm test`.
+
+Mutable locals use compiler symbol IDs in `GlyphExecutionContext.Locals`, with runtime and
+nominal types stored alongside their values. `local.write_*` is eager; `local.read_*` bypasses
+cached outputs. Writes invalidate only pure downstream dependencies of that symbol's reads.
+Action outputs captured by `let` remain snapshots. Pure `let` expressions remain lazy.
+
+All loops share `GlyphExecFrame`, `GlyphNodeResult.LoopBody` and interpreter continuation
+handling. `flow.while` owns a frame whose body starts with the condition's lowered prelude,
+including action calls and short-circuit branches. A false condition breaks that frame;
+normal termination or `flow.continue` re-enters the prelude. `flow.for_range` keeps an integer
+cursor in `LoopStates`; bounds and step are snapshots, no list is allocated, and advancement
+uses long arithmetic to avoid Int overflow. `for` over lists shares the `foreach` executor.
+`CompletedPinId` declares the break continuation. `break` removes loop-owned state;
+`continue` preserves it. All state is cleared when the execution chain exits.
+
+Executed nodes are tracked in every enclosing loop frame. Cached lazy dependencies are also
+tracked, stopping at action snapshots and flow outputs owned by their producer. Iteration
+advance clears only these caches. The default 10,000-step guard counts flow and lazy data
+execution; cancellation, zero range steps and runtime errors halt execution with traces.
+Each generated operation retains a source span, including condition preludes and match arms.
+
+`GlyphDataType.Aggregate` carries `GlyphAggregateValue`: nominal type name, optional ADT
+variant name and immutable typed field values. Compiler aggregate construction uses typed
+`aggregate.with_*` operations; destructuring uses `aggregate.field_*`. Registered aggregate
+arguments/results declare `GlyphPin.AggregateTypeName`; declare the corresponding struct or
+ADT in the global environment so source binding knows its fields/variants. IR validation checks
+known nominal aggregate identities, while the binder enforces nominal assignment compatibility.
+This supports aggregates through locals, captured results and global function parameters/results
+without reflection, JSON payloads, or a second interpreter.
+
+`BoundMatch` captures its subject once in a typed slot, then lowers to ordinary branches with
+scalar equality or `aggregate.is_variant` tests. Each arm has a lexical field-binding scope;
+ADT exhaustiveness remains a compiler requirement (a final wildcard may satisfy it). Scalar
+matches without a wildcard may fall through. Terminating arms do not emit join edges.
+
+New bound forms must be traversed by `GlyphBoundLimits`. Extend the execution tests and corpus
+alongside syntax changes; do not rely on parser-only tests to establish runtime support.

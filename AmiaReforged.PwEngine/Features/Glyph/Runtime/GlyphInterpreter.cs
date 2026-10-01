@@ -11,6 +11,7 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime;
 /// </summary>
 public class GlyphInterpreter
 {
+    private sealed class ExecutionStoppedException : Exception;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public event Action<GlyphExecutionContext>? ExecutionCompleted;
@@ -65,7 +66,7 @@ public class GlyphInterpreter
 
         Trace(context, $"Execution completed. Steps: {context.ExecutionStepCount}");
         ExecutionCompleted?.Invoke(context);
-        return true;
+        return !context.ExecutionHalted;
     }
 
     /// <summary>
@@ -113,13 +114,13 @@ public class GlyphInterpreter
 
         Trace(context, $"Stage '{stageTypeId}' completed. Steps: {context.ExecutionStepCount}");
         ExecutionCompleted?.Invoke(context);
-        return true;
+        return !context.ExecutionHalted;
     }
 
     /// <summary>
     /// Follows the execution chain starting from a specific output Exec pin on a node.
     /// Uses a stack of <see cref="GlyphExecFrame"/>s to support multi-branch flow control
-    /// (Sequence) and loops (ForEach).
+    /// (Sequence) and loop continuations.
     /// </summary>
     private async Task FollowExecChain(
         GlyphNodeInstance sourceNode,
@@ -131,96 +132,117 @@ public class GlyphInterpreter
         Guid currentNodeId = sourceNode.InstanceId;
         string currentPinId = execPinId;
 
-        while (true)
+        try
         {
-            // Check cancellation and step limit
-            if (context.CancellationToken.IsCancellationRequested)
+            while (true)
             {
-                Trace(context, "Execution cancelled via CancellationToken.");
-                return;
-            }
-
-            if (context.ExecutionStepCount >= context.MaxExecutionSteps)
-            {
-                Log.Warn("Glyph graph '{Name}' hit execution step limit ({Limit}). Possible infinite loop.",
-                    context.Graph.Name, context.MaxExecutionSteps);
-                Trace(context, $"Execution halted: step limit {context.MaxExecutionSteps} reached.");
-                return;
-            }
-
-            // Find the edge from the current Exec output pin
-            GlyphEdge? edge = context.Graph.GetEdgesFrom(currentNodeId, currentPinId).FirstOrDefault();
-            if (edge == null)
-            {
-                // No outgoing edge — this branch terminates.
-                // Check if there's a frame on the stack to resume.
-                (Guid nodeId, string pinId)? resume = await TryResumeFromStack(stack, context);
-                if (resume == null) return; // Stack empty — execution complete
-                (currentNodeId, currentPinId) = resume.Value;
-                continue;
-            }
-
-            // Get the target node
-            GlyphNodeInstance? targetNode = context.Graph.GetNode(edge.TargetNodeId);
-            if (targetNode == null)
-            {
-                Log.Warn("Glyph edge targets non-existent node {NodeId}.", edge.TargetNodeId);
-                (Guid nodeId, string pinId)? resume = await TryResumeFromStack(stack, context);
-                if (resume == null) return;
-                (currentNodeId, currentPinId) = resume.Value;
-                continue;
-            }
-
-            // Execute the target node
-            GlyphNodeResult result = await ExecuteNode(targetNode, context);
-
-            // Handle Break signal — unwind to the nearest enclosing loop frame
-            if (result.IsBreak)
-            {
-                (Guid nodeId, string pinId)? breakResume = HandleBreak(stack, context);
-                if (breakResume == null) return; // No enclosing loop — terminate branch
-                (currentNodeId, currentPinId) = breakResume.Value;
-                continue;
-            }
-
-            if (result.NextExecPinId == null)
-            {
-                // Node terminates this branch — check stack
-                (Guid nodeId, string pinId)? resume = await TryResumeFromStack(stack, context);
-                if (resume == null) return;
-                (currentNodeId, currentPinId) = resume.Value;
-                continue;
-            }
-
-            // Handle multi-branch results (Sequence-style)
-            if (result.BranchPinIds is { Length: > 0 })
-            {
-                // Push a frame with the remaining branches
-                GlyphExecFrame frame = new()
+                // Check cancellation and step limit
+                if (context.CancellationToken.IsCancellationRequested)
                 {
-                    Node = targetNode,
-                    RemainingBranches = new Queue<string>(result.BranchPinIds),
-                };
-                stack.Push(frame);
-                Trace(context, $"Pushed Sequence frame for node {targetNode.TypeId} with {result.BranchPinIds.Length} remaining branches.");
-            }
+                    context.ExecutionHalted = true;
+                    Trace(context, "Execution cancelled via CancellationToken.");
+                    return;
+                }
 
-            // Handle loop results (ForEach-style)
-            if (result.IsLoopNode)
-            {
-                // Push a loop frame — the interpreter will re-execute this node when the body terminates
-                GlyphExecFrame loopFrame = new()
+                if (context.ExecutionStepCount >= context.MaxExecutionSteps)
                 {
-                    Node = targetNode,
-                    IsLoop = true,
-                };
-                stack.Push(loopFrame);
-                Trace(context, $"Pushed Loop frame for node {targetNode.TypeId}.");
-            }
+                    Log.Warn("Glyph graph '{Name}' hit execution step limit ({Limit}). Possible infinite loop.",
+                        context.Graph.Name, context.MaxExecutionSteps);
+                    context.ExecutionHalted = true;
+                    Trace(context, $"Execution halted: step limit {context.MaxExecutionSteps} reached.");
+                    return;
+                }
 
-            // Continue to the next node in the chain
-            currentNodeId = targetNode.InstanceId;
-            currentPinId = result.NextExecPinId;
+                // Find the edge from the current Exec output pin
+                GlyphEdge? edge = context.Graph.GetEdgesFrom(currentNodeId, currentPinId).FirstOrDefault();
+                if (edge == null)
+                {
+                    // No outgoing edge — this branch terminates.
+                    // Check if there's a frame on the stack to resume.
+                    (Guid nodeId, string pinId)? resume = await TryResumeFromStack(stack, context);
+                    if (resume == null) return; // Stack empty — execution complete
+                    (currentNodeId, currentPinId) = resume.Value;
+                    continue;
+                }
+
+                // Get the target node
+                GlyphNodeInstance? targetNode = context.Graph.GetNode(edge.TargetNodeId);
+                if (targetNode == null)
+                {
+                    Log.Warn("Glyph edge targets non-existent node {NodeId}.", edge.TargetNodeId);
+                    (Guid nodeId, string pinId)? resume = await TryResumeFromStack(stack, context);
+                    if (resume == null) return;
+                    (currentNodeId, currentPinId) = resume.Value;
+                    continue;
+                }
+
+                // Execute the target node
+                GlyphNodeResult result = await ExecuteNode(targetNode, context);
+
+                if (context.ExecutionHalted) return;
+                if (result.IsContinue)
+                {
+                    while (stack.Count > 0 && !stack.Peek().IsLoop) stack.Pop();
+                    var resume = await TryResumeFromStack(stack, context);
+                    if (resume == null) return;
+                    (currentNodeId, currentPinId) = resume.Value;
+                    continue;
+                }
+
+                // Unwind to the nearest enclosing loop frame.
+                if (result.IsBreak)
+                {
+                    (Guid nodeId, string pinId)? breakResume = HandleBreak(stack, context);
+                    if (breakResume == null) return; // No enclosing loop — terminate branch
+                    (currentNodeId, currentPinId) = breakResume.Value;
+                    continue;
+                }
+
+                if (result.NextExecPinId == null)
+                {
+                    // Node terminates this branch — check stack
+                    (Guid nodeId, string pinId)? resume = await TryResumeFromStack(stack, context);
+                    if (resume == null) return;
+                    (currentNodeId, currentPinId) = resume.Value;
+                    continue;
+                }
+
+                // Handle multi-branch results (Sequence-style)
+                if (result.BranchPinIds is { Length: > 0 })
+                {
+                    // Push a frame with the remaining branches
+                    GlyphExecFrame frame = new()
+                    {
+                        Node = targetNode,
+                        RemainingBranches = new Queue<string>(result.BranchPinIds),
+                    };
+                    stack.Push(frame);
+                    Trace(context, $"Pushed Sequence frame for node {targetNode.TypeId} with {result.BranchPinIds.Length} remaining branches.");
+                }
+
+                // Handle loop continuations
+                if (result.IsLoopNode)
+                {
+                    // Push a loop frame — the interpreter will re-execute this node when the body terminates
+                    GlyphExecFrame loopFrame = new()
+                    {
+                        Node = targetNode,
+                        IsLoop = true,
+                        CompletedPinId = result.CompletedPinId,
+                    };
+                    stack.Push(loopFrame);
+                    Trace(context, $"Pushed Loop frame for node {targetNode.TypeId}.");
+                }
+
+                // Continue to the next node in the chain
+                currentNodeId = targetNode.InstanceId;
+                currentPinId = result.NextExecPinId;
+            }
+        }
+        finally
+        {
+            context.ActiveStack = null;
+            context.LoopStates.Clear();
         }
     }
 
@@ -246,6 +268,7 @@ public class GlyphInterpreter
                 ClearLoopBodyCaches(frame, context);
 
                 GlyphNodeResult loopResult = await ExecuteNode(frame.Node, context);
+                if (context.ExecutionHalted) return null;
 
                 if (loopResult.IsLoopNode && loopResult.NextExecPinId != null)
                 {
@@ -300,7 +323,8 @@ public class GlyphInterpreter
 
             if (frame.IsLoop)
             {
-                // Clean up the loop's iteration state (ForEach stores list + index in Variables)
+                context.LoopStates.Remove(frame.Node.InstanceId);
+                // Compatibility cleanup for existing custom/legacy foreach executors.
                 string listKey = $"__foreach_{frame.Node.InstanceId}_list";
                 string indexKey = $"__foreach_{frame.Node.InstanceId}_index";
                 context.Variables.Remove(listKey);
@@ -313,7 +337,7 @@ public class GlyphInterpreter
                 Trace(context, $"Break: unwound to loop node {frame.Node.TypeId}, resuming via 'completed' pin.");
 
                 // Resume from the loop node's "completed" pin
-                return (frame.Node.InstanceId, "completed");
+                return (frame.Node.InstanceId, frame.CompletedPinId);
             }
 
             // Non-loop frame (e.g., Sequence) — pop and keep unwinding
@@ -366,7 +390,7 @@ public class GlyphInterpreter
     }
 
     /// <summary>
-    /// Records a node ID in the innermost loop frame's <see cref="GlyphExecFrame.LoopBodyNodeIds"/>
+    /// Records a node ID in the enclosing loop frames' <see cref="GlyphExecFrame.LoopBodyNodeIds"/>
     /// so its cached outputs can be invalidated on the next iteration.
     /// </summary>
     private static void RecordNodeInLoopFrame(Stack<GlyphExecFrame> stack, Guid nodeId)
@@ -376,7 +400,6 @@ public class GlyphInterpreter
             if (frame.IsLoop)
             {
                 frame.LoopBodyNodeIds.Add(nodeId);
-                return;
             }
         }
     }
@@ -388,12 +411,18 @@ public class GlyphInterpreter
         GlyphNodeInstance node,
         GlyphExecutionContext context)
     {
+        if (context.ExecutionHalted || context.CancellationToken.IsCancellationRequested || context.ExecutionStepCount >= context.MaxExecutionSteps)
+        {
+            context.ExecutionHalted = true;
+            Trace(context, $"Execution halted: cancellation or step limit {context.MaxExecutionSteps} reached.");
+            return GlyphNodeResult.Done();
+        }
         context.ExecutionStepCount++;
         if (context.Graph.SourceMap.TryGetValue(node.InstanceId, out var source))
             Trace(context, $"{source.SourceId}:{source.Line}:{source.Column}");
         Trace(context, $"Step {context.ExecutionStepCount}: Executing node '{node.TypeId}' ({node.InstanceId})");
 
-        // Record this node in the innermost loop frame so its cached outputs
+        // Record this node in all enclosing loop frames so its cached outputs
         // are invalidated when the loop advances to the next iteration.
         if (context.ActiveStack != null)
         {
@@ -410,17 +439,22 @@ public class GlyphInterpreter
         // Create the input resolver — lazily evaluates data pins by tracing edges
         async Task<object?> ResolveInput(string inputPinId)
         {
-            return await ResolveInputPinValue(node, inputPinId, context);
+            object? value = await ResolveInputPinValue(node, inputPinId, context);
+            if (context.ExecutionHalted) throw new ExecutionStoppedException();
+            return value;
         }
 
         try
         {
             GlyphNodeResult result = await executor.ExecuteAsync(node, context, ResolveInput);
+            if (context.ExecutionHalted) return GlyphNodeResult.Done();
+            if (result.WrittenLocal is { } slot) InvalidateLocalReads(slot, context);
 
             // Cache any output values for downstream consumers
             foreach (KeyValuePair<string, object?> kvp in result.OutputValues)
             {
-                context.CachePinValue(node.InstanceId, kvp.Key, kvp.Value);
+                if (_registry.Get(node.TypeId)?.CacheOutputs != false)
+                    context.CachePinValue(node.InstanceId, kvp.Key, kvp.Value);
                 Trace(context, $"  Output [{kvp.Key}] = {FormatValue(kvp.Value)}");
             }
 
@@ -431,12 +465,43 @@ public class GlyphInterpreter
 
             return result;
         }
+        catch (ExecutionStoppedException) { return GlyphNodeResult.Done(); }
         catch (Exception ex)
         {
             Log.Error(ex, "[Glyph] Error executing node '{TypeId}' ({InstanceId}) in graph '{Graph}'.",
                 node.TypeId, node.InstanceId, context.Graph.Name);
             Trace(context, $"ERROR in node {node.TypeId}: {ex.Message}");
+            context.ExecutionHalted = true;
             return GlyphNodeResult.Done();
+        }
+    }
+
+    private void RecordLazyDependencies(GlyphExecutionContext context, Guid root)
+    {
+        Stack<Guid> pending = new(); pending.Push(root);
+        HashSet<Guid> visited = [];
+        while (pending.TryPop(out Guid id))
+        {
+            if (!visited.Add(id) || context.Graph.GetNode(id) is not { } node) continue;
+            // Loop elements and captured action outputs belong to their producing frame.
+            if (_registry.Get(node.TypeId)?.Archetype is not (GlyphNodeArchetype.PureFunction or GlyphNodeArchetype.ContextGetter)) continue;
+            RecordNodeInLoopFrame(context.ActiveStack!, id);
+            foreach (var edge in context.Graph.Edges.Where(e => e.TargetNodeId == id)) pending.Push(edge.SourceNodeId);
+        }
+    }
+
+    private void InvalidateLocalReads(int slot, GlyphExecutionContext context)
+    {
+        Queue<Guid> pending = new(context.Graph.Nodes.Where(n => n.TypeId.StartsWith("local.read_", StringComparison.Ordinal) &&
+            n.PropertyOverrides.GetValueOrDefault("slot") == slot.ToString(CultureInfo.InvariantCulture)).Select(n => n.InstanceId));
+        HashSet<Guid> visited = [];
+        while (pending.TryDequeue(out Guid id))
+        {
+            if (!visited.Add(id) || context.Graph.GetNode(id) is not { } node) continue;
+            // An eagerly captured action result is a snapshot, not a lazy dependency.
+            if (_registry.Get(node.TypeId)?.Archetype is not (GlyphNodeArchetype.PureFunction or GlyphNodeArchetype.ContextGetter)) continue;
+            ClearNodeOutputCache(node, context);
+            foreach (var edge in context.Graph.Edges.Where(e => e.SourceNodeId == id)) pending.Enqueue(edge.TargetNodeId);
         }
     }
 
@@ -467,8 +532,11 @@ public class GlyphInterpreter
             return defaultVal;
         }
 
-        // Check the cache first
-        if (context.TryGetCachedPinValue(edge.SourceNodeId, edge.SourcePinId, out object? cachedValue))
+        // Track dependencies even on a cache hit: a lazy expression evaluated before a
+        // nested loop still needs invalidation when either enclosing loop advances.
+        if (context.ActiveStack != null) RecordLazyDependencies(context, edge.SourceNodeId);
+        bool cacheable = context.Graph.GetNode(edge.SourceNodeId) is { } producer && _registry.Get(producer.TypeId)?.CacheOutputs != false;
+        if (cacheable && context.TryGetCachedPinValue(edge.SourceNodeId, edge.SourcePinId, out object? cachedValue))
         {
             Trace(context, $"  Input [{inputPinId}] resolved from cache (source {edge.SourceNodeId}:{edge.SourcePinId}): {FormatValue(cachedValue)}");
             return cachedValue;

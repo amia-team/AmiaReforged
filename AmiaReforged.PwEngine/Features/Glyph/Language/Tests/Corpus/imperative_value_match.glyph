@@ -1,0 +1,11 @@
+glyph inspect_target : interaction {
+    completed {
+        let target = player.get_nearest_object_by_type("creature")
+        match target.get_object_type() {
+            OBJECT_TYPE.CREATURE { message(player, "Creature") }
+            OBJECT_TYPE.DOOR { message(player, "Door") }
+            _ { message(player, "Other") }
+        }
+        match player.get_tag() { "quest_actor" { message(player, "Quest actor") } }
+    }
+}

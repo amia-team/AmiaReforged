@@ -1,0 +1,8 @@
+glyph local_loop : interaction {
+    completed {
+        player.set_local_int("remaining", 5)
+        while player.get_local_int("remaining") > 0 {
+            player.set_local_int("remaining", player.get_local_int("remaining") - 1)
+        }
+    }
+}

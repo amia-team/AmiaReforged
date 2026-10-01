@@ -78,7 +78,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         foreach (TypeDeclarationSyntax declaration in declarations)
         {
             if (BuiltinType(declaration.Name) != null ||
-                !_userTypes.TryAdd(declaration.Name, new(declaration.Name)))
+                !_userTypes.TryAdd(declaration.Name, new(declaration.Name, GlyphDataType.Aggregate)))
                 Error("GLYPH2006", $"Duplicate or reserved type '{declaration.Name}'.", declaration.Span);
         }
 
@@ -201,9 +201,51 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
                 return prefix.Count == 0 ? null : new BoundBlock(prefix, let.Span);
             }
 
+            case VarStatementSyntax variable:
+            {
+                BoundExpression value = Expression(variable.Value);
+                if (value.Type == GlyphTypeSymbol.Void)
+                    Error("GLYPH2004", "A variable initializer must produce a value.", variable.Span);
+                int symbol = _nextSymbol++;
+                if (!_scopes.Peek().TryAdd(variable.Name, new BoundVariableRead(symbol, value.Type, variable.Span)))
+                    Error("GLYPH2006", $"Duplicate local '{variable.Name}'.", variable.Span);
+                return new BoundVar(symbol, value, variable.Span);
+            }
+
+            case ContinueStatementSyntax cont:
+                if (_loops == 0) Error("GLYPH3004", "continue requires an enclosing loop.", cont.Span);
+                return new BoundContinue(cont.Span);
+
+            case WhileStatementSyntax loop:
+            {
+                BoundExpression condition = Expression(loop.Condition);
+                Require(condition, GlyphTypeSymbol.Bool);
+                _loops++;
+                BoundBlock body = Block(loop.Body);
+                _loops--;
+                return new BoundWhile(condition, body, loop.Span);
+            }
+
+            case ForRangeStatementSyntax loop:
+            {
+                BoundExpression start = IntegerRangeExpression(loop.Start), end = IntegerRangeExpression(loop.End);
+                BoundExpression? step = loop.Step == null ? null : IntegerRangeExpression(loop.Step);
+                RequireInteger(start); RequireInteger(end);
+                if (step != null) RequireInteger(step);
+                if (ConstantInteger(step) == 0)
+                    Error("GLYPH2014", "A range step cannot be zero.", loop.Step!.Span);
+                int symbol = _nextSymbol++;
+                _scopes.Push(new(StringComparer.Ordinal) { [loop.Name] = new BoundLoopElement(symbol, loop.Span, GlyphTypeSymbol.Int) });
+                _loops++;
+                BoundBlock body = Block(loop.Body);
+                _loops--;
+                _scopes.Pop();
+                return new BoundForRange(symbol, start, end, loop.Inclusive, step, body, loop.Span);
+            }
+
             case BreakStatementSyntax br:
                 if (_loops == 0)
-                    Error("GLYPH3004", "break requires an enclosing foreach.", br.Span);
+                    Error("GLYPH3004", "break requires an enclosing loop.", br.Span);
                 return new BoundBreak(br.Span);
 
             case IfStatementSyntax conditional:
@@ -221,7 +263,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
             {
                 BoundExpression list = Expression(loop.List);
                 if (list.Type.RuntimeType != GlyphDataType.List || list.Type.ElementType == null)
-                    Error("GLYPH2004", "foreach requires a typed list.", loop.Span);
+                    Error("GLYPH2004", "for/foreach requires a typed list.", loop.Span);
                 int symbol = _nextSymbol++;
 
                 _scopes.Push(new(StringComparer.Ordinal)
@@ -263,97 +305,133 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         }
     }
 
+    // Range syntax has an integer context. Preserve ordinary expression arithmetic's
+    // existing Float semantics while retaining integral arithmetic for range cursors.
+    private BoundExpression IntegerRangeExpression(ExpressionSyntax syntax) => Integral(Expression(syntax));
+    private static BoundExpression Integral(BoundExpression value)
+    {
+        if (value is BoundUnary { Operator: "+" or "-" } unary)
+        {
+            var operand = Integral(unary.Operand);
+            return unary with { Operand = operand, Type = operand.Type == GlyphTypeSymbol.Int ? GlyphTypeSymbol.Int : unary.Type };
+        }
+        if (value is BoundBinary { Operator: "+" or "-" or "*" or "%" } binary)
+        {
+            var left = Integral(binary.Left); var right = Integral(binary.Right);
+            return binary with { Left = left, Right = right, Type = left.Type == GlyphTypeSymbol.Int && right.Type == GlyphTypeSymbol.Int ? GlyphTypeSymbol.Int : binary.Type };
+        }
+        return value;
+    }
+
+    private void RequireInteger(BoundExpression value)
+    {
+        if (value.Type != GlyphTypeSymbol.Int && value.Type != GlyphTypeSymbol.Error)
+            Error("GLYPH2004", "Range bounds and step must be Int.", value.Span);
+    }
+
+    private static long? ConstantInteger(BoundExpression? value) => value switch
+    {
+        BoundLiteral { Value: int number } => number,
+        BoundUnary { Operator: "-" } unary when ConstantInteger(unary.Operand) is { } n => -n,
+        BoundUnary { Operator: "+" } unary => ConstantInteger(unary.Operand),
+        BoundBinary binary when ConstantInteger(binary.Left) is { } l && ConstantInteger(binary.Right) is { } r =>
+            binary.Operator switch { "+" => l + r, "-" => l - r, "*" => l * r, "%" when r != 0 => l % r, _ => null },
+        _ => null
+    };
+
     private BoundStatement Match(MatchStatementSyntax syntax)
     {
         BoundExpression value = Expression(syntax.Value);
+        _adts.TryGetValue(value.Type.Name, out GlyphAdtDefinition? adt);
+        if (adt == null && value.Type.RuntimeType is not (GlyphDataType.Int or GlyphDataType.Bool or GlyphDataType.String or GlyphDataType.NwObject))
+            Error("GLYPH2010", $"match requires an ADT or scalar value, got {value.Type.Name}.", syntax.Value.Span);
 
-        if (!_adts.TryGetValue(value.Type.Name, out GlyphAdtDefinition? adt))
-        {
-            Error("GLYPH2010", $"match requires an ADT value, got {value.Type.Name}.", syntax.Value.Span);
-            return new BoundBlock([], syntax.Span);
-        }
-
-        BoundVariant? selected = value as BoundVariant;
-        if (selected == null)
-        {
-            Error(
-                "GLYPH2011",
-                "This Glyph version can only match an ADT variant constructed in source. " +
-                "Dynamic runtime ADT values are reserved for the runtime-aggregate slice.",
-                syntax.Value.Span);
-        }
-
-        HashSet<string> seen = new(StringComparer.Ordinal);
-        BoundBlock? selectedBody = null;
-
+        int symbol = _nextSymbol++;
+        BoundExpression captured = new BoundVariableRead(symbol, value.Type, syntax.Value.Span, Mutable: false);
+        HashSet<string> variants = new(StringComparer.Ordinal);
+        HashSet<(GlyphTypeSymbol, object)> constants = [];
+        bool wildcard = false;
+        List<BoundMatchArm> arms = [];
         foreach (MatchArmSyntax arm in syntax.Arms)
         {
-            GlyphVariantDefinition? variant = adt.Variants.FirstOrDefault(v => v.Name == arm.Variant);
-
-            if (variant == null)
+            Dictionary<string, BoundExpression> scope = new(StringComparer.Ordinal);
+            BoundPattern pattern = new BoundWildcardPattern();
+            if (wildcard)
+                Error("GLYPH2010", "Wildcard must be the last match arm.", arm.Span);
+            switch (arm.Pattern)
             {
-                Error("GLYPH2010", $"Unknown variant '{adt.Name}.{arm.Variant}'.", arm.Span);
-                Block(arm.Body);
-                continue;
-            }
-
-            if (!seen.Add(arm.Variant))
-                Error("GLYPH2010", $"Duplicate match arm '{arm.Variant}'.", arm.Span);
-
-            Dictionary<string, BoundExpression> patternScope = new(StringComparer.Ordinal);
-            HashSet<string> boundNames = new(StringComparer.Ordinal);
-
-            foreach (string binding in arm.Bindings)
-            {
-                if (!boundNames.Add(binding))
+                case WildcardPatternSyntax:
+                    if (wildcard) Error("GLYPH2010", "Duplicate wildcard arm.", arm.Span);
+                    wildcard = true;
+                    break;
+                case ValuePatternSyntax scalar:
                 {
-                    Error("GLYPH2010", $"Duplicate pattern binding '{binding}'.", arm.Span);
-                    continue;
+                    BoundExpression constant = Expression(scalar.Value);
+                    if (constant is BoundUnary { Operator: "+" or "-", Operand: BoundLiteral { Value: int } } && ConstantInteger(constant) is { } integer && integer is >= int.MinValue and <= int.MaxValue)
+                        constant = new BoundLiteral((int)integer, GlyphTypeSymbol.Int, scalar.Span);
+                    if (adt != null)
+                        Error("GLYPH2010", "ADT matches require variant patterns.", arm.Span);
+                    if (constant is not BoundLiteral)
+                        Error("GLYPH2010", "Value patterns must be literals or resolved constants.", scalar.Span);
+                    if (constant.Type != value.Type && constant.Type != GlyphTypeSymbol.Error)
+                        Error("GLYPH2004", $"Pattern type {constant.Type.Name} does not match {value.Type.Name}.", scalar.Span);
+                    object? key = constant is BoundLiteral literal ? literal.Value : ConstantInteger(constant);
+                    if (key != null && !constants.Add((constant.Type, key)))
+                        Error("GLYPH2010", "Duplicate value match arm.", arm.Span);
+                    pattern = new BoundValuePattern(constant);
+                    break;
                 }
-
-                GlyphFieldSymbol? field = variant.Fields.FirstOrDefault(f => f.Name == binding);
-                if (field == null)
+                case VariantPatternSyntax variantPattern:
                 {
-                    Error("GLYPH2010", $"Variant '{adt.Name}.{variant.Name}' has no field '{binding}'.", arm.Span);
-                    continue;
+                    GlyphVariantDefinition? variant = adt?.Variants.FirstOrDefault(v => v.Name == variantPattern.Variant);
+                    if (variant == null)
+                    {
+                        Error("GLYPH2010", $"Unknown variant '{value.Type.Name}.{variantPattern.Variant}'.", arm.Span);
+                        break;
+                    }
+                    if (!variants.Add(variant.Name)) Error("GLYPH2010", $"Duplicate match arm '{variant.Name}'.", arm.Span);
+                    HashSet<string> bindings = new(StringComparer.Ordinal);
+                    foreach (string binding in variantPattern.Bindings)
+                    {
+                        if (!bindings.Add(binding))
+                        { Error("GLYPH2010", $"Duplicate pattern binding '{binding}'.", arm.Span); continue; }
+                        GlyphFieldSymbol? field = variant.Fields.FirstOrDefault(f => f.Name == binding);
+                        if (field == null)
+                        { Error("GLYPH2010", $"Variant '{adt!.Name}.{variant.Name}' has no field '{binding}'.", arm.Span); continue; }
+                        scope[binding] = new BoundAggregateField(captured, binding, field.Type, arm.Span);
+                    }
+                    pattern = new BoundVariantPattern(adt!.Name, variant.Name);
+                    break;
                 }
-
-                BoundExpression bindingValue =
-                    selected != null &&
-                    selected.Variant.Name == variant.Name &&
-                    selected.Fields.TryGetValue(binding, out BoundExpression? actual)
-                        ? actual
-                        : new BoundPlaceholder(field.Type, arm.Span);
-
-                patternScope[binding] = bindingValue;
             }
-
-            _scopes.Push(patternScope);
-            BoundBlock body;
-            try
-            {
-                body = Block(arm.Body);
-            }
-            finally
-            {
-                _scopes.Pop();
-            }
-
-            if (selected != null && selected.Variant.Name == variant.Name)
-                selectedBody = body;
+            _scopes.Push(scope);
+            BoundBlock body = Block(arm.Body);
+            _scopes.Pop();
+            arms.Add(new(pattern, body, arm.Span));
         }
-
-        foreach (GlyphVariantDefinition variant in adt.Variants)
-        {
-            if (!seen.Contains(variant.Name))
-                Error("GLYPH2010", $"Non-exhaustive match on '{adt.Name}'; missing variant '{variant.Name}'.", syntax.Span);
-        }
-
-        return selectedBody ?? new BoundBlock([], syntax.Span);
+        if (adt != null && !wildcard)
+            foreach (GlyphVariantDefinition variant in adt.Variants)
+                if (!variants.Contains(variant.Name))
+                    Error("GLYPH2010", $"Non-exhaustive match on '{adt.Name}'; missing variant '{variant.Name}'.", syntax.Span);
+        return new BoundMatch(symbol, value, arms, syntax.Span);
     }
 
     private BoundStatement? Assignment(AssignmentStatementSyntax assignment)
     {
+        if (assignment.Target is NameExpressionSyntax localName)
+        {
+            BoundExpression? local = _scopes.Select(scope => scope.GetValueOrDefault(localName.Name)).FirstOrDefault(v => v != null);
+            if (local != null)
+            {
+                if (local is not BoundVariableRead { Mutable: true } variable)
+                { Error("GLYPH2008", "Only var locals can be assigned; let, loop and pattern bindings are immutable.", assignment.Span); return null; }
+                ExpressionSyntax rhs = assignment.Operator == "=" ? assignment.Value :
+                    new BinaryExpressionSyntax(assignment.Target, assignment.Operator[..1], assignment.Value, assignment.Span);
+                BoundExpression assignedValue = Expression(rhs);
+                Require(assignedValue, variable.Type);
+                return new BoundVariableAssignment(variable.SymbolId, variable.Type, assignedValue, assignment.Span);
+            }
+        }
         string? name = Path(assignment.Target);
         string? setter = name == null ? null : catalog.Setters.GetValueOrDefault(name);
 
@@ -374,7 +452,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
 
         if (setter == null)
         {
-            Error("GLYPH2008", "let bindings are immutable; only interaction state and metadata support assignment.", assignment.Span);
+            Error("GLYPH2008", "Assignment requires a var local or registered writable state; let bindings are immutable.", assignment.Span);
             return null;
         }
 
@@ -524,40 +602,17 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         if (!TryAggregateReceiver(syntax.Receiver, out BoundExpression receiver))
             return false;
 
-        switch (receiver)
+        if (!_structs.TryGetValue(receiver.Type.Name, out GlyphStructDefinition? definition)) return false;
+        GlyphFieldSymbol? field = definition.Fields.FirstOrDefault(f => f.Name == syntax.Name);
+        if (field == null)
         {
-            case BoundStruct structure:
-                if (structure.Fields.TryGetValue(syntax.Name, out BoundExpression? fieldValue))
-                {
-                    value = fieldValue;
-                    return true;
-                }
-
-                Error("GLYPH3002", $"Struct '{structure.Definition.Name}' has no field '{syntax.Name}'.", syntax.Span);
-                value = new BoundError(syntax.Span);
-                return true;
-
-            case BoundPlaceholder placeholder
-                when _structs.TryGetValue(placeholder.Type.Name, out GlyphStructDefinition? definition):
-            {
-                GlyphFieldSymbol? field = definition.Fields.FirstOrDefault(f => f.Name == syntax.Name);
-
-                if (field == null)
-                {
-                    Error("GLYPH3002", $"Struct '{definition.Name}' has no field '{syntax.Name}'.", syntax.Span);
-                    value = new BoundError(syntax.Span);
-                }
-                else
-                {
-                    value = new BoundPlaceholder(field.Type, syntax.Span);
-                }
-
-                return true;
-            }
-
-            default:
-                return false;
+            Error("GLYPH3002", $"Struct '{definition.Name}' has no field '{syntax.Name}'.", syntax.Span);
+            value = new BoundError(syntax.Span);
         }
+        else value = receiver is BoundStruct structure
+            ? structure.Fields[syntax.Name]
+            : new BoundAggregateField(receiver, syntax.Name, field.Type, syntax.Span);
+        return true;
     }
 
     private bool TryAggregateReceiver(ExpressionSyntax syntax, out BoundExpression value)
@@ -583,7 +638,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
             case InvocationExpressionSyntax invocation:
             {
                 string? path = Path(invocation.Function);
-                if (!IsConstructorName(path)) return false;
+                if (!IsConstructorName(path) && globals?.GetFunction(path ?? "") == null && catalog.Find(path ?? "")?.ReturnType.RuntimeType != GlyphDataType.Aggregate) return false;
                 value = Call(invocation);
                 return true;
             }
@@ -814,7 +869,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
             Error("GLYPH3003", $"'{name}' is unavailable in stage '{_stage}'.", span);
 
         if (name == "fail" && _loops > 0)
-            Error("GLYPH3003", "fail inside foreach is not supported; fail before or after the loop.", span);
+            Error("GLYPH3003", "fail inside loops is not supported; fail before or after the loop.", span);
 
         if (symbol.Strategy == GlyphLoweringStrategy.Action && symbol.OutputPin == null && !allowAction ||
             symbol.Strategy == GlyphLoweringStrategy.PredicateBranch && !allowPredicate)
@@ -934,6 +989,11 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         if (value.Type == GlyphTypeSymbol.Error || type == GlyphTypeSymbol.Error) return;
         if (value.Type == type) return;
 
+        if (value.Type.RuntimeType is GlyphDataType.Aggregate or GlyphDataType.List || type.RuntimeType is GlyphDataType.Aggregate or GlyphDataType.List)
+        {
+            Error("GLYPH2004", $"Cannot convert {value.Type.Name} to {type.Name}.", value.Span);
+            return;
+        }
         if (value.Type.RuntimeType is { } from &&
             type.RuntimeType is { } to &&
             GlyphIrValidator.CanConnect(from, to))

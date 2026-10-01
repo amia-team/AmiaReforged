@@ -21,7 +21,9 @@ public sealed record GlyphTypeSymbol(
         Objects = new("List<Object>", GlyphDataType.List, Object),
         Effects = new("List<Effect>", GlyphDataType.List, Effect);
 
-    public static GlyphTypeSymbol From(GlyphPin pin) => pin.DataType == GlyphDataType.List
+    public static GlyphTypeSymbol From(GlyphPin pin) => pin.DataType == GlyphDataType.Aggregate && pin.AggregateTypeName != null
+        ? new(pin.AggregateTypeName, GlyphDataType.Aggregate)
+        : pin.DataType == GlyphDataType.List
         ? new($"List<{From(pin.ElementType ?? GlyphDataType.NwObject).Name}>", GlyphDataType.List, From(pin.ElementType ?? GlyphDataType.NwObject))
         : From(pin.DataType);
 
@@ -94,3 +96,17 @@ public sealed record BoundPlaceholder(
     SourceSpan Span) : BoundExpression(PlaceholderType, Span);
 
 public sealed record BoundSequence(IReadOnlyList<BoundLet> Prefix, BoundExpression Value, SourceSpan Span) : BoundExpression(Value.Type, Span);
+
+public sealed record BoundVar(int SymbolId, BoundExpression Value, SourceSpan Span) : BoundStatement(Span);
+public sealed record BoundVariableRead(int SymbolId, GlyphTypeSymbol ValueType, SourceSpan Span, bool Mutable = true) : BoundExpression(ValueType, Span);
+public sealed record BoundVariableAssignment(int SymbolId, GlyphTypeSymbol ValueType, BoundExpression Value, SourceSpan Span) : BoundStatement(Span);
+public sealed record BoundWhile(BoundExpression Condition, BoundBlock Body, SourceSpan Span) : BoundStatement(Span);
+public sealed record BoundForRange(int SymbolId, BoundExpression Start, BoundExpression End, bool Inclusive, BoundExpression? Step, BoundBlock Body, SourceSpan Span) : BoundStatement(Span);
+public sealed record BoundContinue(SourceSpan Span) : BoundStatement(Span);
+public sealed record BoundMatch(int SymbolId, BoundExpression Value, IReadOnlyList<BoundMatchArm> Arms, SourceSpan Span) : BoundStatement(Span);
+public sealed record BoundMatchArm(BoundPattern Pattern, BoundBlock Body, SourceSpan Span);
+public abstract record BoundPattern;
+public sealed record BoundWildcardPattern : BoundPattern;
+public sealed record BoundValuePattern(BoundExpression Value) : BoundPattern;
+public sealed record BoundVariantPattern(string TypeName, string Variant) : BoundPattern;
+public sealed record BoundAggregateField(BoundExpression Receiver, string Field, GlyphTypeSymbol FieldType, SourceSpan Span) : BoundExpression(FieldType, Span);

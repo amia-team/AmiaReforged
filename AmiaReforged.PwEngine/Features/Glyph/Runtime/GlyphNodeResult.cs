@@ -36,6 +36,7 @@ public class GlyphNodeResult
     /// Used by ForEach to loop the body N times, then follow CompletedPinId.
     /// </summary>
     public bool IsLoopNode { get; init; }
+    public string CompletedPinId { get; init; } = "completed";
 
     /// <summary>
     /// When true, signals the interpreter to break out of the innermost loop.
@@ -43,6 +44,9 @@ public class GlyphNodeResult
     /// cleans up loop state, and continues via the loop's "completed" pin.
     /// </summary>
     public bool IsBreak { get; init; }
+    public bool IsContinue { get; init; }
+    public int? WrittenLocal { get; init; }
+    public static GlyphNodeResult ContinueLoop() => new() { IsContinue = true };
 
     /// <summary>
     /// Creates a result that continues execution along the specified output Exec pin.
@@ -81,12 +85,13 @@ public class GlyphNodeResult
     /// then re-executes this node. When the executor decides the loop is done, it should return
     /// <see cref="Continue"/> with the completed pin instead.
     /// </summary>
-    public static GlyphNodeResult LoopBody(string loopBodyPinId, Dictionary<string, object?> outputs) =>
+    public static GlyphNodeResult LoopBody(string loopBodyPinId, Dictionary<string, object?> outputs, string completedPinId = "completed") =>
         new()
         {
             NextExecPinId = loopBodyPinId,
             OutputValues = outputs,
             IsLoopNode = true,
+            CompletedPinId = completedPinId,
         };
 
     /// <summary>

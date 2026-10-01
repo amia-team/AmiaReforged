@@ -1,0 +1,9 @@
+glyph loop_test : interaction {
+    completed {
+        var i = 0
+        while i < 10 {
+            player.set_local_int("loop_i", i)
+            i += 1
+        }
+    }
+}

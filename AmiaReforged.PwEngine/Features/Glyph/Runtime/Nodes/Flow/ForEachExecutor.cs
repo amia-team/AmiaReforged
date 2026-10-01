@@ -9,7 +9,7 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 /// Exposes the current element and index as output data pins during each iteration.
 /// After the loop completes, execution continues via the "completed" Exec output.
 /// <para>
-/// The executor manages its own iteration state via <see cref="GlyphExecutionContext.Variables"/>,
+/// The executor manages its own iteration state via <see cref="GlyphExecutionContext.LoopStates"/>,
 /// keyed by the node instance ID. On each execution:
 /// <list type="bullet">
 /// <item>First call: stores the list and sets index to 0, returns <see cref="GlyphNodeResult.LoopBody"/>.</item>
@@ -22,6 +22,8 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Flow;
 [GlyphNode]
 public partial class ForEachExecutor : IGlyphNodeExecutor
 {
+    private sealed record IterationState(IList<object?> Items, int Index);
+
     public const string NodeTypeId = "flow.for_each";
 
     public virtual string TypeId => NodeTypeId;
@@ -31,33 +33,19 @@ public partial class ForEachExecutor : IGlyphNodeExecutor
         GlyphExecutionContext context,
         Func<string, Task<object?>> resolveInput)
     {
-        string listKey = $"__foreach_{node.InstanceId}_list";
-        string indexKey = $"__foreach_{node.InstanceId}_index";
-
-        // Check if this is a re-entry (loop continuation) or first call
-        if (context.Variables.TryGetValue(listKey, out object? existingList) &&
-            context.Variables.TryGetValue(indexKey, out object? existingIndex))
+        if (context.LoopStates.TryGetValue(node.InstanceId, out object? existing))
         {
-            // Re-entry: advance to next iteration
-            IList<object?> items = (IList<object?>)existingList!;
-            int nextIndex = Convert.ToInt32(existingIndex) + 1;
-
-            if (nextIndex >= items.Count)
+            var state = (IterationState)existing;
+            int nextIndex = state.Index + 1;
+            if (nextIndex >= state.Items.Count)
             {
-                // Loop complete — clean up and signal completion
-                context.Variables.Remove(listKey);
-                context.Variables.Remove(indexKey);
+                context.LoopStates.Remove(node.InstanceId);
                 return GlyphNodeResult.Continue("completed");
             }
-
-            // Store updated index
-            context.Variables[indexKey] = nextIndex;
-
-            return GlyphNodeResult.LoopBody("loop_body", new Dictionary<string, object?>
+            context.LoopStates[node.InstanceId] = state with { Index = nextIndex };
+            return GlyphNodeResult.LoopBody("loop_body", new()
             {
-                ["element"] = items[nextIndex],
-                ["index"] = nextIndex,
-                ["count"] = items.Count,
+                ["element"] = state.Items[nextIndex], ["index"] = nextIndex, ["count"] = state.Items.Count
             });
         }
 
@@ -85,8 +73,7 @@ public partial class ForEachExecutor : IGlyphNodeExecutor
         }
 
         // Store iteration state
-        context.Variables[listKey] = inputItems;
-        context.Variables[indexKey] = 0;
+        context.LoopStates[node.InstanceId] = new IterationState(inputItems, 0);
 
         return GlyphNodeResult.LoopBody("loop_body", new Dictionary<string, object?>
         {

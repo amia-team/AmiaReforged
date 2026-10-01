@@ -28,6 +28,17 @@ internal static class GlyphBoundLimits
                     Push(loop.List);
                     Push(loop.Body);
                     break;
+                case BoundVar variable: Push(variable.Value); break;
+                case BoundVariableAssignment assignment: Push(assignment.Value); break;
+                case BoundWhile loop: Push(loop.Condition); Push(loop.Body); break;
+                case BoundForRange loop:
+                    Push(loop.Start); Push(loop.End); if (loop.Step != null) Push(loop.Step); Push(loop.Body); break;
+                case BoundMatch match:
+                    Push(match.Value); foreach (var arm in match.Arms) Push(arm); break;
+                case BoundMatchArm arm:
+                    Push(arm.Pattern); Push(arm.Body); break;
+                case BoundValuePattern pattern: Push(pattern.Value); break;
+                case BoundAggregateField field: Push(field.Receiver); break;
                 case BoundSequence sequence:
                     foreach (var let in sequence.Prefix) Push(let);
                     Push(sequence.Value);

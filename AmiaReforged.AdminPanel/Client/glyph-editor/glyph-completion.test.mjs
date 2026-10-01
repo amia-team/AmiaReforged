@@ -536,3 +536,19 @@ test("new pipeline event completions derive their stage list from metadata", () 
   const result = complete("glyph g : sample.pipeline { | }", true, catalog);
   assert.deepEqual(result.options.map(o => o.label), ["tick"]);
 });
+
+
+test("mutable locals and new loop forms participate in lexical completion", () => {
+  assert.ok(labels("glyph g : interaction { tick { var current = player current.| } }").includes("is_player"));
+  for (const loop of ["while true", "for i in 0..3", "for item in party.members", "foreach item in party.members"]) {
+    const options = labels(`glyph g : interaction { tick { ${loop} { | } } }`);
+    assert.ok(options.includes("break"), loop);
+    assert.ok(options.includes("continue"), loop);
+  }
+  assert.ok(labels("glyph g : interaction { tick { for item in party.members { item.| } } }").includes("is_player"));
+  const outside = labels("glyph g : interaction { tick { if true { var hidden = player } | } }");
+  assert.ok(!outside.includes("hidden"));
+  assert.ok(!outside.includes("continue"));
+  for (const keyword of ["var", "while", "for", "match"])
+    assert.ok(outside.includes(keyword), keyword);
+});
