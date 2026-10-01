@@ -41,8 +41,7 @@ public partial class GetCreatureNameExecutor : IGlyphNodeExecutor
     {
         TypeId = NodeTypeId, Source = "NWScript.GetName", Backend = "NWScript adapter",
         Exports = [
-            new("nwn.get_name", "name", ReceiverMethods: ["get_name"]), new("nwn.get_original_name", "original_name"),
-            new("creature.name", "name", null, PropertyAliases: [new("creature.name", "creature.name", "creature")])
+            new("nwn.get_name", "name"), new("nwn.get_original_name", "original_name"),
         ],
         DisplayName = "Get Creature Name",
         Category = "Getters",

@@ -66,7 +66,7 @@ API: `NWN.Core, Version=8193.37.4.0, Culture=neutral, PublicKeyToken=null`
 | `GetIsPC` | nwn.is_player | Explicit adapter preserving runtime semantics and published identities. |
 | `GetMaxHitPoints` | nwn.get_max_hit_points | Explicit adapter preserving runtime semantics and published identities. |
 | `GetName` | nwn.get_name | Explicit adapter preserving runtime semantics and published identities. |
-| `GetNearestObject` | nwn.get_nearest_object_by_type | Explicit origin and OBJECT_TYPE mask, preserving legacy string-based Object.nearest_object_by_type separately. |
+| `GetNearestObject` | nwn.get_nearest_object_by_type | Explicit origin and OBJECT_TYPE mask, with the curated string-filter adapter exposed separately as nwn.nearest_object_by_kind. |
 | `GetPositionFromLocation` | nwn.location_x | Explicit adapter preserving runtime semantics and published identities. |
 | `GetRacialType` | nwn.get_racial_type | Explicit adapter preserving runtime semantics and published identities. |
 | `GetResRef` | nwn.get_resref | Explicit adapter preserving runtime semantics and published identities. |

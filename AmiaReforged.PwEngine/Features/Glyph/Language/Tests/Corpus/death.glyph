@@ -1,6 +1,6 @@
 glyph vampiric_kill : encounter.on_creature_death {
     let killer = context.killer
-    if distance(killer, context.dead_creature) <= 10 {
+    if nwn.get_distance_between(killer, context.dead_creature) <= 10 {
         heal(killer, 10)
         floating_text(killer, "You absorb some of your foe's vitality.")
     }

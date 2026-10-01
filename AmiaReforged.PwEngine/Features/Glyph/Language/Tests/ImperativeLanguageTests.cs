@@ -200,7 +200,7 @@ public class ImperativeLanguageTests
         Assert.That(GlyphGraphSerializer.Serialize(a.CreateExecutionGraph()), Is.EqualTo(GlyphGraphSerializer.Serialize(b.CreateExecutionGraph())));
         await Run("for value in numbers() { if value == 2 { continue } record(value) }");
         Assert.That(_probe.Values, Is.EqualTo(new[] { 1, 3 }));
-        Compile("glyph effects : interaction { completed { for effect in player.effects() { player.remove_effect(effect) continue } } }");
+        Compile("glyph effects : interaction { completed { for effect in nwn.effects(player) { nwn.remove_effect(player, effect) continue } } }");
     }
 
     [TestCase("for")]

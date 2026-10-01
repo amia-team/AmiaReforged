@@ -68,7 +68,7 @@ public class GlobalSyntaxTests
     public void Function_parses_as_standalone_prelude()
     {
         const string source =
-            "fn nearest(origin: Object, kind: String): Object = Object.nearest_object_by_type(origin, kind)";
+            "fn nearest(origin: Object, kind: String): Object = nwn.nearest_object_by_kind(origin, kind)";
         var (lex, parse, unit) = Compile(source);
 
         Assert.That(lex, Is.Empty);
@@ -101,7 +101,7 @@ public class GlobalSyntaxTests
     {
         const string source =
             "const OBJECT_TRIGGER = \"trigger\";\n" +
-            "fn nearest(origin: Object, kind: String): Object = Object.nearest_object_by_type(origin, kind);\n" +
+            "fn nearest(origin: Object, kind: String): Object = nwn.nearest_object_by_kind(origin, kind);\n" +
             "struct Result { target: Object }\n" +
             "glyph test : interaction { tick {} }";
         var (lex, parse, unit) = Compile(source);
@@ -121,7 +121,7 @@ public class GlobalSyntaxTests
         const string source =
             "glyph vampiric_kill : encounter.on_creature_death {\n" +
             "    let killer = context.killer\n" +
-            "    if distance(killer, context.dead_creature) <= 10 { heal(killer, 10) }\n" +
+            "    if nwn.get_distance_between(killer, context.dead_creature) <= 10 { heal(killer, 10) }\n" +
             "}";
         var (lex, parse, unit) = Compile(source);
 

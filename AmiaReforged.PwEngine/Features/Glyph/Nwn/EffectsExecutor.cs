@@ -13,7 +13,7 @@ public sealed partial class EffectsExecutor : GlyphNodeBase
         Archetype = GlyphNodeArchetype.PureFunction,
         Parameters = [Pins.InObject("target", "Target")],
         Results = [Pins.Out("value", "Effects", GlyphDataType.List) with { ElementType = GlyphDataType.Effect }],
-        Exports = [new("nwn.effects", "value", ReceiverMethods: ["effects"])]
+        Exports = [new("nwn.effects", "value")]
     };
     public override string TypeId => Descriptor.TypeId;
     public override GlyphNodeDefinition CreateDefinition() => Descriptor.CreateDefinition();

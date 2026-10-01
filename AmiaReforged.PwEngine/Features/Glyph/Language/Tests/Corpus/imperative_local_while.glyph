@@ -1,8 +1,8 @@
 glyph local_loop : interaction {
     completed {
-        player.set_local_int("remaining", 5)
-        while player.get_local_int("remaining") > 0 {
-            player.set_local_int("remaining", player.get_local_int("remaining") - 1)
+        nwn.set_local_int(player, "remaining", 5)
+        while nwn.get_local_int(player, "remaining") > 0 {
+            nwn.set_local_int(player, "remaining", nwn.get_local_int(player, "remaining") - 1)
         }
     }
 }

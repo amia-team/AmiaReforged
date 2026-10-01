@@ -35,7 +35,11 @@ public sealed record GlyphFieldMetadataDto(string Name, string Type, string Desc
     string? Setter);
 public sealed record GlyphReceiverMethodMetadataDto(string Name, string ReceiverType, string CanonicalName,
     string Description, string ReturnType, string Kind, IReadOnlyList<GlyphParameterMetadataDto> Parameters,
-    IReadOnlyList<GlyphAvailabilityDto> AvailableIn);
+    IReadOnlyList<GlyphAvailabilityDto> AvailableIn)
+{
+    public string Policy { get; init; } = "None";
+    public string? Deprecated { get; init; }
+}
 
 public sealed record GlyphIndexerMetadataDto(string Name, string Getter, string Setter);
 
@@ -94,7 +98,7 @@ public static class GlyphLanguageMetadata
                     p.Id, p.Name, GlyphTypeSymbol.From(p).Name, p.DefaultValue == null, p.DefaultValue))
                     .ToArray(),
                 scopes.Where(s => Available(symbol, s.Event, s.Stage, null))
-                    .Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray());
+                    .Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray()) { Policy = rm.Policy.ToString(), Deprecated = symbol.Definition.Deprecated };
         }).ToArray();
         return new(GlyphLanguageVersion.Current, functions,
             Platform.GlyphEvents.All.Select(e => new GlyphEventMetadataDto(e.Name, e.EventType.ToString(), e.Category.ToString(),

@@ -2,14 +2,14 @@
 glyph inspect_nearby : interaction {
     completed {
         let target = nwn.get_nearest_object_by_type(player, OBJECT_TYPE.PLACEABLE)
-        if target.is_valid() {
-            let tag = target.get_tag()
-            let resref = target.get_resref()
-            let area = target.get_area()
-            target.set_local_string("inspected_tag", tag)
-            target.set_local_string("inspected_resref", resref)
-            target.set_local_object("inspected_area", area)
-            if player.is_player() { message(player, target.get_name()) }
+        if nwn.get_is_object_valid(target) {
+            let tag = nwn.get_tag(target)
+            let resref = nwn.get_resref(target)
+            let area = nwn.get_area(target)
+            nwn.set_local_string(target, "inspected_tag", tag)
+            nwn.set_local_string(target, "inspected_resref", resref)
+            nwn.set_local_object(target, "inspected_area", area)
+            if nwn.is_player(player) { message(player, nwn.get_name(target)) }
         }
     }
 }

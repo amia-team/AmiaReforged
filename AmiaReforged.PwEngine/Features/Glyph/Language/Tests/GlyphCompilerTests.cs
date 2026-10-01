@@ -31,7 +31,7 @@ public class GlyphCompilerTests
         // Regression: the `type` parameter name is lexed as a keyword token, yet the parser must
         // still read it as an identifier-shaped named-argument label rather than failing with
         // GLYPH1001 'Expected identifier'. The argument-name position is keyword-agnostic.
-        const string source = "glyph t : interaction { tick { let door = player.get_nearest_object_by_type(type: \"door\") } }";
+        const string source = "glyph t : interaction { tick { let door = nwn.nearest_object_by_kind(player, type: \"door\") } }";
         var parser = new GlyphParser(new GlyphLexer(source).Lex());
         var unit = parser.Parse();
         Assert.That(unit, Is.Not.Null);
@@ -41,10 +41,10 @@ public class GlyphCompilerTests
     [Test]
     public void excess_keyword_named_argument_reaches_the_binder_not_the_parser()
     {
-        // `origin` is supplied by the receiver, so the explicit `origin:` label is excess. This
+        // `origin` is supplied positionally, so the explicit `origin:` label is excess. This
         // must surface as GLYPH2003 from the binder, which requires the parser to have accepted
         // both keyword-shaped labels without a parse error first.
-        const string source = "glyph t : interaction { tick { let x = player.get_nearest_object_by_type(origin: creature, type: \"door\") } }";
+        const string source = "glyph t : interaction { tick { let x = nwn.nearest_object_by_kind(player, origin: creature, type: \"door\") } }";
         var parser = new GlyphParser(new GlyphLexer(source).Lex());
         parser.Parse();
         Assert.That(parser.Diagnostics.Select(d => d.Code), Does.Not.Contain("GLYPH1001"));
@@ -87,7 +87,7 @@ public class GlyphCompilerTests
     [TestCase("glyph a : encounter.before_group_spawn { heal(true, 4) }", "GLYPH2004")]
     [TestCase("glyph a : encounter.before_group_spawn { heal() }", "GLYPH2003")]
     [TestCase("glyph a : encounter.before_group_spawn { mystery() }", "GLYPH2002")]
-    [TestCase("glyph a : encounter.before_group_spawn { let a = creature.hp }", "GLYPH3002")]
+    [TestCase("glyph a : encounter.before_group_spawn { let a = nwn.get_current_hit_points(creature) }", "GLYPH3002")]
     [TestCase("glyph a : trait.on_granted { spawn.modify_count(4) }", "GLYPH3001")]
     [TestCase("glyph a : interaction { attempted { progress = 1 } }", "GLYPH3003")]
     [TestCase("glyph a : interaction { attempted { let a = context.session_id } }", "GLYPH3002")]

@@ -13,7 +13,7 @@ public sealed partial class NearestObjectExecutor : GlyphNodeBase
         Archetype = GlyphNodeArchetype.PureFunction,
         Parameters = [Pins.InObject("origin", "Origin"), Pins.InInt("object_type", "Object Type", "32767"), Pins.InInt("nth", "Nth", "1")],
         Results = [Pins.Out("value", "Object", GlyphDataType.NwObject)],
-        Exports = [new("nwn.get_nearest_object_by_type", "value", ReceiverMethods: ["nearest_object"]), new("nwn.get_nearest_object", "value")]
+        Exports = [new("nwn.get_nearest_object_by_type", "value"), new("nwn.get_nearest_object", "value")]
     };
     public override string TypeId => Descriptor.TypeId;
     public override GlyphNodeDefinition CreateDefinition() => Descriptor.CreateDefinition();

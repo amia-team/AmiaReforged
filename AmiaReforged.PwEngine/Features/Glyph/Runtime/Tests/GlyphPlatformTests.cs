@@ -47,7 +47,7 @@ public class GlyphPlatformTests
         var distance = GetDistanceBetweenExecutor.Descriptor.CreateDefinition();
         Assert.That(distance.InputPins.All(p => p.DataType != GlyphDataType.Exec), Is.True);
         Assert.That(distance.OutputPins.Single().Id, Is.EqualTo("distance"));
-        Assert.That(_compiler.Catalog.Find("Object.get_distance")!.ReturnType, Is.EqualTo(GlyphTypeSymbol.Float));
+        Assert.That(_compiler.Catalog.Find("nwn.get_distance_between")!.ReturnType, Is.EqualTo(GlyphTypeSymbol.Float));
         var predicate = _compiler.Catalog.Find("skill_check")!;
         Assert.That(predicate.Strategy, Is.EqualTo(GlyphLoweringStrategy.PredicateBranch));
         Assert.That(predicate.ReturnType, Is.EqualTo(GlyphTypeSymbol.Bool));
@@ -177,6 +177,34 @@ public class GlyphPlatformTests
         };
         _registry.Register(descriptor.CreateDefinition());
         Assert.That(GlyphFeatureVerifier.Errors(_registry).Any(e => e.Contains(expected)), Is.True);
+    }
+
+    [TestCase(GlyphReceiverPolicy.None, GlyphDataType.Location, null, "explicit semantic policy")]
+    [TestCase(GlyphReceiverPolicy.LanguageValue, GlyphDataType.NwObject, null, "typed Location or Effect")]
+    [TestCase(GlyphReceiverPolicy.DomainAbstraction, GlyphDataType.NwObject, "NWScript.GetTag", "cannot declare domain receivers")]
+    [TestCase(GlyphReceiverPolicy.Legacy, GlyphDataType.NwObject, null, "deprecation/removal plan")]
+    public void Invalid_receiver_policies_fail_conformance(GlyphReceiverPolicy policy, GlyphDataType type, string? source, string expected)
+    {
+        var descriptor = new GlyphIntrinsicDescriptor
+        {
+            TypeId = "test.receiver_policy", DisplayName = "Policy", Category = "Tests", Source = source,
+            Parameters = [Pins.In("receiver", "Receiver", type)], Results = [Pins.Out("result", "Result", GlyphDataType.Int)],
+            Exports = [new("policy_test", "result", ReceiverMethods: ["policy_test"], ReceiverType: type, ReceiverPolicy: policy)]
+        };
+        _registry.Register(descriptor.CreateDefinition());
+        Assert.That(GlyphFeatureVerifier.Errors(_registry), Has.Some.Contains(expected));
+    }
+
+    [Test] public void Hand_authored_domain_receiver_requires_no_engine_provenance()
+    {
+        var descriptor = new GlyphIntrinsicDescriptor
+        {
+            TypeId = "test.domain_receiver", DisplayName = "Domain", Category = "Tests",
+            Parameters = [Pins.InObject("player", "Player")], Results = [Pins.Out("result", "Result", GlyphDataType.Bool)],
+            Exports = [new("test.has_permission", "result", ReceiverMethods: ["has_permission"], ReceiverPolicy: GlyphReceiverPolicy.DomainAbstraction)]
+        };
+        _registry.Register(descriptor.CreateDefinition());
+        Assert.That(GlyphFeatureVerifier.Errors(_registry), Is.Empty);
     }
 
     [Test] public void Dependency_modules_reach_runtime_compiler_and_editor_metadata()

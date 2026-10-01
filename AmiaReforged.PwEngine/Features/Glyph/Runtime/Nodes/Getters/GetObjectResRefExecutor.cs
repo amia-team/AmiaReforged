@@ -42,6 +42,6 @@ public partial class GetObjectResRefExecutor : IGlyphNodeExecutor
         Source = "NWScript.GetResRef", Backend = "NWScript adapter",
         Archetype = GlyphNodeArchetype.PureFunction,
         Parameters = [Pins.InObject("object", "Object")], Results = [Pins.Out("resref", "ResRef", GlyphDataType.String)],
-        Exports = [new("nwn.get_resref", "resref", ReceiverMethods: ["get_resref"])]
+        Exports = [new("nwn.get_resref", "resref"), new("nwn.get_res_ref", "resref")]
     };
 }

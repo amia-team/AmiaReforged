@@ -3,12 +3,16 @@ using AmiaReforged.PwEngine.Features.Glyph.Language.Binding;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Platform;
 
+/// <summary>Source members require a deliberate semantic contract, independent of runtime representation.</summary>
+public enum GlyphReceiverPolicy { None, LanguageValue, DomainAbstraction, Legacy }
+
 /// <summary>A curated source projection of a runtime operation, including its local syntax sugar.</summary>
 public sealed record GlyphIntrinsicExport(string Name, string? OutputPin = null,
     GlyphLoweringStrategy? Strategy = null, IReadOnlyList<string>? AllowedStages = null,
     IReadOnlyList<string>? ReceiverMethods = null, GlyphDataType ReceiverType = GlyphDataType.NwObject,
     IReadOnlyList<GlyphCallAlias>? CallAliases = null, IReadOnlyList<GlyphCallAlias>? PropertyAliases = null,
-    string? WritableAs = null, GlyphIndexerDescriptor? Indexer = null);
+    string? WritableAs = null, GlyphIndexerDescriptor? Indexer = null,
+    GlyphReceiverPolicy ReceiverPolicy = GlyphReceiverPolicy.None);
 
 public sealed record GlyphIndexerDescriptor(string Name, string Getter, string Setter);
 

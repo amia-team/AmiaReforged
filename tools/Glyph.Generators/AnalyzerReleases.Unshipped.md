@@ -12,3 +12,4 @@ GLYPHNW005 | Glyph | Error | NWN binding manifest validation
 GLYPHNW006 | Glyph | Error | NWN binding manifest validation
 GLYPHNW007 | Glyph | Error | NWN binding manifest validation
 GLYPHNW008 | Glyph | Error | NWN binding manifest validation
+GLYPHNW009 | Glyph | Error | NWN receiver semantic policy validation

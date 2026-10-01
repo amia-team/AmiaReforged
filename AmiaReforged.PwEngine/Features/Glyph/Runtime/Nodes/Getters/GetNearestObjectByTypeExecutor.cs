@@ -69,9 +69,9 @@ public partial class GetNearestObjectByTypeExecutor : IGlyphNodeExecutor
 
     public static GlyphIntrinsicDescriptor Descriptor { get; } = new()
     {
-        TypeId = NodeTypeId,
+        TypeId = NodeTypeId, Source = "NWScript.GetNearestObject", Backend = "Anvil curated adapter",
         Exports = [
-            new("Object.nearest_object_by_type", "object", null, ReceiverMethods: ["get_nearest_object_by_type"])
+            new("nwn.nearest_object_by_kind", "object", null)
         ],
         DisplayName = "Get Nearest Object By Type",
         Category = "Getters",

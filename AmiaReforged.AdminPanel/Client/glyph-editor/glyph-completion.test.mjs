@@ -32,25 +32,24 @@ function completionQuery(marked, result) {
 }
 
 test("members and functions respect event/stage restrictions and signatures", () => {
-  // Object-typed receivers expose curated Object methods alongside
-  // namespace/alias members. Member-mode labels are relative to the final dot.
+  // Object handles expose deliberate domain aliases. Member-mode labels are relative to the final dot.
   const playerMembers = labels(
     "glyph g : interaction { attempted { player.| } }",
   );
 
   assert.ok(playerMembers.includes("has_item"));
-  assert.ok(playerMembers.includes("get_nearest_object_by_type"));
-  assert.ok(playerMembers.includes("is_player"));
-  assert.ok(playerMembers.includes("get_distance"));
+  assert.ok(!playerMembers.includes("get_nearest_object_by_type"));
+  assert.ok(!playerMembers.includes("is_player"));
+  assert.ok(!playerMembers.includes("get_distance"));
 
   const creatureMembers = labels(
     "glyph g : interaction { tick { creature.| } }",
   );
 
-  assert.ok(creatureMembers.includes("hp"));
-  assert.ok(creatureMembers.includes("get_nearest_object_by_type"));
-  assert.ok(creatureMembers.includes("is_player"));
-  assert.ok(creatureMembers.includes("get_distance"));
+  assert.ok(!creatureMembers.includes("hp"));
+  assert.ok(!creatureMembers.includes("get_nearest_object_by_type"));
+  assert.ok(!creatureMembers.includes("is_player"));
+  assert.ok(!creatureMembers.includes("get_distance"));
 
   // Namespace member labels are also relative.
   assert.ok(
@@ -102,194 +101,34 @@ test("members and functions respect event/stage restrictions and signatures", ()
   assert.equal(typeof option.apply, "function");
 });
 
-test("typed receiver completion resolves the receiver Glyph type", () => {
-  // Context field typed Object.
-  const contextCreature = labels(
-    "glyph g : interaction { attempted { context.creature.| } }",
-  );
-
-  assert.ok(
-    contextCreature.includes("get_nearest_object_by_type"),
-  );
-
-  assert.ok(contextCreature.includes("is_player"));
-
-  // Partial member:
-  // CompletionResult.from must begin immediately after the final dot.
-  const partialSource =
-    "glyph g : interaction { attempted { context.creature.get_| } }";
-
-  const partial = complete(partialSource);
-
-  assert.ok(
-    partial.options
-      .map((o) => o.label)
-      .includes("get_nearest_object_by_type"),
-  );
-
-  const expectedFrom =
-    "glyph g : interaction { attempted { context.creature.".length;
-
-  assert.equal(partial.from, expectedFrom);
-
-  // This is the important regression assertion:
-  // CodeMirror must filter against "get_", not
-  // "context.creature.get_".
-  assert.equal(completionQuery(partialSource, partial), "get_");
-
-  // Empty member prefix should likewise begin after the dot.
-  const emptyMemberSource =
-    "glyph g : interaction { attempted { context.creature.| } }";
-
-  const emptyMember = complete(emptyMemberSource);
-
-  assert.equal(completionQuery(emptyMemberSource, emptyMember), "");
-
-  // Local inferred Object from an Object-returning static call.
-  const localFromStatic = labels(
-    'glyph g : interaction { tick { let target = Object.nearest_object_by_type(player, "creature")\ntarget.| } }',
-  );
-
-  assert.ok(
-    localFromStatic.includes("get_nearest_object_by_type"),
-  );
-
-  assert.ok(localFromStatic.includes("is_player"));
-
-  // Local inferred Object from a receiver-method result.
-  const localFromReceiver = labels(
-    'glyph g : interaction { tick { let target = player.get_nearest_object_by_type("creature")\ntarget.| } }',
-  );
-
-  assert.ok(
-    localFromReceiver.includes("get_nearest_object_by_type"),
-  );
-
-  assert.ok(localFromReceiver.includes("is_player"));
-
-  // Chaining: an Object-returning receiver call again offers
-  // Object methods.
-  const chained = labels(
-    'glyph g : interaction { attempted { player.get_nearest_object_by_type("creature").| } }',
-  );
-  // Partial member on a named Object alias: get_distance appears alongside the other Object methods.
-  const playerGet = labels(
-    "glyph g : interaction { attempted { player.get_| } }",
-  );
-  assert.ok(playerGet.includes("get_distance"));
-  assert.ok(playerGet.includes("get_nearest_object_by_type"));
-
-
-  assert.ok(
-    chained.includes("get_nearest_object_by_type"),
-  );
-
-  assert.ok(chained.includes("is_player"));
-
-  // Foreach element typed Object.
-  const foreach = labels(
-    "glyph g : interaction { tick { foreach member in party.members { member.| } } }",
-  );
-
-  assert.ok(
-    foreach.includes("get_nearest_object_by_type"),
-  );
-
-  assert.ok(foreach.includes("is_player"));
-
-  // Wrong receiver type: Int and String must not get Object methods.
-  assert.ok(
-    !labels(
-      "glyph g : interaction { tick { party.size.| } }",
-    ).includes("is_player"),
-  );
-
-  assert.ok(
-    !labels(
-      "glyph g : interaction { tick { context.character_id.| } }",
-    ).includes("get_nearest_object_by_type"),
-  );
-});
-
-test("receiver completions carry receiver-stripped signatures and named arguments", () => {
-  const option = complete(
-    "glyph g : interaction { attempted { context.creature.get_| } }",
-  ).options.find(
-    (o) => o.label === "get_nearest_object_by_type",
-  );
-
-  assert.match(option.detail, /\(type: String\) → Object/);
-  assert.ok(!/origin/.test(option.detail));
-
-  const isPlayer = complete(
-    "glyph g : interaction { attempted { context.creature.is_| } }",
-  ).options.find((o) => o.label === "is_player");
-
-  assert.match(isPlayer.detail, /^\(\) → Bool/);
-
-  // Object.get_distance receiver: only the second object is exposed; object_a is injected.
-  const getDistance = complete(
-    "glyph g : interaction { attempted { context.creature.get_| } }",
-  ).options.find((o) => o.label === "get_distance");
-
-  assert.match(getDistance.detail, /^\(object_b: Object\) → Float/);
-  assert.ok(!/object_a/.test(getDistance.detail));
-
-  // Named arguments omit the injected object_a.
-  const distanceNamed = labels(
-    "glyph g : interaction { attempted { context.creature.get_distance(|) } }",
-  );
-  assert.ok(distanceNamed.includes("object_b:"));
-  assert.ok(!distanceNamed.includes("object_a:"));
-
-  // Named arguments omit the injected origin parameter.
-  const named = labels(
-    "glyph g : interaction { attempted { context.creature.get_nearest_object_by_type(|) } }",
-  );
-
-  assert.ok(named.includes("type:"));
-  assert.ok(!named.includes("origin:"));
-
-  const noArgs = labels(
-    "glyph g : interaction { attempted { context.creature.is_player(|) } }",
-  );
-
-  assert.ok(!noArgs.includes("origin:"));
-});
-
-test("static Object namespace and curated-only surface are preserved", () => {
-  const object = labels(
-    "glyph g : interaction { tick { Object.| } }",
-  );
-
-  // Static namespace member-mode labels are relative to Object.
-  assert.ok(object.includes("nearest_object_by_type"));
-  assert.ok(object.includes("is_player"));
-  assert.ok(object.includes("get_distance"));
-
-  assert.ok(
-    !object.includes("Object.nearest_object_by_type"),
-  );
-
-  assert.ok(!object.includes("Object.is_player"));
-
-  const contextCreature = labels(
-    "glyph g : interaction { attempted { context.creature.| } }",
-  );
-
-  // Only curated receiver methods, never raw NWScript/.NET/Anvil members.
-  for (const leaked of [
-    "Destroy",
-    "Area",
-    "ObjectId",
-    "GetObjectVariable",
-    "ApplyEffect",
-  ]) {
-    assert.ok(
-      !contextCreature.includes(leaked),
-      `unexpected leaked member ${leaked}`,
-    );
+test("only typed values receive member completions; nwn exposes procedures", () => {
+  for (const expression of ["player", "context.creature", "nwn.nearest_object_by_kind(player, \"creature\")"]) {
+    const names = labels(`glyph g : interaction { tick { (${expression}).| } }`);
+    for (const removed of ["get_distance", "is_player", "get_ability_score", "set_local_int", "action_attack"])
+      assert.ok(!names.includes(removed), expression + "." + removed);
   }
+  assert.ok(!labels("glyph g : interaction { tick { Object.| } }").includes("is_player"));
+  const namespace = complete("glyph g : interaction { tick { nw| } }").options.find(o => o.label === "nwn");
+  assert.equal(namespace.type, "namespace");
+  assert.equal(namespace.apply, "nwn.");
+  const procedures = labels("glyph g : interaction { tick { nwn.| } }");
+  for (const name of ["get_distance_between", "get_location", "get_ability_score", "set_local_int", "action_attack"])
+    assert.ok(procedures.includes(name), name);
+  const source = "glyph g : interaction { tick { let loc = nwn.get_location(player) loc.get_| } }";
+  const partial = complete(source);
+  assert.ok(partial.options.some(o => o.label === "get_x"));
+  assert.equal(completionQuery(source, partial), "get_");
+  assert.ok(labels("glyph g : interaction { tick { nwn.get_location(player).| } }").includes("get_x"));
+  assert.ok(labels("glyph g : interaction { tick { let aura = effect.haste() aura.| } }").includes("get_effect_type"));
+  assert.ok(!labels("glyph g : interaction { tick { player.| } }").includes("get_x"));
+});
+
+test("typed receiver arguments hide the receiver; command arguments include actor", () => {
+  const coordinate = labels("glyph g : interaction { tick { let loc = nwn.get_location(player) loc.get_x(|) } }");
+  assert.ok(!coordinate.includes("location:"));
+  const action = labels("glyph g : interaction { tick { nwn.action_attack(|) } }");
+  assert.ok(action.includes("actor:"));
+  assert.ok(action.includes("target:"));
 });
 
 test("named arguments omit parameters already supplied positionally or by name", () => {
@@ -520,9 +359,9 @@ test("descriptor-owned receiver and writable-state restrictions filter completio
     writableState: [{ name: "new_state", type: "Int", setter: "set_new_state",
       availableIn: [{ event: "interaction", stage: "tick" }] }],
   };
-  const attempted = complete("glyph g : interaction { attempted { player.| } }", true, catalog);
+  const attempted = complete("glyph g : interaction { attempted { nwn.get_location(player).| } }", true, catalog);
   assert.ok(!attempted.options.some(o => o.label === "tick_only"));
-  const tick = complete("glyph g : interaction { tick { player.| } }", true, catalog);
+  const tick = complete("glyph g : interaction { tick { nwn.get_location(player).| } }", true, catalog);
   assert.ok(tick.options.some(o => o.label === "tick_only"));
   assert.ok(!complete("glyph g : interaction { attempted { | } }", true, catalog).options.some(o => o.label === "new_state"));
   const state = complete("glyph g : interaction { tick { | } }", true, catalog).options.find(o => o.label === "new_state");
@@ -539,13 +378,13 @@ test("new pipeline event completions derive their stage list from metadata", () 
 
 
 test("mutable locals and new loop forms participate in lexical completion", () => {
-  assert.ok(labels("glyph g : interaction { tick { var current = player current.| } }").includes("is_player"));
+  assert.ok(labels("glyph g : interaction { tick { var current = nwn.get_location(player) current.| } }").includes("get_x"));
   for (const loop of ["while true", "for i in 0..3", "for item in party.members", "foreach item in party.members"]) {
     const options = labels(`glyph g : interaction { tick { ${loop} { | } } }`);
     assert.ok(options.includes("break"), loop);
     assert.ok(options.includes("continue"), loop);
   }
-  assert.ok(labels("glyph g : interaction { tick { for item in party.members { item.| } } }").includes("is_player"));
+  assert.ok(!labels("glyph g : interaction { tick { for item in party.members { item.| } } }").includes("is_player"));
   const outside = labels("glyph g : interaction { tick { if true { var hidden = player } | } }");
   assert.ok(!outside.includes("hidden"));
   assert.ok(!outside.includes("continue"));

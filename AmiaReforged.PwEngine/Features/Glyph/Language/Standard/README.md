@@ -37,28 +37,40 @@ authoritative current inventory and records every native method and constant, in
 | Exclusions | Unpublished APIs with reasons or an unsupported/deferred classification |
 
 Canonical low-level functions use `nwn.*`; effect constructors also have `effect.*` aliases.
-`player.set_local_int("uses", 1)` and `nwn.set_local_int(player, "uses", 1)` lower to the same
-operation. Existing `distance`, `Object.get_distance`, `set_name`, `heal`, `damage`, `message`,
-and legacy queries remain available. World Engine modules remain distinct and composable.
+Object is an opaque NWN handle. Engine locals, queries, mutations and commands are procedures,
+so the object or action actor is an explicit argument. Higher-level World Engine modules remain
+separate and composable; `player.has_knowledge` and `player.has_item` are deliberate domain aliases.
 
 ```glyph
 glyph guardian : interaction {
     completed {
-        let spirit = nwn.create_object(OBJECT_TYPE.CREATURE, "amia_restless_spirit", player.get_location())
-        spirit.set_name("Restless Spirit")
-        spirit.set_local_object("summoner", player)
-        spirit.apply_effect(effect.visual_effect(VFX.DUR_AURA_PURPLE))
-        spirit.apply_effect(effect.haste(), duration: 30.0)
-        spirit.action_move_to_object(player)
+        let spirit = nwn.create_object(OBJECT_TYPE.CREATURE, "amia_restless_spirit", nwn.get_location(player))
+        nwn.set_name(spirit, "Restless Spirit")
+        nwn.set_local_object(spirit, "summoner", player)
+        nwn.apply_effect_to_object(spirit, effect.visual_effect(VFX.DUR_AURA_PURPLE))
+        nwn.apply_effect_to_object(spirit, effect.haste(), duration: 30.0)
+        nwn.action_move_to_object(spirit, player)
     }
 }
 ```
+
+The manifest receiver column defaults to no exposure. Only deliberate Location/Effect queries
+use `language_value:method_name`; handwritten typed methods carry `GlyphReceiverPolicy.LanguageValue`.
+Location exposes `get_x`, `get_y`, `get_z`, `get_area`, `get_facing` and distance queries. Effect
+exposes inspection getters and validity; constructors, transformations and mutations remain
+namespaced procedures. Metadata supplies this small classified receiver list to the editor.
+`nwn.` completes the broad engine surface. Generic `player.` offers explicit domain APIs.
+
+Compatibility source aliases `Object.*`, `distance`, `set_name` and creature query properties
+were removed. Canonical procedures continue to use the same runtime TypeIds, pins and executor
+implementations. The older string-filter query remains as `nwn.nearest_object_by_kind`; its
+existing runtime identity is preserved. No native function or constant was removed.
 
 ## Value and execution semantics
 
 Object is an NWN handle, not a CLR object. Zero handles and absent Anvil objects normalize to
 `OBJECT.INVALID` (native OBJECT_INVALID). Object-valued native results are normalized consistently.
-Use `object.is_valid()` before behavior that depends on a successful query/creation. Missing locals
+Use `nwn.get_is_object_valid(object)` before behavior that depends on a successful query/creation. Missing locals
 retain NWScript defaults: Int zero, Float zero, String empty, Object invalid, Location invalid.
 Invalid collection targets produce empty typed snapshots; scalar natives retain native sentinel
 behavior. Do not assume every native operation is meaningful for every object type.
@@ -66,8 +78,8 @@ behavior. Do not assume every native operation is meaningful for every object ty
 Location and Effect are distinct opaque typed engine values; their pointers cannot be accessed
 from Glyph. Required invalid location/effect inputs return safe typed defaults or skip mutation.
 `nwn.location(area, x, y, z: 0.0, facing: 0.0)` constructs a location; its area, coordinates and
-facing are queryable. Effect constructors compose with link/subtype operations and apply/remove.
-`target.apply_effect(effect, duration: 30.0)` selects temporary duration; omitted/zero duration
+facing are queryable through deliberate typed getter methods. Effect constructors compose with link/subtype operations and apply/remove.
+`nwn.apply_effect_to_object(target, effect, duration: 30.0)` selects temporary duration; omitted/zero duration
 selects permanent. `duration_type` can explicitly select `DURATION_TYPE.INSTANT` or another native
 mode. Typed local get/set/delete functions include Location as well as Int, Float, String and Object.
 

@@ -14,7 +14,7 @@ public sealed partial class LocationCoordinateExecutor : GlyphNodeBase
         Archetype = GlyphNodeArchetype.PureFunction,
         Parameters = [Pins.In("location", "Location", GlyphDataType.Location)],
         Results = [Pins.Out("x", "X", GlyphDataType.Float), Pins.Out("y", "Y", GlyphDataType.Float), Pins.Out("z", "Z", GlyphDataType.Float)],
-        Exports = [new("nwn.location_x", "x", ReceiverMethods: ["get_x"], ReceiverType: GlyphDataType.Location), new("nwn.location_y", "y", ReceiverMethods: ["get_y"], ReceiverType: GlyphDataType.Location), new("nwn.location_z", "z", ReceiverMethods: ["get_z"], ReceiverType: GlyphDataType.Location)]
+        Exports = [new("nwn.location_x", "x", ReceiverMethods: ["get_x"], ReceiverType: GlyphDataType.Location, ReceiverPolicy: GlyphReceiverPolicy.LanguageValue), new("nwn.location_y", "y", ReceiverMethods: ["get_y"], ReceiverType: GlyphDataType.Location, ReceiverPolicy: GlyphReceiverPolicy.LanguageValue), new("nwn.location_z", "z", ReceiverMethods: ["get_z"], ReceiverType: GlyphDataType.Location, ReceiverPolicy: GlyphReceiverPolicy.LanguageValue)]
     };
     public override string TypeId => Descriptor.TypeId;
     public override GlyphNodeDefinition CreateDefinition() => Descriptor.CreateDefinition();

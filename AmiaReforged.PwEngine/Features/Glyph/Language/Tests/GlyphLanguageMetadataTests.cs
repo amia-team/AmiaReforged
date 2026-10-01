@@ -89,6 +89,7 @@ public class GlyphLanguageMetadataTests
             var meta = _metadata.ReceiverMethods.Single(m => m.Name == rm.Name && m.ReceiverType == GlyphTypeSymbol.From(rm.ReceiverType).Name);
             var target = catalog.Find(rm.Target)!;
             Assert.That(meta.ReceiverType, Is.EqualTo(GlyphTypeSymbol.From(rm.ReceiverType).Name));
+            Assert.That(meta.Policy, Is.EqualTo(rm.Policy.ToString()));
             Assert.That(meta.CanonicalName, Is.EqualTo(rm.Target));
             Assert.That(meta.ReturnType, Is.EqualTo(target.ReturnType.Name));
             Assert.That(meta.Description, Is.EqualTo(target.Definition.Description));

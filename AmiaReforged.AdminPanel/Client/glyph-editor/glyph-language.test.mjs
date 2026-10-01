@@ -127,14 +127,14 @@ test('incremental editing recovers from an incomplete program without losing syn
 test('keyword-shaped words are accepted as named argument labels', () => {
     // A parameter name that is also a Glyph keyword (here `type`) must still parse as a
     // named argument label, with no parse-recovery errors, exactly as the C# parser accepts it.
-    const source = 'glyph t : interaction { tick { let door = player.get_nearest_object_by_type(type: "door") } }';
+    const source = 'glyph t : interaction { tick { let door = nwn.nearest_object_by_kind(player, type: "door") } }';
     const tree = parse(source);
     assert.deepEqual(errors(tree), [], tree.toString());
     const labels = nodes(tree, 'ArgumentName');
     assert.equal(labels.length, 1);
     assert.equal(source.slice(labels[0].from, labels[0].to), 'type');
     // Both a keyword-shaped and a plain label work together, and keyword-as-value stays reserved.
-    const both = parse('glyph t : interaction { tick { let x = player.get_nearest_object_by_type(origin: creature, type: "door") } }');
+    const both = parse('glyph t : interaction { tick { let x = nwn.nearest_object_by_kind(player, origin: creature, type: "door") } }');
     assert.deepEqual(errors(both), [], both.toString());
     assert.equal(nodes(both, 'ArgumentName').length, 2);
     assert.ok(nodes(parse('glyph g : interaction { tick { type } }'), 'ArgumentName').length === 0);

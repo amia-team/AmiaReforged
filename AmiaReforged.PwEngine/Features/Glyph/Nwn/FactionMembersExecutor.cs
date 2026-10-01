@@ -13,7 +13,7 @@ public sealed partial class FactionMembersExecutor : GlyphNodeBase
         Archetype = GlyphNodeArchetype.PureFunction,
         Parameters = [Pins.InObject("member", "member"), Pins.InBool("pc_only", "Players only", "false")],
         Results = [Pins.Out("value", "Objects", GlyphDataType.List) with { ElementType = GlyphDataType.NwObject }],
-        Exports = [new("nwn.faction_members", "value", ReceiverMethods: ["faction_members"])]
+        Exports = [new("nwn.faction_members", "value")]
     };
     public override string TypeId => Descriptor.TypeId;
     public override GlyphNodeDefinition CreateDefinition() => Descriptor.CreateDefinition();

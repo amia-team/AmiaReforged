@@ -41,6 +41,6 @@ public partial class GetCreatureLevelExecutor : IGlyphNodeExecutor
         Source = "NWScript.GetHitDice", Backend = "NWScript adapter",
         Archetype = GlyphNodeArchetype.PureFunction,
         Parameters = [Pins.InObject("creature", "Creature")], Results = [Pins.Out("level", "Level", GlyphDataType.Int)],
-        Exports = [new("nwn.get_hit_dice", "level", ReceiverMethods: ["get_hit_dice"])]
+        Exports = [new("nwn.get_hit_dice", "level")]
     };
 }

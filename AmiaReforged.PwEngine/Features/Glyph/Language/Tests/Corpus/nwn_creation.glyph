@@ -1,12 +1,12 @@
 glyph summon_guardian : interaction {
     completed {
-        let spirit = nwn.create_object(OBJECT_TYPE.CREATURE, "amia_restless_spirit", player.get_location())
-        spirit.set_name("Restless Spirit")
-        spirit.set_local_object("summoner", player)
-        spirit.apply_effect(effect.haste(), duration: 30.0)
-        spirit.action_speak_string("I will protect you.")
-        spirit.action_move_to_object(player)
+        let spirit = nwn.create_object(OBJECT_TYPE.CREATURE, "amia_restless_spirit", nwn.get_location(player))
+        nwn.set_name(spirit, "Restless Spirit")
+        nwn.set_local_object(spirit, "summoner", player)
+        nwn.apply_effect_to_object(spirit, effect.haste(), duration: 30.0)
+        nwn.action_speak_string(spirit, "I will protect you.")
+        nwn.action_move_to_object(spirit, player)
         // This queues native delayed destruction, not a Glyph callback.
-        spirit.destroy(delay_seconds: 60.0)
+        nwn.destroy_object(spirit, delay_seconds: 60.0)
     }
 }

@@ -3,14 +3,9 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Language.Binding;
 
 public enum GlyphLoweringStrategy { Value, Action, PredicateBranch }
 
-/// <summary>
-/// Curated receiver-method sugar: <c>receiver.method(args)</c> where <c>receiver</c> is an
-/// Object-typed Glyph expression. It lowers to the static catalog intrinsic <c>Target</c> with
-/// the bound receiver injected as parameter zero — no new executor is introduced. The receiver
-/// type is the Glyph value type of the expression (here <see cref="GlyphDataType.NwObject"/>),
-/// not the capitalized <c>Object.</c> namespace spelling.
-/// </summary>
-public sealed record GlyphReceiverMethod(GlyphDataType ReceiverType, string Name, string Target);
+/// <summary>A classified member of a known Glyph value or an intentional domain abstraction.</summary>
+public sealed record GlyphReceiverMethod(GlyphDataType ReceiverType, string Name, string Target,
+    Platform.GlyphReceiverPolicy Policy);
 
 public sealed record GlyphLanguageSymbol(string Name, GlyphNodeDefinition Definition, string? OutputPin,
     GlyphLoweringStrategy Strategy, string[]? AllowedStages = null)
@@ -67,7 +62,7 @@ public sealed class GlyphLanguageCatalog
                 foreach (string receiver in intrinsic.ReceiverMethods ?? [])
                 {
                     _receiverNames.Add(receiver);
-                    _receiverMethods.Add((intrinsic.ReceiverType, receiver), new(intrinsic.ReceiverType, receiver, intrinsic.Name));
+                    _receiverMethods.Add((intrinsic.ReceiverType, receiver), new(intrinsic.ReceiverType, receiver, intrinsic.Name, intrinsic.ReceiverPolicy));
                 }
             }
     }

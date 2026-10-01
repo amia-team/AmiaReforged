@@ -10,14 +10,14 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Getters;
 /// <see cref="GetNearestObjectsByTypeExecutor"/>, so the object-type switch is
 /// maintained in one place rather than duplicated across executors.
 /// <para>
-/// All type names are matched case-insensitively; the canonical <c>Object.*</c>
+/// All type names are matched case-insensitively; the canonical <c>nwn.nearest_object_by_kind</c>
 /// spellings are lowercase.
 /// </para>
 /// </summary>
 internal static class NwObjectQuery
 {
     /// <summary>
-    /// Canonical lowercase type spellings exposed by the curated <c>Object.*</c> surface.
+    /// Canonical lowercase type spellings exposed by the curated <c>nwn.nearest_object_by_kind</c> surface.
     /// </summary>
     public static readonly HashSet<string> CuratedTypes = new(StringComparer.OrdinalIgnoreCase)
     {

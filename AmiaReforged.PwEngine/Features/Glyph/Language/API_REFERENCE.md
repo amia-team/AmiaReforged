@@ -15,7 +15,7 @@ Generated from registered Glyph contracts. Do not edit function or context table
 | trait.on_granted | OnTraitGranted | Trait |  |
 | trait.on_removed | OnTraitRemoved | Trait |  |
 
-## Functions and call aliases
+## NWN procedures and language/domain functions
 
 ## Actions
 
@@ -81,18 +81,6 @@ Kind: Action. Canonical: `play_vfx`.
 
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
-### `set_name`
-
-`set_name(creature: Object, name: String) → Void`
-
-Changes the display name of a creature.
-
-Source: `NWScript.SetName`. Backend: NWScript adapter.
-
-Kind: Action. Canonical: `set_name`.
-
-Available in: all Glyph events/stages.
-
 ### `spawn.cancel`
 
 `spawn.cancel() → Void`
@@ -144,100 +132,6 @@ Kind: Action. Canonical: `spawn_resource_node`.
 Available in: interaction/attempted, interaction/started, interaction/tick, interaction/completed.
 
 ## Getters
-
-### `Object.get_distance`
-
-`Object.get_distance(object_a: Object, object_b: Object) → Float`
-
-Returns the distance in meters between two game objects. Returns 0 if either object is invalid.
-
-Source: `NWScript.GetDistanceBetween`. Backend: NWScript adapter.
-
-Kind: Value. Canonical: `Object.get_distance`.
-
-Available in: all Glyph events/stages.
-
-### `Object.is_player`
-
-`Object.is_player(object: Object) → Bool`
-
-Returns true when the object is a player character (NWScript.GetIsPC). Returns false for invalid or unresolvable objects.
-
-Source: `NWScript.GetIsPC`. Backend: NWScript adapter.
-
-Kind: Value. Canonical: `Object.is_player`.
-
-Available in: all Glyph events/stages.
-
-### `Object.nearest_object_by_type`
-
-`Object.nearest_object_by_type(origin: Object, type: String) → Object`
-
-Returns the nearest game object of a curated type from an origin. Supported types (case-insensitive, lowercase canonical): trigger, door, placeable, creature, waypoint. Returns OBJECT_INVALID when the origin is invalid, the type is unsupported, or no match exists.
-
-Kind: Value. Canonical: `Object.nearest_object_by_type`.
-
-Available in: all Glyph events/stages.
-
-### `creature.ac`
-
-`creature.ac(creature: Object) → Int`
-
-Returns the current armor class of a creature.
-
-Source: `NWScript.GetAC`. Backend: NWScript adapter.
-
-Kind: Value. Canonical: `creature.ac`.
-
-Available in: all Glyph events/stages.
-
-### `creature.hp`
-
-`creature.hp(creature: Object) → Int`
-
-Returns the current and maximum hit points of a creature.
-
-Source: `NWScript.GetCurrentHitPoints / GetMaxHitPoints`. Backend: NWScript adapter.
-
-Kind: Value. Canonical: `creature.hp`.
-
-Available in: all Glyph events/stages.
-
-### `creature.max_hp`
-
-`creature.max_hp(creature: Object) → Int`
-
-Returns the current and maximum hit points of a creature.
-
-Source: `NWScript.GetCurrentHitPoints / GetMaxHitPoints`. Backend: NWScript adapter.
-
-Kind: Value. Canonical: `creature.max_hp`.
-
-Available in: all Glyph events/stages.
-
-### `creature.name`
-
-`creature.name(creature: Object) → String`
-
-Returns the current display name and original blueprint name of a creature.
-
-Source: `NWScript.GetName`. Backend: NWScript adapter.
-
-Kind: Value. Canonical: `creature.name`.
-
-Available in: all Glyph events/stages.
-
-### `distance`
-
-`distance(object_a: Object, object_b: Object) → Float`
-
-Returns the distance in meters between two game objects. Returns 0 if either object is invalid.
-
-Source: `NWScript.GetDistanceBetween`. Backend: NWScript adapter.
-
-Kind: Value. Canonical: `distance`.
-
-Available in: all Glyph events/stages.
 
 ### `has_item`
 
@@ -342,6 +236,18 @@ Returns true when the object is a player character (NWScript.GetIsPC). Returns f
 Source: `NWScript.GetIsPC`. Backend: NWScript adapter.
 
 Kind: Value. Canonical: `nwn.is_player`.
+
+Available in: all Glyph events/stages.
+
+### `nwn.nearest_object_by_kind`
+
+`nwn.nearest_object_by_kind(origin: Object, type: String) → Object`
+
+Returns the nearest game object of a curated type from an origin. Supported types (case-insensitive, lowercase canonical): trigger, door, placeable, creature, waypoint. Returns OBJECT_INVALID when the origin is invalid, the type is unsupported, or no match exists.
+
+Source: `NWScript.GetNearestObject`. Backend: Anvil curated adapter.
+
+Kind: Value. Canonical: `nwn.nearest_object_by_kind`.
 
 Available in: all Glyph events/stages.
 
@@ -519,6 +425,8 @@ Attack oAttackee. - bPassive: If this is TRUE, attack is in passive mode.
 
 Source: `NWScript.ActionAttack`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_attack`.
 
 Available in: all Glyph events/stages.
@@ -530,6 +438,8 @@ Available in: all Glyph events/stages.
 The action subject will fake casting a spell at lLocation; the conjure and cast animations and visuals will occur, nothing else. - nSpell - lTarget - nProjectilePathType: PROJECTILE_PATH_TYPE_*
 
 Source: `NWScript.ActionCastFakeSpellAtLocation`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_cast_fake_spell_at_location`.
 
@@ -543,6 +453,8 @@ The action subject will fake casting a spell at oTarget; the conjure and cast an
 
 Source: `NWScript.ActionCastFakeSpellAtObject`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_cast_fake_spell_at_object`.
 
 Available in: all Glyph events/stages.
@@ -554,6 +466,8 @@ Available in: all Glyph events/stages.
 Cast spell nSpell at lTargetLocation. - nSpell: SPELL_* - lTargetLocation - nMetaMagic: METAMAGIC_*. If nClass is specified, cannot be METAMAGIC_ANY. - bCheat: If this is TRUE, then the executor of the action doesn't have to be able to cast the spell. Ignored if nClass is specified. - bCheat: If this is TRUE, then the executor of the action doesn't have to be able to cast the spell. - nProjectilePathType: PROJECTILE_PATH_TYPE_* - bInstantSpell: If this is TRUE, the spell is cast immediately; this allows the end-user to simulate a high-level magic user having lots of advance warning of impending trouble. - nClass: If set to a CLASS_TYPE_* it will cast using that class specifically. CLASS_TYPE_INVALID will use spell abilities. - bSpontaneousCast: If set to TRUE will attempt to cast the given spell spontaneously, ie a Cleric casting Cure Light Wounds using any level 1 slot. Needs a valid nClass set. - nDomainLevel: The level of the spell if cast from a domain slot. eg SPELL_HEAL can be spell level 5 on a cleric. Use 0 for no domain slot.
 
 Source: `NWScript.ActionCastSpellAtLocation`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_cast_spell_at_location`.
 
@@ -567,6 +481,8 @@ This action casts a spell at oTarget. - nSpell: SPELL_* - oTarget: Target for th
 
 Source: `NWScript.ActionCastSpellAtObject`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_cast_spell_at_object`.
 
 Available in: all Glyph events/stages.
@@ -578,6 +494,8 @@ Available in: all Glyph events/stages.
 Cause the action subject to close oDoor - bRun: If TRUE, subject will run to the door instead of walking
 
 Source: `NWScript.ActionCloseDoor`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_close_door`.
 
@@ -591,6 +509,8 @@ Counterspell oCounterSpellTarget.
 
 Source: `NWScript.ActionCounterSpell`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_counter_spell`.
 
 Available in: all Glyph events/stages.
@@ -602,6 +522,8 @@ Available in: all Glyph events/stages.
 Equip oItem into nInventorySlot. - nInventorySlot: INVENTORY_SLOT_* * No return value, but if an error occurs the log file will contain "ActionEquipItem failed." Note: If the creature already has an item equipped in the slot specified, it will be unequipped automatically by the call to ActionEquipItem. In order for ActionEquipItem to succeed the creature must be able to equip the item oItem normally. This means that: 1) The item is in the creature's inventory. 2) The item must already be identified (if magical). 3) The creature has the level required to equip the item (if magical and ILR is on). 4) The creature possesses the required feats to equip the item (such as weapon proficiencies).
 
 Source: `NWScript.ActionEquipItem`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_equip_item`.
 
@@ -615,6 +537,8 @@ The creature will equip the melee weapon in its possession that can do the most 
 
 Source: `NWScript.ActionEquipMostDamagingMelee`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_equip_most_damaging_melee`.
 
 Available in: all Glyph events/stages.
@@ -626,6 +550,8 @@ Available in: all Glyph events/stages.
 The creature will equip the range weapon in its possession that can do the most damage. If no valid range weapon can be found, it will equip the most damaging melee weapon. - oVersus: You can try to get the most damaging weapon against oVersus
 
 Source: `NWScript.ActionEquipMostDamagingRanged`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_equip_most_damaging_ranged`.
 
@@ -639,6 +565,8 @@ Makes a player examine the object oExamine. This causes the examination pop-up b
 
 Source: `NWScript.ActionExamine`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_examine`.
 
 Available in: all Glyph events/stages.
@@ -650,6 +578,8 @@ Available in: all Glyph events/stages.
 The action subject will follow oFollow until a ClearAllActions() is called. - oFollow: this is the object to be followed - fFollowDistance: follow distance in metres * No return value
 
 Source: `NWScript.ActionForceFollowObject`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_force_follow_object`.
 
@@ -663,6 +593,8 @@ Force the action subject to move to lDestination.
 
 Source: `NWScript.ActionForceMoveToLocation`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_force_move_to_location`.
 
 Available in: all Glyph events/stages.
@@ -674,6 +606,8 @@ Available in: all Glyph events/stages.
 Force the action subject to move to oMoveTo.
 
 Source: `NWScript.ActionForceMoveToObject`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_force_move_to_object`.
 
@@ -687,6 +621,8 @@ Give oItem to oGiveTo If oItem is not a valid item, or oGiveTo is not a valid ob
 
 Source: `NWScript.ActionGiveItem`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_give_item`.
 
 Available in: all Glyph events/stages.
@@ -698,6 +634,8 @@ Available in: all Glyph events/stages.
 Use oPlaceable.
 
 Source: `NWScript.ActionInteractObject`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_interact_object`.
 
@@ -711,6 +649,8 @@ The subject will jump to lLocation instantly (even between areas). If lLocation 
 
 Source: `NWScript.ActionJumpToLocation`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_jump_to_location`.
 
 Available in: all Glyph events/stages.
@@ -722,6 +662,8 @@ Available in: all Glyph events/stages.
 Jump to an object ID, or as near to it as possible.
 
 Source: `NWScript.ActionJumpToObject`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_jump_to_object`.
 
@@ -735,6 +677,8 @@ The action subject will lock oTarget, which can be a door or a placeable object.
 
 Source: `NWScript.ActionLockObject`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_lock_object`.
 
 Available in: all Glyph events/stages.
@@ -746,6 +690,8 @@ Available in: all Glyph events/stages.
 Causes the action subject to move away from lMoveAwayFrom.
 
 Source: `NWScript.ActionMoveAwayFromLocation`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_move_away_from_location`.
 
@@ -759,6 +705,8 @@ Cause the action subject to move to a certain distance away from oFleeFrom. - oF
 
 Source: `NWScript.ActionMoveAwayFromObject`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_move_away_from_object`.
 
 Available in: all Glyph events/stages.
@@ -770,6 +718,8 @@ Available in: all Glyph events/stages.
 The action subject will move to lDestination. - lDestination: The object will move to this location. If the location is invalid or a path cannot be found to it, the command does nothing. - bRun: If this is TRUE, the action subject will run rather than walk * No return value, but if an error occurs the log file will contain "MoveToPoint failed."
 
 Source: `NWScript.ActionMoveToLocation`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_move_to_location`.
 
@@ -783,6 +733,8 @@ Cause the action subject to move to a certain distance from oMoveTo. If there is
 
 Source: `NWScript.ActionMoveToObject`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_move_to_object`.
 
 Available in: all Glyph events/stages.
@@ -794,6 +746,8 @@ Available in: all Glyph events/stages.
 Cause the action subject to open oDoor - bRun: If TRUE, subject will run to the door instead of walking
 
 Source: `NWScript.ActionOpenDoor`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_open_door`.
 
@@ -807,6 +761,8 @@ Pause the current conversation.
 
 Source: `NWScript.ActionPauseConversation`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_pause_conversation`.
 
 Available in: all Glyph events/stages.
@@ -818,6 +774,8 @@ Available in: all Glyph events/stages.
 Pick up oItem from the ground. * No return value, but if an error occurs the log file will contain "ActionPickUpItem failed."
 
 Source: `NWScript.ActionPickUpItem`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_pick_up_item`.
 
@@ -831,6 +789,8 @@ Cause the action subject to play an animation - nAnimation: ANIMATION_* - fSpeed
 
 Source: `NWScript.ActionPlayAnimation`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_play_animation`.
 
 Available in: all Glyph events/stages.
@@ -842,6 +802,8 @@ Available in: all Glyph events/stages.
 Put down oItem on the ground. * No return value, but if an error occurs the log file will contain "ActionPutDownItem failed."
 
 Source: `NWScript.ActionPutDownItem`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_put_down_item`.
 
@@ -855,6 +817,8 @@ The action subject will generate a random location near its current location and
 
 Source: `NWScript.ActionRandomWalk`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_random_walk`.
 
 Available in: all Glyph events/stages.
@@ -866,6 +830,8 @@ Available in: all Glyph events/stages.
 The creature will rest if not in combat and no enemies are nearby. - bCreatureToEnemyLineOfSightCheck: TRUE to allow the creature to rest if enemies are nearby, but the creature can't see the enemy. FALSE the creature will not rest if enemies are nearby regardless of whether or not the creature can see them, such as if an enemy is close by, but is in a different room behind a closed door.
 
 Source: `NWScript.ActionRest`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_rest`.
 
@@ -879,6 +845,8 @@ Resume a conversation after it has been paused.
 
 Source: `NWScript.ActionResumeConversation`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_resume_conversation`.
 
 Available in: all Glyph events/stages.
@@ -890,6 +858,8 @@ Available in: all Glyph events/stages.
 Sit in oChair. Note: Not all creatures will be able to sit and not all objects can be sat on. The object oChair must also be marked as usable in the toolset. For Example: To get a player to sit in oChair when they click on it, place the following script in the OnUsed event for the object oChair. void main() { object oChair = OBJECT_SELF; AssignCommand(GetLastUsedBy(),ActionSit(oChair)); }
 
 Source: `NWScript.ActionSit`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_sit`.
 
@@ -903,6 +873,8 @@ Add a speak action to the action subject. - sStringToSpeak: String to be spoken 
 
 Source: `NWScript.ActionSpeakString`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_speak_string`.
 
 Available in: all Glyph events/stages.
@@ -914,6 +886,8 @@ Available in: all Glyph events/stages.
 Causes the creature to speak a translated string. - nStrRef: Reference of the string in the talk table - nTalkVolume: TALKVOLUME_*
 
 Source: `NWScript.ActionSpeakStringByStrRef`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_speak_string_by_str_ref`.
 
@@ -927,6 +901,8 @@ Starts a conversation with oObjectToConverseWith - this will cause their OnDialo
 
 Source: `NWScript.ActionStartConversation`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_start_conversation`.
 
 Available in: all Glyph events/stages.
@@ -938,6 +914,8 @@ Available in: all Glyph events/stages.
 Take oItem from oTakeFrom If oItem is not a valid item, or oTakeFrom is not a valid object, nothing will happen.
 
 Source: `NWScript.ActionTakeItem`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_take_item`.
 
@@ -951,6 +929,8 @@ Unequip oItem from whatever slot it is currently in.
 
 Source: `NWScript.ActionUnequipItem`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_unequip_item`.
 
 Available in: all Glyph events/stages.
@@ -962,6 +942,8 @@ Available in: all Glyph events/stages.
 The action subject will unlock oTarget, which can be a door or a placeable object.
 
 Source: `NWScript.ActionUnlockObject`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_unlock_object`.
 
@@ -975,6 +957,8 @@ Use nFeat on oTarget. - nFeat: FEAT_* - oTarget: Target of the feat. Must be OBJ
 
 Source: `NWScript.ActionUseFeat`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_use_feat`.
 
 Available in: all Glyph events/stages.
@@ -986,6 +970,8 @@ Available in: all Glyph events/stages.
 Runs the action "UseSkill" on the current creature Use nSkill on oTarget. - nSkill: SKILL_* - oTarget - nSubSkill: SUBSKILL_* - oItemUsed: Item to use in conjunction with the skill
 
 Source: `NWScript.ActionUseSkill`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_use_skill`.
 
@@ -999,6 +985,8 @@ Do nothing for fSeconds seconds.
 
 Source: `NWScript.ActionWait`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.action_wait`.
 
 Available in: all Glyph events/stages.
@@ -1010,6 +998,8 @@ Available in: all Glyph events/stages.
 Clear all the actions of oObject. * No return value, but if an error occurs, the log file will contain "ClearAllActions failed.". - nClearCombatState: if true, this will immediately clear the combat state on a creature, which will stop the combat music and allow them to rest, engage in dialog, or other actions that they would normally have to wait for.
 
 Source: `NWScript.ClearAllActions`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.clear_all_actions`.
 
@@ -1023,6 +1013,8 @@ Jump to lDestination. The action is added to the TOP of the action queue.
 
 Source: `NWScript.JumpToLocation`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.jump_to_location`.
 
 Available in: all Glyph events/stages.
@@ -1034,6 +1026,8 @@ Available in: all Glyph events/stages.
 Jump to oToJumpTo (the action is added to the top of the action queue).
 
 Source: `NWScript.JumpToObject`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.jump_to_object`.
 
@@ -1047,6 +1041,8 @@ Play nAnimation immediately. - nAnimation: ANIMATION_* - fSpeed - fSeconds
 
 Source: `NWScript.PlayAnimation`. Backend: NWScript.AssignCommand.
 
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
+
 Kind: Action. Canonical: `nwn.play_animation`.
 
 Available in: all Glyph events/stages.
@@ -1058,6 +1054,8 @@ Available in: all Glyph events/stages.
 The caller will immediately speak sStringToSpeak (this is different from ActionSpeakString) - sStringToSpeak - nTalkVolume: TALKVOLUME_*
 
 Source: `NWScript.SpeakString`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.speak_string`.
 
@@ -1762,6 +1760,18 @@ NWScript GetRacialType with the established runtime pin contract.
 Source: `NWScript.GetRacialType`. Backend: NWScript adapter.
 
 Kind: Value. Canonical: `nwn.get_racial_type`.
+
+Available in: all Glyph events/stages.
+
+### `nwn.get_res_ref`
+
+`nwn.get_res_ref(object: Object) → String`
+
+NWScript GetResRef with the established runtime pin contract.
+
+Source: `NWScript.GetResRef`. Backend: NWScript adapter.
+
+Kind: Value. Canonical: `nwn.get_res_ref`.
 
 Available in: all Glyph events/stages.
 
@@ -3636,6 +3646,8 @@ Available in: all Glyph events/stages.
 The creature will equip the armour in its possession that has the highest armour class.
 
 Source: `NWScript.ActionEquipMostEffectiveArmor`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.action_equip_most_effective_armor`.
 
@@ -6426,6 +6438,8 @@ Available in: all Glyph events/stages.
 Play sSoundName - sSoundName: TBD - SS This will play a mono sound from the location of the object running the command.
 
 Source: `NWScript.PlaySound`. Backend: NWScript.AssignCommand.
+
+The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.
 
 Kind: Action. Canonical: `nwn.play_sound`.
 
@@ -10631,311 +10645,31 @@ Constants are available automatically. Domains currently use Int values; OBJECT.
 
 ## Receiver methods
 
-| Receiver | Method | Parameters | Returns | Canonical | Availability |
-| --- | --- | --- | --- | --- | --- |
-| Object | action_attack | attackee: Object, passive: Bool = false | Void | nwn.action_attack | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_cast_fake_spell_at_location | spell: Int, target: Location, projectile_path_type: Int = 0 | Void | nwn.action_cast_fake_spell_at_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_cast_fake_spell_at_object | spell: Int, target: Object, projectile_path_type: Int = 0 | Void | nwn.action_cast_fake_spell_at_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_cast_spell_at_location | spell: Int, target_location: Location, meta_magic: Int = 255, cheat: Bool = false, projectile_path_type: Int = 0, instant_spell: Bool = false, class: Int = -1, spontaneous_cast: Bool = false, domainlevel: Int = 0 | Void | nwn.action_cast_spell_at_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_cast_spell_at_object | spell: Int, target: Object, meta_magic: Int = 255, cheat: Bool = false, domain_level: Int = 0, projectile_path_type: Int = 0, instant_spell: Bool = false, class: Int = -1, spontaneous_cast: Bool = false | Void | nwn.action_cast_spell_at_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_close_door | door: Object, run: Bool = false | Void | nwn.action_close_door | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_counter_spell | counter_spell_target: Object | Void | nwn.action_counter_spell | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_equip_item | item: Object, inventory_slot: Int | Void | nwn.action_equip_item | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_equip_most_damaging_melee | versus: Object = 2130706432, off_hand: Bool = false | Void | nwn.action_equip_most_damaging_melee | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_equip_most_damaging_ranged | versus: Object = 2130706432 | Void | nwn.action_equip_most_damaging_ranged | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_equip_most_effective_armor |  | Void | nwn.action_equip_most_effective_armor | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_examine | examine: Object | Void | nwn.action_examine | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_force_follow_object | follow: Object, follow_distance: Float = 0 | Void | nwn.action_force_follow_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_force_move_to_location | destination: Location, run: Bool = false, timeout: Float = 30 | Void | nwn.action_force_move_to_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_force_move_to_object | move_to: Object, run: Bool = false, range: Float = 1, timeout: Float = 30 | Void | nwn.action_force_move_to_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_give_item | item: Object, give_to: Object | Void | nwn.action_give_item | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_interact_object | placeable: Object | Void | nwn.action_interact_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_jump_to_location | location: Location | Void | nwn.action_jump_to_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_jump_to_object | to_jump_to: Object, walk_straight_line_to_point: Bool = true | Void | nwn.action_jump_to_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_lock_object | target: Object | Void | nwn.action_lock_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_move_away_from_location | move_away_from: Location, run: Bool = false, move_away_range: Float = 40 | Void | nwn.action_move_away_from_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_move_away_from_object | flee_from: Object, run: Bool = false, move_away_range: Float = 40 | Void | nwn.action_move_away_from_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_move_to_location | destination: Location, run: Bool = false | Void | nwn.action_move_to_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_move_to_object | move_to: Object, run: Bool = false, range: Float = 1 | Void | nwn.action_move_to_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_open_door | door: Object, run: Bool = false | Void | nwn.action_open_door | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_pause_conversation |  | Void | nwn.action_pause_conversation | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_pick_up_item | item: Object | Void | nwn.action_pick_up_item | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_play_animation | animation: Int, speed: Float = 1, duration_seconds: Float = 0 | Void | nwn.action_play_animation | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_put_down_item | item: Object | Void | nwn.action_put_down_item | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_random_walk |  | Void | nwn.action_random_walk | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_rest | creature_to_enemy_line_of_sight_check: Bool = false | Void | nwn.action_rest | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_resume_conversation |  | Void | nwn.action_resume_conversation | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_sit | chair: Object | Void | nwn.action_sit | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_speak_string | string_to_speak: String, talk_volume: Int = 0 | Void | nwn.action_speak_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_speak_string_by_str_ref | str_ref: Int, talk_volume: Int = 0 | Void | nwn.action_speak_string_by_str_ref | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_start_conversation | object_to_converse_with: Object, dialog_res_ref: String = , private_conversation: Bool = false, play_hello: Bool = true | Void | nwn.action_start_conversation | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_take_item | item: Object, take_from: Object | Void | nwn.action_take_item | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_unequip_item | item: Object | Void | nwn.action_unequip_item | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_unlock_object | target: Object | Void | nwn.action_unlock_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_use_feat | feat: Int, target: Object = 2130706432, sub_feat: Int = 0, target_location: Location = invalid | Void | nwn.action_use_feat | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_use_skill | skill: Int, target: Object, sub_skill: Int = 0, item_used: Object = 2130706432 | Void | nwn.action_use_skill | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | action_wait | seconds: Float | Void | nwn.action_wait | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | add_henchman | henchman: Object = 2130706432 | Void | nwn.add_henchman | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | adjust_alignment | alignment: Int, shift: Int, all_party_members: Bool = true | Void | nwn.adjust_alignment | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | adjust_reputation | source_faction_member: Object, adjustment: Int | Void | nwn.adjust_reputation | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | ambient_sound_change_day | track: Int | Void | nwn.ambient_sound_change_day | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | ambient_sound_change_night | track: Int | Void | nwn.ambient_sound_change_night | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | ambient_sound_play |  | Void | nwn.ambient_sound_play | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | ambient_sound_set_day_volume | volume: Int | Void | nwn.ambient_sound_set_day_volume | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | ambient_sound_set_night_volume | volume: Int | Void | nwn.ambient_sound_set_night_volume | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | ambient_sound_stop |  | Void | nwn.ambient_sound_stop | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | apply_effect | effect: Effect, duration: Float = 0, duration_type: Int = -1 | Void | nwn.apply_effect_to_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | black_screen |  | Void | nwn.black_screen | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | change_faction | member_of_faction_to_join: Object | Void | nwn.change_faction | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | change_to_standard_faction | standard_faction: Int | Void | nwn.change_to_standard_faction | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | clear_actions | clear_combat_state: Int = 0, object: Object = 2130706432 | Void | nwn.clear_all_actions | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | copy_area | new_tag: String = , new_name: String =  | Object | nwn.copy_area | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | copy_item | target_inventory: Object = 2130706432, copy_vars: Bool = false | Object | nwn.copy_item | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | copy_item_and_modify | type: Int, index: Int, new_value: Int, copy_vars: Bool = false | Object | nwn.copy_item_and_modify | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | copy_object | loc_location: Location, owner: Object = 2130706432, new_tag: String = , copy_local_state: Bool = false | Object | nwn.copy_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | delete_local_float | var_name: String | Void | nwn.delete_local_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | delete_local_int | var_name: String | Void | nwn.delete_local_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | delete_local_location | var_name: String | Void | nwn.delete_local_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | delete_local_object | var_name: String | Void | nwn.delete_local_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | delete_local_string | var_name: String | Void | nwn.delete_local_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | destroy | delay_seconds: Float = 0 | Void | nwn.destroy_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | destroy_area |  | Int | nwn.destroy_area | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | do_door_action | door_action: Int | Void | nwn.do_door_action | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | do_placeable_object_action | placeable_action: Int | Void | nwn.do_placeable_object_action | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | effects |  | List<Effect> | nwn.effects | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | explore_area_for_player | player: Object, explored: Bool = true | Void | nwn.explore_area_for_player | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | extraordinary_effect |  | Effect | nwn.extraordinary_effect | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | faction_members | pc_only: Bool = false | List<Object> | nwn.faction_members | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | fade_from_black | speed: Float = 0.01 | Void | nwn.fade_from_black | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | fade_to_black | speed: Float = 0.01 | Void | nwn.fade_to_black | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | force_rest |  | Void | nwn.force_rest | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | fortitude_save | dc: Int, save_type: Int = 0, save_versus: Object = 2130706432 | Bool | nwn.fortitude_save | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_ability_score | ability_type: Int, base_ability_score: Bool = false | Int | nwn.get_ability_score | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_ac |  | Int | nwn.get_ac | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_action_mode | mode: Int | Int | nwn.get_action_mode | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_age |  | Int | nwn.get_age | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_ai_level |  | Int | nwn.get_ai_level | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_alignment_good_evil |  | Int | nwn.get_alignment_good_evil | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_alignment_law_chaos |  | Int | nwn.get_alignment_law_chaos | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_animal_companion_creature_type |  | Int | nwn.get_animal_companion_creature_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_animal_companion_name |  | String | nwn.get_animal_companion_name | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_appearance_type |  | Int | nwn.get_appearance_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_arcane_spell_failure |  | Int | nwn.get_arcane_spell_failure | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_area |  | Object | nwn.get_area | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Location | get_area |  | Object | nwn.get_area_from_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_area_no_rest_flag |  | Int | nwn.get_area_no_rest_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_associate_type |  | Int | nwn.get_associate_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_attack_target |  | Object | nwn.get_attack_target | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_attacks_per_round | check_overriden_value: Bool = true | Int | nwn.get_attacks_per_round | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_base_attack_bonus |  | Int | nwn.get_base_attack_bonus | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_base_item_type |  | Int | nwn.get_base_item_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_caster_level |  | Int | nwn.get_caster_level | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_challenge_rating |  | Float | nwn.get_challenge_rating | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_color | color_channel: Int | Int | nwn.get_color | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_commandable |  | Bool | nwn.get_commandable | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_creature_size |  | Int | nwn.get_creature_size | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_creature_tail_type |  | Int | nwn.get_creature_tail_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_creature_wing_type |  | Int | nwn.get_creature_wing_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_current_action |  | Int | nwn.get_current_action | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_current_hit_points |  | Int | nwn.get_current_hit_points | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_deity |  | String | nwn.get_deity | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_description | original_description: Bool = false, identified_description: Bool = true | String | nwn.get_description | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_distance | object_b: Object | Float | Object.get_distance | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Location | get_distance_between_locations | location_b: Location | Float | nwn.get_distance_between_locations | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_droppable_flag |  | Bool | nwn.get_droppable_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_caster_level |  | Int | nwn.get_effect_caster_level | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_creator |  | Object | nwn.get_effect_creator | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_duration |  | Int | nwn.get_effect_duration | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_duration_remaining |  | Int | nwn.get_effect_duration_remaining | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_duration_type |  | Int | nwn.get_effect_duration_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_float | index: Int | Float | nwn.get_effect_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_integer | index: Int | Int | nwn.get_effect_integer | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_link_id |  | String | nwn.get_effect_link_id | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_object | index: Int | Object | nwn.get_effect_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_spell_id |  | Int | nwn.get_effect_spell_id | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_string | index: Int | String | nwn.get_effect_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_sub_type |  | Int | nwn.get_effect_sub_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_tag |  | String | nwn.get_effect_tag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_effect_type | all_types: Bool = false | Int | nwn.get_effect_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_facing |  | Float | nwn.get_facing | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Location | get_facing |  | Float | nwn.get_facing_from_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_average_good_evil_alignment |  | Int | nwn.get_faction_average_good_evil_alignment | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_average_law_chaos_alignment |  | Int | nwn.get_faction_average_law_chaos_alignment | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_average_level |  | Int | nwn.get_faction_average_level | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_average_reputation | target: Object | Int | nwn.get_faction_average_reputation | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_average_xp |  | Int | nwn.get_faction_average_xp | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_best_ac | must_be_visible: Bool = true | Object | nwn.get_faction_best_ac | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_equal | second_object: Object = 2130706432 | Bool | nwn.get_faction_equal | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_leader |  | Object | nwn.get_faction_leader | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_least_damaged_member | must_be_visible: Bool = true | Object | nwn.get_faction_least_damaged_member | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_most_damaged_member | must_be_visible: Bool = true | Object | nwn.get_faction_most_damaged_member | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_strongest_member | must_be_visible: Bool = true | Object | nwn.get_faction_strongest_member | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_weakest_member | must_be_visible: Bool = true | Object | nwn.get_faction_weakest_member | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_faction_worst_ac | must_be_visible: Bool = true | Object | nwn.get_faction_worst_ac | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_familiar_creature_type |  | Int | nwn.get_familiar_creature_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_familiar_name |  | String | nwn.get_familiar_name | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_fortitude_saving_throw |  | Int | nwn.get_fortitude_saving_throw | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_gender |  | Int | nwn.get_gender | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_gold |  | Int | nwn.get_gold | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_gold_piece_value |  | Int | nwn.get_gold_piece_value | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_good_evil_value |  | Int | nwn.get_good_evil_value | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_hardness |  | Int | nwn.get_hardness | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_has_inventory |  | Bool | nwn.get_has_inventory | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_hit_dice |  | Int | nwn.get_hit_dice | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_identified |  | Bool | nwn.get_identified | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_infinite_flag |  | Bool | nwn.get_infinite_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_area_above_ground |  | Bool | nwn.get_is_area_above_ground | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_area_interior |  | Bool | nwn.get_is_area_interior | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_area_natural |  | Bool | nwn.get_is_area_natural | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_dm_possessed |  | Bool | nwn.get_is_dm_possessed | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_door_action_possible | door_action: Int | Bool | nwn.get_is_door_action_possible | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | get_is_effect_valid |  | Bool | nwn.get_is_effect_valid | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_enemy | source: Object = 2130706432 | Bool | nwn.get_is_enemy | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_friend | source: Object = 2130706432 | Bool | nwn.get_is_friend | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_immune | immunity_type: Int, versus: Object = 2130706432 | Bool | nwn.get_is_immune | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_in_combat |  | Bool | nwn.get_is_in_combat | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_neutral | source: Object = 2130706432 | Bool | nwn.get_is_neutral | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_open |  | Bool | nwn.get_is_open | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_placeable_object_action_possible | placeable_action: Int | Bool | nwn.get_is_placeable_object_action_possible | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_is_player_dm |  | Bool | nwn.get_is_player_dm | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_item_ac_value |  | Int | nwn.get_item_ac_value | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_item_charges |  | Int | nwn.get_item_charges | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_item_cursed_flag |  | Bool | nwn.get_item_cursed_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_item_possessor | return_bags: Bool = false | Object | nwn.get_item_possessor | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_item_stack_size |  | Int | nwn.get_item_stack_size | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_law_chaos_value |  | Int | nwn.get_law_chaos_value | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_local_float | var_name: String | Float | nwn.get_local_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_local_int | var_name: String | Int | nwn.get_local_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_local_location | var_name: String | Location | nwn.get_local_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_local_object | var_name: String | Object | nwn.get_local_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_local_string | var_name: String | String | nwn.get_local_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_location |  | Location | nwn.get_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_lock_key_required |  | Bool | nwn.get_lock_key_required | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_lock_key_tag |  | String | nwn.get_lock_key_tag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_lock_lock_dc |  | Int | nwn.get_lock_lock_dc | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_lock_lockable |  | Bool | nwn.get_lock_lockable | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_lock_unlock_dc |  | Int | nwn.get_lock_unlock_dc | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_locked |  | Bool | nwn.get_locked | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_master |  | Object | nwn.get_master | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_max_hit_points |  | Int | nwn.get_max_hit_points | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_memorized_spell_id | class_type: Int, spell_level: Int, index: Int | Int | nwn.get_memorized_spell_id | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_memorized_spell_ready | class_type: Int, spell_level: Int, index: Int | Int | nwn.get_memorized_spell_ready | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_movement_rate |  | Int | nwn.get_movement_rate | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_name |  | String | nwn.get_name | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_nearest_object_by_type | type: String | Object | Object.nearest_object_by_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_nearest_trap_to_object | trap_detected: Int = 1 | Object | nwn.get_nearest_trap_to_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_object_type |  | Int | nwn.get_object_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_object_visual_transform | transform: Int, current_lerp: Bool = false, scope: Int = 0 | Float | nwn.get_object_visual_transform | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_pickpocketable_flag |  | Bool | nwn.get_pickpocketable_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_plot_flag |  | Bool | nwn.get_plot_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_portrait_id |  | Int | nwn.get_portrait_id | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_portrait_res_ref |  | String | nwn.get_portrait_res_ref | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_racial_type |  | Int | nwn.get_racial_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_reflex_saving_throw |  | Int | nwn.get_reflex_saving_throw | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_resref |  | String | nwn.get_resref | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_spell_resistance |  | Int | nwn.get_spell_resistance | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_stolen_flag |  | Bool | nwn.get_stolen_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_store_gold |  | Int | nwn.get_store_gold | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_store_identify_cost |  | Int | nwn.get_store_identify_cost | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_store_max_buy_price |  | Int | nwn.get_store_max_buy_price | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_sub_race |  | String | nwn.get_sub_race | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_tag |  | String | nwn.get_tag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_transition_target |  | Object | nwn.get_transition_target | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_useable_flag |  | Bool | nwn.get_useable_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_weather |  | Int | nwn.get_weather | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_weight |  | Int | nwn.get_weight | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_will_saving_throw |  | Int | nwn.get_will_saving_throw | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Location | get_x |  | Float | nwn.location_x | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | get_xp |  | Int | nwn.get_xp | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Location | get_y |  | Float | nwn.location_y | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Location | get_z |  | Float | nwn.location_z | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | give_gold_to_creature | gp: Int | Void | nwn.give_gold_to_creature | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | give_xp_to_creature | xp_amount: Int | Void | nwn.give_xp_to_creature | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | inventory |  | List<Object> | nwn.inventory | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | is_dead |  | Bool | nwn.get_is_dead | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | is_dm |  | Bool | nwn.get_is_dm | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | is_in_conversation |  | Bool | nwn.is_in_conversation | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | is_player |  | Bool | Object.is_player | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | is_resting |  | Bool | nwn.get_is_resting | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | is_valid |  | Bool | nwn.get_is_object_valid | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | jump_to_location | destination: Location | Void | nwn.jump_to_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | jump_to_object | to_jump_to: Object, walk_straight_line_to_point: Int = 1 | Void | nwn.jump_to_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | magical_effect |  | Effect | nwn.magical_effect | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | music_background_change_day | track: Int | Void | nwn.music_background_change_day | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | music_background_change_night | track: Int | Void | nwn.music_background_change_night | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | music_background_play |  | Void | nwn.music_background_play | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | music_background_stop |  | Void | nwn.music_background_stop | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | music_battle_change | track: Int | Void | nwn.music_battle_change | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | music_battle_play |  | Void | nwn.music_battle_play | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | music_battle_stop |  | Void | nwn.music_battle_stop | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | nearest_object | object_type: Int = 32767, nth: Int = 1 | Object | nwn.get_nearest_object_by_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | objects | object_type: Int = 32767 | List<Object> | nwn.objects_in_area | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | play_animation | animation: Int, speed: Float = 1, seconds: Float = 0 | Void | nwn.play_animation | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | play_sound | sound_name: String | Void | nwn.play_sound | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | reflex_save | dc: Int, save_type: Int = 0, save_versus: Object = 2130706432 | Bool | nwn.reflex_save | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | remove_effect | effect: Effect | Void | nwn.remove_effect | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | remove_henchman | henchman: Object = 2130706432 | Void | nwn.remove_henchman | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | send_message_to_pc | sz_message: String | Void | nwn.send_message_to_pc | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_action_mode | mode: Int, status: Int | Void | nwn.set_action_mode | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_ai_level | ai_level: Int | Void | nwn.set_ai_level | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_camera_height | height: Float = 0 | Void | nwn.set_camera_height | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_camera_mode | camera_mode: Int | Void | nwn.set_camera_mode | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_color | color_channel: Int, color_value: Int | Void | nwn.set_color | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_creature_appearance_type | appearance_type: Int | Void | nwn.set_creature_appearance_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_description | new_description: String = , identified_description: Bool = true | Void | nwn.set_description | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_droppable_flag | droppable: Bool | Void | nwn.set_droppable_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | set_effect_creator | creator: Object | Effect | nwn.set_effect_creator | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | set_effect_spell_id | spell_id: Int | Effect | nwn.set_effect_spell_id | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_gender | gender: Int | Void | nwn.set_gender | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_identified | identified: Bool | Void | nwn.set_identified | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_immortal | immortal: Bool | Void | nwn.set_immortal | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_infinite_flag | infinite: Bool = true | Void | nwn.set_infinite_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_item_charges | charges: Int | Void | nwn.set_item_charges | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_item_cursed_flag | cursed: Int | Void | nwn.set_item_cursed_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_item_stack_size | size: Int | Void | nwn.set_item_stack_size | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_local_float | var_name: String, value: Float | Void | nwn.set_local_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_local_int | var_name: String, value: Int | Void | nwn.set_local_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_local_location | var_name: String, value: Location | Void | nwn.set_local_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_local_object | var_name: String, value: Object | Void | nwn.set_local_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_local_string | var_name: String, value: String | Void | nwn.set_local_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_lock_key_required | key_required: Int = 1 | Void | nwn.set_lock_key_required | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_lock_key_tag | new_key_tag: String | Void | nwn.set_lock_key_tag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_lock_lock_dc | new_lock_dc: Int | Void | nwn.set_lock_lock_dc | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_lock_lockable | lockable: Int = 1 | Void | nwn.set_lock_lockable | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_lock_unlock_dc | new_unlock_dc: Int | Void | nwn.set_lock_unlock_dc | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_locked | locked: Bool | Void | nwn.set_locked | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_map_pin_enabled | enabled: Int | Void | nwn.set_map_pin_enabled | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_name | name: String | Void | nwn.set_name | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_object_visual_transform | transform: Int, value: Float, lerp_type: Int = 0, lerp_duration: Float = 0, pause_with_game: Bool = true, scope: Int = 0, behavior_flags: Int = 0, repeats: Int = 0 | Float | nwn.set_object_visual_transform | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_pickpocketable_flag | pickpocketable: Bool | Void | nwn.set_pickpocketable_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_plot_flag | plot_flag: Int | Void | nwn.set_plot_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_portrait_id | portrait_id: Int | Void | nwn.set_portrait_id | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_portrait_res_ref | portrait_res_ref: String | Void | nwn.set_portrait_res_ref | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_stolen_flag | stolen_flag: Int | Void | nwn.set_stolen_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_store_gold | gold: Int | Void | nwn.set_store_gold | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_store_identify_cost | cost: Int | Void | nwn.set_store_identify_cost | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_store_max_buy_price | max_buy: Int | Void | nwn.set_store_max_buy_price | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_tag | new_tag: String | Void | nwn.set_tag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_trap_active | active: Int = 1 | Void | nwn.set_trap_active | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_trap_detect_dc | detect_dc: Int | Void | nwn.set_trap_detect_dc | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_trap_detectable | detectable: Int = 1 | Void | nwn.set_trap_detectable | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_trap_detected_by | detector: Object, detected: Bool = true | Int | nwn.set_trap_detected_by | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_trap_disarm_dc | disarm_dc: Int | Void | nwn.set_trap_disarm_dc | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_trap_disarmable | disarmable: Int = 1 | Void | nwn.set_trap_disarmable | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_trap_key_tag | key_tag: String | Void | nwn.set_trap_key_tag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_trap_one_shot | one_shot: Int = 1 | Void | nwn.set_trap_one_shot | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_useable_flag | useable_flag: Int | Void | nwn.set_useable_flag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_weather | weather: Int | Void | nwn.set_weather | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | set_xp | xp_amount: Int | Void | nwn.set_xp | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | speak_string | string_to_speak: String, talk_volume: Int = 0 | Void | nwn.speak_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | summon_animal_companion |  | Void | nwn.summon_animal_companion | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | summon_familiar |  | Void | nwn.summon_familiar | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | supernatural_effect |  | Effect | nwn.supernatural_effect | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | tag_effect | new_tag: String | Effect | nwn.tag_effect | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | versus_alignment_effect | law_chaos: Int = 0, good_evil: Int = 0 | Effect | nwn.versus_alignment_effect | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | versus_racial_type_effect | racial_type: Int | Effect | nwn.versus_racial_type_effect | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Effect | versus_trap_effect |  | Effect | nwn.versus_trap_effect | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| Object | will_save | dc: Int, save_type: Int = 0, save_versus: Object = 2130706432 | Bool | nwn.will_save | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+These deliberately classified methods belong to known Glyph value types or explicit domain abstractions. Object is an opaque NWN handle; engine procedures use `nwn.*`.
+
+| Receiver | Policy | Method | Parameters | Returns | Canonical | Availability |
+| --- | --- | --- | --- | --- | --- | --- |
+| Location | LanguageValue | get_area |  | Object | nwn.get_area_from_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Location | LanguageValue | get_distance_between_locations | location_b: Location | Float | nwn.get_distance_between_locations | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_caster_level |  | Int | nwn.get_effect_caster_level | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_creator |  | Object | nwn.get_effect_creator | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_duration |  | Int | nwn.get_effect_duration | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_duration_remaining |  | Int | nwn.get_effect_duration_remaining | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_duration_type |  | Int | nwn.get_effect_duration_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_float | index: Int | Float | nwn.get_effect_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_integer | index: Int | Int | nwn.get_effect_integer | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_link_id |  | String | nwn.get_effect_link_id | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_object | index: Int | Object | nwn.get_effect_object | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_spell_id |  | Int | nwn.get_effect_spell_id | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_string | index: Int | String | nwn.get_effect_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_sub_type |  | Int | nwn.get_effect_sub_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_tag |  | String | nwn.get_effect_tag | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_effect_type | all_types: Bool = false | Int | nwn.get_effect_type | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Location | LanguageValue | get_facing |  | Float | nwn.get_facing_from_location | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Effect | LanguageValue | get_is_effect_valid |  | Bool | nwn.get_is_effect_valid | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Location | LanguageValue | get_x |  | Float | nwn.location_x | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Location | LanguageValue | get_y |  | Float | nwn.location_y | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Location | LanguageValue | get_z |  | Float | nwn.location_z | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 
 ## Context and property aliases
 
@@ -11061,10 +10795,6 @@ Constants are available automatically. Domains currently use Int values; OBJECT.
 | context.triggering_player | Object | triggering_player |  | Triggering Player |
 | corruption | Int | corruption |  | Chaos: Corruption |
 | creature | Object | creature |  | Boss Creature |
-| creature.ac | Int | creature.ac |  | Returns the current armor class of a creature. |
-| creature.hp | Int | creature.hp |  | Returns the current and maximum hit points of a creature. |
-| creature.max_hp | Int | creature.max_hp |  | Returns the current and maximum hit points of a creature. |
-| creature.name | String | creature.name |  | Returns the current display name and original blueprint name of a creature. |
 | creature_resref | String | creature_resref |  | Boss ResRef |
 | danger | Int | danger |  | Chaos: Danger |
 | density | Int | density |  | Chaos: Density |
@@ -11154,10 +10884,6 @@ Constants are available automatically. Domains currently use Int values; OBJECT.
 | context.triggering_player | Object | triggering_player |  | Triggering Player |
 | corruption | Int | corruption |  | Chaos: Corruption |
 | creature | Object | creature |  | Creature |
-| creature.ac | Int | creature.ac |  | Returns the current armor class of a creature. |
-| creature.hp | Int | creature.hp |  | Returns the current and maximum hit points of a creature. |
-| creature.max_hp | Int | creature.max_hp |  | Returns the current and maximum hit points of a creature. |
-| creature.name | String | creature.name |  | Returns the current display name and original blueprint name of a creature. |
 | creature_resref | String | creature_resref |  | Creature ResRef |
 | danger | Int | danger |  | Chaos: Danger |
 | density | Int | density |  | Chaos: Density |
@@ -11196,10 +10922,6 @@ Constants are available automatically. Domains currently use Int values; OBJECT.
 | context.target_id | String | target_id |  | Target ID |
 | context.target_mode | String | target_mode |  | Target Mode |
 | creature | Object | creature |  | Creature |
-| creature.ac | Int | creature.ac |  | Returns the current armor class of a creature. |
-| creature.hp | Int | creature.hp |  | Returns the current and maximum hit points of a creature. |
-| creature.max_hp | Int | creature.max_hp |  | Returns the current and maximum hit points of a creature. |
-| creature.name | String | creature.name |  | Returns the current display name and original blueprint name of a creature. |
 | interaction_tag | String | interaction_tag |  | Interaction Tag |
 | player | Object | creature |  | Creature |
 | proficiency | String | proficiency |  | Proficiency |
@@ -11229,10 +10951,6 @@ Constants are available automatically. Domains currently use Int values; OBJECT.
 | context.session_id | String | session_id |  | Session ID |
 | context.target_id | String | target_id |  | Target ID |
 | creature | Object | creature |  | Creature |
-| creature.ac | Int | creature.ac |  | Returns the current armor class of a creature. |
-| creature.hp | Int | creature.hp |  | Returns the current and maximum hit points of a creature. |
-| creature.max_hp | Int | creature.max_hp |  | Returns the current and maximum hit points of a creature. |
-| creature.name | String | creature.name |  | Returns the current display name and original blueprint name of a creature. |
 | interaction_tag | String | interaction_tag |  | Interaction Tag |
 | player | Object | creature |  | Creature |
 | proficiency | String | proficiency |  | Proficiency |
@@ -11265,10 +10983,6 @@ Constants are available automatically. Domains currently use Int values; OBJECT.
 | context.target_id | String | target_id |  | Target ID |
 | context.target_mode | String | target_mode |  | Target Mode |
 | creature | Object | creature |  | Creature |
-| creature.ac | Int | creature.ac |  | Returns the current armor class of a creature. |
-| creature.hp | Int | creature.hp |  | Returns the current and maximum hit points of a creature. |
-| creature.max_hp | Int | creature.max_hp |  | Returns the current and maximum hit points of a creature. |
-| creature.name | String | creature.name |  | Returns the current display name and original blueprint name of a creature. |
 | interaction_tag | String | interaction_tag |  | Interaction Tag |
 | player | Object | creature |  | Creature |
 | proficiency | String | proficiency |  | Proficiency |
@@ -11302,10 +11016,6 @@ Constants are available automatically. Domains currently use Int values; OBJECT.
 | context.session_id | String | session_id |  | Session ID |
 | context.target_id | String | target_id |  | Target ID |
 | creature | Object | creature |  | Creature |
-| creature.ac | Int | creature.ac |  | Returns the current armor class of a creature. |
-| creature.hp | Int | creature.hp |  | Returns the current and maximum hit points of a creature. |
-| creature.max_hp | Int | creature.max_hp |  | Returns the current and maximum hit points of a creature. |
-| creature.name | String | creature.name |  | Returns the current display name and original blueprint name of a creature. |
 | interaction_tag | String | interaction_tag |  | Interaction Tag |
 | player | Object | creature |  | Creature |
 | proficiency | String | proficiency |  | Proficiency |
@@ -11326,10 +11036,6 @@ Constants are available automatically. Domains currently use Int values; OBJECT.
 | context.target_creature | Object | target_creature |  | Target Creature |
 | context.trait_tag | String | trait_tag |  | Trait Tag |
 | creature | Object | target_creature |  | Target Creature |
-| creature.ac | Int | creature.ac |  | Returns the current armor class of a creature. |
-| creature.hp | Int | creature.hp |  | Returns the current and maximum hit points of a creature. |
-| creature.max_hp | Int | creature.max_hp |  | Returns the current and maximum hit points of a creature. |
-| creature.name | String | creature.name |  | Returns the current display name and original blueprint name of a creature. |
 | target_creature | Object | target_creature |  | Target Creature |
 | trait_tag | String | trait_tag |  | Trait Tag |
 
@@ -11345,10 +11051,6 @@ Constants are available automatically. Domains currently use Int values; OBJECT.
 | context.target_creature | Object | target_creature |  | Target Creature |
 | context.trait_tag | String | trait_tag |  | Trait Tag |
 | creature | Object | target_creature |  | Target Creature |
-| creature.ac | Int | creature.ac |  | Returns the current armor class of a creature. |
-| creature.hp | Int | creature.hp |  | Returns the current and maximum hit points of a creature. |
-| creature.max_hp | Int | creature.max_hp |  | Returns the current and maximum hit points of a creature. |
-| creature.name | String | creature.name |  | Returns the current display name and original blueprint name of a creature. |
 | target_creature | Object | target_creature |  | Target Creature |
 | trait_tag | String | trait_tag |  | Trait Tag |
 

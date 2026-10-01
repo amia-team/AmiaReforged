@@ -37,8 +37,7 @@ public partial class SetCreatureNameExecutor : IGlyphNodeExecutor
     {
         TypeId = NodeTypeId, Source = "NWScript.SetName", Backend = "NWScript adapter",
         Exports = [
-            new("nwn.set_name", ReceiverMethods: ["set_name"]),
-            new("set_name", null)
+            new("nwn.set_name"),
         ],
         DisplayName = "Set Creature Name",
         Category = "Actions",

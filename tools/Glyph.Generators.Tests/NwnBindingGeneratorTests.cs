@@ -36,18 +36,18 @@ public sealed class NwnBindingGeneratorTests
         Assert.That(fixture.Output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error), Is.Empty);
     }
 
-    [Test] public void Pure_query_has_direct_dispatch_object_conversion_receiver_and_legacy_alias()
+    [Test] public void Pure_query_has_direct_dispatch_object_conversion_and_no_receiver()
     {
-        var fixture = Generate("public static string GetTag(uint oObject) => \"tag\";", Function("GetTag", "nwn.get_tag", receiver: "get_tag", aliases: "tag,Object.get_tag"));
+        var fixture = Generate("public static string GetTag(uint oObject) => \"tag\";", Function("GetTag", "nwn.get_tag"));
         Valid(fixture);
         string text = Text(fixture.Result);
-        Assert.That(text, Does.Contain("NWScript.GetTag(p0)").And.Contain("cx.InObject(\"object\")").And.Contain("ReceiverMethods: [\"get_tag\"]").And.Contain("new(\"Object.get_tag\", \"value\")"));
+        Assert.That(text, Does.Contain("NWScript.GetTag(p0)").And.Contain("cx.InObject(\"object\")").And.Not.Contain("ReceiverMethods:"));
         Assert.That(text, Does.Not.Contain("Reflection").And.Not.Contain("Invoke("));
     }
     [Test] public void Action_and_impure_object_result_have_exec_flow()
     {
         var fixture = Generate("public static uint CreateObject(int nType) => 1u; public static void SetLocalInt(uint oObject, string sName, int nValue) {}",
-            Function("CreateObject", "nwn.create_object", "action") + "\n" + Function("SetLocalInt", "nwn.set_local_int", "action", receiver: "set_local_int"));
+            Function("CreateObject", "nwn.create_object", "action") + "\n" + Function("SetLocalInt", "nwn.set_local_int", "action"));
         Valid(fixture);
         string text = Text(fixture.Result);
         Assert.That(text, Does.Contain("Archetype = GlyphNodeArchetype.Action").And.Contain("NextExecPinId = \"exec_out\"").And.Contain("GlyphNwnValue.NormalizeObject(value)"));
@@ -68,7 +68,7 @@ public sealed class NwnBindingGeneratorTests
     [Test] public void Command_injects_an_explicit_actor_and_never_exposes_a_delegate_pin()
     {
         var fixture = Generate("public static void AssignCommand(uint oActor, System.Action callback) => callback(); public static void ActionAttack(uint oTarget) {}",
-            Function("ActionAttack", "nwn.action_attack", "command", receiver: "action_attack"));
+            Function("ActionAttack", "nwn.action_attack", "command"));
         Valid(fixture);
         Assert.That(Text(fixture.Result), Does.Contain("Pins.InObject(\"actor\", \"Actor\")").And.Contain("NWScript.AssignCommand(actor, () => NWScript.ActionAttack(p0))").And.Contain("Requires Glyph-native scheduling"));
     }
@@ -91,6 +91,13 @@ public sealed class NwnBindingGeneratorTests
         Valid(fixture);
         Assert.That(Text(fixture.Result), Does.Contain("GlyphDataType.NwObject, null"));
     }
+    [Test] public void Procedural_subject_preserves_the_required_pin_after_receiver_removal()
+    {
+        var fixture = Generate("public static int GetGold(uint oTarget = 2130706432u) => 0;", Function("GetGold", "nwn.get_gold"));
+        Valid(fixture);
+        Assert.That(Text(fixture.Result), Does.Contain("GlyphDataType.NwObject, null"));
+    }
+
     [Test] public void Omitted_optional_parameters_keep_the_native_default()
     {
         var fixture = Generate("public static int GetValue(int nMode = 7) => nMode;", Function("GetValue", "nwn.get_value", rules: "nMode:omit"));
@@ -124,12 +131,45 @@ public sealed class NwnBindingGeneratorTests
     [TestCase("public static void A(System.Action callback) {}", "function|A|nwn.a|action|||||Test|||", "GLYPHNW002")]
     [TestCase("public static System.IntPtr A() => default;", "function|A|nwn.a|pure|||||Test|||", "GLYPHNW003")]
     [TestCase("public static int A(int x) => x;", "function|A|nwn.a|pure||x:Object|||Test|||", "GLYPHNW004")]
-    [TestCase("public static int A(uint o) => 0; public static int B(uint o) => 0;", "function|A|nwn.a|pure|||same||Test|||\nfunction|B|nwn.b|pure|||same||Test|||", "GLYPHNW005")]
+    [TestCase("public static int A(System.IntPtr l) => 0; public static int B(System.IntPtr l) => 0;", "function|A|nwn.a|pure||l:Location|language_value:same||Test|||\nfunction|B|nwn.b|pure||l:Location|language_value:same||Test|||", "GLYPHNW005")]
     [TestCase("public const int FOO_X = 1; public const int BAR_X = 2;", "domain|FOO|X\ndomain|BAR|X", "GLYPHNW006")]
     [TestCase("public static int A() => 0;", "function|A|nwn.a|manual|||||Test|Missing.Adapter||", "GLYPHNW007")]
     [TestCase("public static int A() => 0;", "function|Missing|nwn.a|pure|||||Test|||", "GLYPHNW008")]
     public void Malformed_bindings_have_specific_diagnostics(string api, string manifest, string code) =>
         Assert.That(Generate(api, manifest).Result.Diagnostics.Select(d => d.Id), Does.Contain(code));
+
+    [TestCase("get_tag")]
+    [TestCase("language_value:get_tag")]
+    [TestCase("domain_abstraction:get_tag")]
+    [TestCase("legacy:get_tag")]
+    public void Raw_object_receiver_projection_is_rejected(string receiver)
+    {
+        var fixture = Generate("public static string GetTag(uint oObject) => \"tag\";",
+            Function("GetTag", "nwn.get_tag", receiver: receiver));
+        Assert.That(fixture.Result.Diagnostics.Select(d => d.Id), Does.Contain("GLYPHNW009"));
+    }
+
+    [Test] public void Deliberate_typed_value_receiver_has_explicit_policy()
+    {
+        var fixture = Generate("public static float GetFacingFromLocation(System.IntPtr lLocation) => 0;",
+            Function("GetFacingFromLocation", "nwn.get_facing_from_location", rules: "lLocation:Location", receiver: "language_value:get_facing"));
+        Valid(fixture);
+        Assert.That(Text(fixture.Result), Does.Contain("ReceiverType: GlyphDataType.Location, ReceiverPolicy: GlyphReceiverPolicy.LanguageValue"));
+    }
+
+    [Test] public void Command_cannot_claim_a_typed_value_receiver()
+    {
+        var fixture = Generate("public static void AssignCommand(uint actor, System.Action callback) {} public static void ActionMove(System.IntPtr lLocation) {}",
+            Function("ActionMove", "nwn.action_move", "command", rules: "lLocation:Location", receiver: "language_value:move"));
+        Assert.That(fixture.Result.Diagnostics.Select(d => d.Id), Does.Contain("GLYPHNW009"));
+    }
+
+    [Test] public void Manual_receiver_must_be_classified_on_its_descriptor()
+    {
+        var fixture = Generate("public static string GetTag(uint oObject) => \"tag\";",
+            Function("GetTag", "nwn.get_tag", "manual", receiver: "language_value:get_tag", adapter: "Missing.Adapter"));
+        Assert.That(fixture.Result.Diagnostics.Select(d => d.Id), Does.Contain("GLYPHNW009"));
+    }
 
     [Test] public void Generation_is_deterministic()
     {

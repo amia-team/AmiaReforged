@@ -24,7 +24,8 @@ public sealed class NwnBindingGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor Error6 = new("GLYPHNW006", "Constant collision", "{0}", "Glyph", DiagnosticSeverity.Error, true);
     private static readonly DiagnosticDescriptor Error7 = new("GLYPHNW007", "Missing manual adapter", "{0}", "Glyph", DiagnosticSeverity.Error, true);
     private static readonly DiagnosticDescriptor Error8 = new("GLYPHNW008", "Invalid NWN manifest", "{0}", "Glyph", DiagnosticSeverity.Error, true);
-    private static readonly DiagnosticDescriptor[] Errors = { Error1, Error2, Error3, Error4, Error5, Error6, Error7, Error8 };
+    private static readonly DiagnosticDescriptor Error9 = new("GLYPHNW009", "Invalid NWN receiver policy", "{0}", "Glyph", DiagnosticSeverity.Error, true);
+    private static readonly DiagnosticDescriptor[] Errors = { Error1, Error2, Error3, Error4, Error5, Error6, Error7, Error8, Error9 };
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -140,6 +141,16 @@ public sealed class NwnBindingGenerator : IIncrementalGenerator
             }
             if (cells.Length != 12 || cells[0] != "function") { Error(8, "Expected function plus 11 fields or domain plus 2 fields: " + line); continue; }
             var e = new Entry { Method = cells[1], Name = cells[2], Mode = cells[3], Return = cells[4], Rules = cells[5], Receiver = cells[6], Aliases = cells[7], Group = cells[8], Adapter = cells[9], Description = cells[10], Deprecated = cells[11] };
+            if (e.Receiver.Length > 0)
+            {
+                var receiver = e.Receiver.Split(':');
+                if (receiver.Length != 2 || receiver[0] != "language_value" || receiver[1].Length == 0)
+                {
+                    Error(9, "NWN receivers require explicit language_value:name policy; domain and legacy receivers must be hand-authored: " + e.Method);
+                    continue;
+                }
+                e.Receiver = receiver[1];
+            }
             if (!Add(entries, e.Method, e)) Error(8, "Duplicate method entry " + e.Method);
             if (e.Mode is not ("pure" or "action" or "command" or "manual" or "exclude" or "deferred")) Error(8, "Unknown mode for " + e.Method);
         }
@@ -168,6 +179,7 @@ public sealed class NwnBindingGenerator : IIncrementalGenerator
 
             if (e.Mode == "manual")
             {
+                if (e.Receiver.Length > 0) Error(9, "Manual receivers must be classified on the authoritative adapter descriptor, not the manifest: " + e.Method);
                 var adapter = compilation.GetTypeByMetadataName(e.Adapter);
                 if (adapter == null || !adapter.GetMembers("Descriptor").OfType<IPropertySymbol>().Any(p => p.IsStatic)) Error(7, "Missing adapter descriptor: " + e.Adapter);
                 continue;
@@ -210,11 +222,15 @@ public sealed class NwnBindingGenerator : IIncrementalGenerator
                 parameters.Add(parameter);
             }
             if (parameters.Where(p => !p.Omit).GroupBy(p => p.Pin).Any(g => g.Count() > 1)) { Error(8, "Duplicate pin ID in " + method.Name); invalid = true; }
+            // Procedural object subjects remain explicit. This preserves the required pins of the
+            // former receiver projections independently of whether source member sugar exists.
+            if (e.Mode != "command" && parameters.FirstOrDefault(p => !p.Omit) is { Type: "Object" } subject)
+                subject.Default = "null";
             string receiverType = e.Mode == "command" ? "Object" : parameters.FirstOrDefault(p => !p.Omit)?.Type ?? "";
             if (e.Receiver.Length > 0)
             {
                 if (!receivers.Add(receiverType + "." + e.Receiver)) Error(5, "Duplicate receiver " + receiverType + "." + e.Receiver);
-                if (receiverType is not ("Object" or "Location" or "Effect")) { Error(5, "Receiver must be Object, Location or Effect: " + e.Name); invalid = true; }
+                if (receiverType is not ("Location" or "Effect")) { Error(9, "LanguageValue receiver must be a typed Location or Effect, never an Object/action subject: " + e.Name); invalid = true; }
                 if (parameters.Count > 0 && e.Mode != "command") parameters.First(p => !p.Omit).Default = "null";
             }
             if (invalid) continue;
@@ -226,7 +242,7 @@ public sealed class NwnBindingGenerator : IIncrementalGenerator
             wrappers.Append("        ],\n        Results = [");
             if (resultType != "Void") wrappers.Append($"Pins.Out(\"value\", \"Value\", GlyphDataType.{RuntimeType(resultType)})");
             wrappers.Append("],\n        Exports = [\n");
-            wrappers.Append($"            new({Literal(e.Name)}, {(resultType == "Void" ? "null" : "\"value\"")}" + (e.Receiver.Length > 0 ? $", ReceiverMethods: [{Literal(e.Receiver)}], ReceiverType: GlyphDataType.{RuntimeType(receiverType)}" : "") + "),\n");
+            wrappers.Append($"            new({Literal(e.Name)}, {(resultType == "Void" ? "null" : "\"value\"")}" + (e.Receiver.Length > 0 ? $", ReceiverMethods: [{Literal(e.Receiver)}], ReceiverType: GlyphDataType.{RuntimeType(receiverType)}, ReceiverPolicy: GlyphReceiverPolicy.LanguageValue" : "") + "),\n");
             foreach (string alias in e.Aliases.Split(',').Where(s => s.Length > 0)) wrappers.Append($"            new({Literal(alias)}, {(resultType == "Void" ? "null" : "\"value\"")}),\n");
             wrappers.Append("        ]\n    };\n    public override async Task<GlyphNodeResult> RunAsync(GlyphNodeContext cx)\n    {\n");
             if (e.Mode == "command") wrappers.Append("        uint actor = await cx.InObject(\"actor\");\n");

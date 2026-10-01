@@ -21,7 +21,7 @@ test('standalone global declarations parse with zero errors', () => {
         'const OBJECT_DOOR = "door"',
         'struct Result { target: Object }',
         'type LookupResult { Found { target: Object } }',
-        'fn nearest(origin: Object, kind: String): Object = Object.nearest_object_by_type(origin, kind)',
+        'fn nearest(origin: Object, kind: String): Object = nwn.nearest_object_by_kind(origin, kind)',
         'const OBJECT_TRIGGER = "trigger";\n' +
             'fn nearest(o: Object, k: String): Object = Object;\n' +
             'struct Result { target: Object }',
@@ -41,7 +41,7 @@ test('prelude declarations keep their declaration node shapes', () => {
 test('const initializer and function body parse as full expressions', () => {
     // A member-accessed call in the function body, and a string in the constant initializer, must
     // parse as expressions rather than stopping at a single identifier.
-    const fn = parse('fn nearest(origin: Object, kind: String): Object = Object.nearest_object_by_type(origin, kind)');
+    const fn = parse('fn nearest(origin: Object, kind: String): Object = nwn.nearest_object_by_kind(origin, kind)');
     assert.deepEqual(errors(fn), []);
     assert.equal(nodes(fn, 'FunctionDeclaration').length, 1);
     assert.equal(nodes(fn, 'CallExpression').length, 1);

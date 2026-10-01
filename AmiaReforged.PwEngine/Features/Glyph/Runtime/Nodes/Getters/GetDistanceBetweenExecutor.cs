@@ -43,8 +43,7 @@ public partial class GetDistanceBetweenExecutor : IGlyphNodeExecutor
         TypeId = NodeTypeId, Source = "NWScript.GetDistanceBetween", Backend = "NWScript adapter",
         Exports = [
             new("nwn.get_distance_between", "distance"),
-            new("distance", "distance", null),
-            new("Object.get_distance", "distance", null, ReceiverMethods: ["get_distance"])
+
         ],
         DisplayName = "Get Distance Between",
         Category = "Getters",

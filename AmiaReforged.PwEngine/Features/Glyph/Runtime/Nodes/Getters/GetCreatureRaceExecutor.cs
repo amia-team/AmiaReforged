@@ -70,6 +70,6 @@ public partial class GetCreatureRaceExecutor : IGlyphNodeExecutor
         Source = "NWScript.GetRacialType", Backend = "NWScript adapter",
         Archetype = GlyphNodeArchetype.PureFunction,
         Parameters = [Pins.InObject("creature", "Creature")], Results = [Pins.Out("race_id", "Race", GlyphDataType.Int), Pins.Out("race_name", "Race name", GlyphDataType.String)],
-        Exports = [new("nwn.get_racial_type", "race_id", ReceiverMethods: ["get_racial_type"])]
+        Exports = [new("nwn.get_racial_type", "race_id")]
     };
 }

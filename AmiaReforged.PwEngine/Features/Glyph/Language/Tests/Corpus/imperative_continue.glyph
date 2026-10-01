@@ -1,14 +1,14 @@
 glyph filter_inventory : interaction {
     completed {
-        for item in player.inventory() {
-            if item.get_tag() == "keep" { continue }
-            item.destroy()
+        for item in nwn.inventory(player) {
+            if nwn.get_tag(item) == "keep" { continue }
+            nwn.destroy_object(item)
         }
         for outer in 0..10 {
             for inner in 0..10 {
                 if outer == inner { continue }
                 if inner > 5 { break }
-                player.set_local_int("pair", outer * 10 + inner)
+                nwn.set_local_int(player, "pair", outer * 10 + inner)
             }
         }
     }

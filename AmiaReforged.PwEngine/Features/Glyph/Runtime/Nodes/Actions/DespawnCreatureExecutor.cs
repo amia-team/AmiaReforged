@@ -41,6 +41,6 @@ public partial class DespawnCreatureExecutor : IGlyphNodeExecutor
         Source = "NWScript.DestroyObject", Backend = "NWScript adapter",
         Archetype = GlyphNodeArchetype.Action,
         Parameters = [Pins.InObject("creature", "Creature"), Pins.InFloat("delay_seconds", "Delay", "0")], Results = [],
-        Exports = [new("nwn.destroy_object", null, ReceiverMethods: ["destroy"])]
+        Exports = [new("nwn.destroy_object", null)]
     };
 }

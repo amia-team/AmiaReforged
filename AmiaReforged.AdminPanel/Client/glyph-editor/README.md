@@ -47,3 +47,8 @@ These read the compiler's existing corpus directly and check keyword parity with
 Run all language, completion, diagnostics, and browser tests with `npm test`. It uses installed Chromium at
 `/usr/bin/chromium`; set `CHROMIUM_PATH` to use another Chromium executable.
 The test serves the production bundle on an ephemeral localhost port.
+
+Engine completion uses the compiler's canonical `nwn.*` functions. Object is an opaque handle;
+`player.` shows explicit domain aliases, not inferred NWScript methods. Location and Effect methods
+come only from the classified `receiverMethods` metadata, with a known receiver type and policy.
+The editor never derives methods from a function's first Object parameter.

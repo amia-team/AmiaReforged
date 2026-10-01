@@ -1,9 +1,9 @@
 glyph mark_nearby_creatures : interaction {
     completed {
-        foreach creature in nwn.objects_in_area(player.get_area(), OBJECT_TYPE.CREATURE) {
-            if creature.get_distance(player) < 10.0 && creature != player {
-                creature.set_local_object("near_player", player)
-                if creature.is_dead() { creature.set_local_string("state", "fallen") }
+        foreach creature in nwn.objects_in_area(nwn.get_area(player), OBJECT_TYPE.CREATURE) {
+            if nwn.get_distance_between(creature, player) < 10.0 && creature != player {
+                nwn.set_local_object(creature, "near_player", player)
+                if nwn.get_is_dead(creature) { nwn.set_local_string(creature, "state", "fallen") }
             }
         }
     }

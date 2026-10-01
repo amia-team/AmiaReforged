@@ -1,11 +1,11 @@
 glyph inspect_target : interaction {
     completed {
-        let target = player.get_nearest_object_by_type("creature")
-        match target.get_object_type() {
+        let target = nwn.nearest_object_by_kind(player, "creature")
+        match nwn.get_object_type(target) {
             OBJECT_TYPE.CREATURE { message(player, "Creature") }
             OBJECT_TYPE.DOOR { message(player, "Door") }
             _ { message(player, "Other") }
         }
-        match player.get_tag() { "quest_actor" { message(player, "Quest actor") } }
+        match nwn.get_tag(player) { "quest_actor" { message(player, "Quest actor") } }
     }
 }

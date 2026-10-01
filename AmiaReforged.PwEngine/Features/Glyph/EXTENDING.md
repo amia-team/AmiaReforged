@@ -44,32 +44,50 @@ An action gets `exec_in`/`exec_out` automatically. For a getter, inherit `GlyphP
 use `PureFunction` (the default), declare `Results = [Pins.Out("value", "Value", type)]`,
 and export `new("source_name", "value")`. Return an output dictionary from `RunPureAsync`.
 A multi-output runtime node can have several exports selecting different return pins, as
-`GetCreatureHPExecutor` does. Source spellings such as `distance` and `Object.get_distance`
-share one runtime signature, using two exports.
+`GetCreatureHPExecutor` does. Canonical source spellings select those result pins without replacing the runtime operation identity.
 
 `Pins.In*` defaults are stored as the existing runtime strings; **null means required**.
 String defaults are raw text, without JSON quotes. The interpreter supplies connected/default
 values before executor input access. The typed accessor's fallback applies to missing or
 mistyped input, including direct executor unit tests; it does not redefine the signature default.
 
-## Add receivers, aliases and availability
+## When to use a receiver method
 
-For an Object receiver method, add this to the export:
+Use member syntax only when the receiver has a meaningful Glyph value type, or the API is an
+explicit higher-level language/domain abstraction. `Object` is an opaque NWN handle. Parameter
+zero being Object is insufficient: Glyph cannot prove it is a creature, item, door, store or area.
+
+Bad: `object.get_ability_score(ABILITY.STRENGTH)`.
+Good: `nwn.get_ability_score(object, ABILITY.STRENGTH)`.
+Good typed value: `location.get_x()`.
+Good domain abstraction: `player.has_knowledge("mining.basic")`.
+Struct fields such as `request.actor` and ADT payloads retain their language-defined semantics.
+
+Typed value methods use an explicit policy:
 
 ```csharp
-new("Object.get_distance", "distance", ReceiverMethods: ["get_distance"])
+new("nwn.location_x", "x", ReceiverMethods: ["get_x"],
+    ReceiverType: GlyphDataType.Location, ReceiverPolicy: GlyphReceiverPolicy.LanguageValue)
 ```
 
-Parameter zero must be Object. `player.get_distance(other)` then binds to
-`Object.get_distance(player, other)`; arbitrary .NET/Anvil members stay inaccessible.
-`ReceiverType` can declare another curated Glyph type. Receiver method names are unique within a receiver type. Object and Location can both
-provide `get_area` without ambiguity; binding resolves the receiver type first.
+Parameter zero must match `ReceiverType`. `LanguageValue` currently allows Location and Effect,
+with reviewed inspection/geometry methods. Their transformations and mutations remain procedural.
+`DomainAbstraction` is reserved for hand-authored semantic APIs; raw NWScript descriptors cannot
+claim it. `None` is the default and exposes no receiver. `Legacy` requires a deprecation message
+with a removal plan; no general Object compatibility receivers are retained by this refactor.
+Names must be unique within the receiver type. The verifier rejects unclassified and incompatible
+receivers. Removing a source alias does not change TypeIds, pins or persisted executable graphs.
+
+If Glyph later gains actual Creature, Item, Door, Placeable, Area or Store refinement types,
+methods such as `creature.ability_score(...)` can be reconsidered. Do not invent those subtypes
+just to preserve Object methods today.
+
+## Add domain aliases and availability
 
 Declare call/property aliases locally, including the injected expression:
 
 ```csharp
 new("has_item", "has_item", CallAliases: [new("player.has_item", "has_item", "player")])
-new("creature.hp", "current_hp", PropertyAliases: [new("creature.hp", "creature.hp", "creature")])
 new("set_progress", AllowedStages: ["started", "tick"], WritableAs: "progress")
 ```
 
@@ -190,7 +208,7 @@ lowerer and Lezer work. Intrinsics, aliases and contexts do not.
 | --- | --- | --- |
 | Action | Definition, executor, bootstrap, catalog, aliases/docs | Partial executor + descriptor + behavior test |
 | Getter | Pins, runtime list, source/output catalog entry, docs | Descriptor parameters/results/export + executor + test |
-| Object receiver | Getter + catalog intrinsic + receiver list + docs | Export `ReceiverMethods` beside the signature |
+| Typed value receiver | Typed signature + explicit policy + docs | Export `ReceiverMethods` with `LanguageValue` and `ReceiverType` |
 | Context | Event pins, output dictionary, getters, metadata/aliases | Schema field + typed integration data |
 | Subsystem | Central Glyph nodes and growing broad facade | Subsystem-owned module/executors/narrow API |
 | Event | Enum + bootstrap + source list + category/entry switches | Append enum identity + descriptor/schema/executor + lifecycle hook |
@@ -216,15 +234,16 @@ No runtime reflection dispatch is involved. New native APIs stay unpublished unt
 A function row has twelve pipe-separated fields; empty fields are significant:
 
 ```text
-function|NativeMember|GlyphName|mode|returnType|parameterRules|receiver|aliases|category|adapterClass|descriptionOrReason|deprecation
+function|NativeMember|GlyphName|mode|returnType|parameterRules|receiverExposure|aliases|category|adapterClass|descriptionOrReason|deprecation
 ```
 
 For example:
 
 ```text
-function|GetLocalInt|nwn.get_local_int|pure|||get_local_int||Locals||Read an object's local integer.|
-function|SetLocalInt|nwn.set_local_int|action|||set_local_int||Locals||Write an object's local integer.|
-function|GetIsDM|nwn.get_is_dm|pure|Bool||is_dm||Creatures||Whether the creature is a DM.|
+function|GetLocalInt|nwn.get_local_int|pure|||||Locals||Read an object's local integer.|
+function|SetLocalInt|nwn.set_local_int|action|||||Locals||Write an object's local integer.|
+function|GetIsDM|nwn.get_is_dm|pure|Bool||||Creatures||Whether the creature is a DM.|
+function|GetAreaFromLocation|nwn.get_area_from_location|pure||lLocation:Location|language_value:get_area||Objects||Area of a typed Location.|
 ```
 
 1. Add a row using `pure` for queries and value constructors, `action` for mutations (including
@@ -232,8 +251,10 @@ function|GetIsDM|nwn.get_is_dm|pure|Bool||is_dm||Creatures||Whether the creature
 2. Override semantic types where CLR types are insufficient. `nativeName:GlyphType:pinName`
    rules are comma-separated; the pin name may be omitted. For example `bRun:Bool` converts
    an integer sentinel to Bool, and `lTarget:Location` maps an opaque native location.
-3. Add one receiver name if parameter zero is Object, Location or Effect. Add comma-separated
-   source aliases to preserve existing spellings. Receivers and aliases use the same executor.
+3. Leave receiver exposure empty (the default `None`) for ordinary procedures and commands.
+   Only reviewed typed Location/Effect methods use `language_value:method_name`. Bare names,
+   Object receivers and automatic domain aliases are errors (`GLYPHNW009`). Constructor namespace
+   aliases such as `effect.haste` remain comma-separated source aliases and use the same executor.
 4. Run the tests and regenerate the standard artifacts with the command below.
 
 Scalar types are inferred: int -> Int, float/double -> Float, string -> String, uint -> Object.
@@ -241,10 +262,12 @@ IntPtr requires explicit Location/Effect semantics. Ref/out, delegates, vectors,
 events, JSON and other unrepresented types require adapters rather than accidental CLR access.
 `nativeName:omit` can omit an optional native parameter; its native `default` is passed. Ordinary
 native scalar defaults are preserved. OBJECT_SELF defaults require an explicit Glyph Object
-because Glyph normalizes zero handles to OBJECT_INVALID. Receiver parameters are required.
+because Glyph normalizes zero handles to OBJECT_INVALID. First Object subject parameters remain
+required independently of receiver exposure, preserving the original runtime pin contracts. Typed
+value receiver parameters are also required.
 
 `command` adds a required `actor: Object` parameter before native parameters and runs the specific
-call under `NWScript.AssignCommand(actor, ...)`. Its receiver is the actor. This is internal
+call under `NWScript.AssignCommand(actor, ...)`. The actor remains an explicit first source argument, not a receiver. This is internal
 scheduling machinery; Glyph cannot supply or obtain a delegate. Command functions return Void.
 Non-Void actions produce both exec and data outputs and execute once at their source position.
 Use unique source names, not implicit overload resolution; native overloads require an adapter.
@@ -322,7 +345,7 @@ have changed, and lists added/removed/changed functions and constants. Review th
 manifest/adapters, run conformance, then commit the regenerated artifacts together. The reviewed
 snapshot is also a regression test; the ordinary test suite fails on unreviewed API drift.
 `GLYPHNW001`–`GLYPHNW008` report duplicate source names, parameter/return mapping problems,
-object semantics, receiver/constant collisions, missing adapters and malformed manifest entries.
+object semantics, receiver/constant collisions, missing adapters, malformed manifest entries and invalid receiver policies (`GLYPHNW009`).
 
 
 ## Imperative language runtime

@@ -13,7 +13,7 @@ public sealed partial class ObjectsInAreaExecutor : GlyphNodeBase
         Archetype = GlyphNodeArchetype.PureFunction,
         Parameters = [Pins.InObject("area", "area"), Pins.InInt("object_type", "Object Type", "32767")],
         Results = [Pins.Out("value", "Objects", GlyphDataType.List) with { ElementType = GlyphDataType.NwObject }],
-        Exports = [new("nwn.objects_in_area", "value", ReceiverMethods: ["objects"])]
+        Exports = [new("nwn.objects_in_area", "value")]
     };
     public override string TypeId => Descriptor.TypeId;
     public override GlyphNodeDefinition CreateDefinition() => Descriptor.CreateDefinition();

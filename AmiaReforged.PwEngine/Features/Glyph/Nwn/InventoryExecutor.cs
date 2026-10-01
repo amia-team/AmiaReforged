@@ -13,7 +13,7 @@ public sealed partial class InventoryExecutor : GlyphNodeBase
         Archetype = GlyphNodeArchetype.PureFunction,
         Parameters = [Pins.InObject("target", "target")],
         Results = [Pins.Out("value", "Objects", GlyphDataType.List) with { ElementType = GlyphDataType.NwObject }],
-        Exports = [new("nwn.inventory", "value", ReceiverMethods: ["inventory"])]
+        Exports = [new("nwn.inventory", "value")]
     };
     public override string TypeId => Descriptor.TypeId;
     public override GlyphNodeDefinition CreateDefinition() => Descriptor.CreateDefinition();

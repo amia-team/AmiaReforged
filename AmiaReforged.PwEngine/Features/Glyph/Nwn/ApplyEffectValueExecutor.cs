@@ -13,7 +13,7 @@ public sealed partial class ApplyEffectValueExecutor : GlyphNodeBase
         Archetype = GlyphNodeArchetype.Action,
         Parameters = [Pins.InObject("target", "Target"), Pins.In("effect", "Effect", GlyphDataType.Effect), Pins.InFloat("duration", "Duration", "0"), Pins.InInt("duration_type", "Duration Type", "-1")],
         Results = [],
-        Exports = [new("nwn.apply_effect_to_object", ReceiverMethods: ["apply_effect"]), new("nwn.apply_effect")]
+        Exports = [new("nwn.apply_effect_to_object"), new("nwn.apply_effect")]
     };
     public override string TypeId => Descriptor.TypeId;
     public override GlyphNodeDefinition CreateDefinition() => Descriptor.CreateDefinition();

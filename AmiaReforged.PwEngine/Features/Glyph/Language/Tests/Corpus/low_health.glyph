@@ -1,3 +1,3 @@
 glyph low_health_bonus : encounter.on_creature_spawn {
-    if creature.hp < 50 { heal(creature, 10) }
+    if nwn.get_current_hit_points(creature) < 50 { heal(creature, 10) }
 }

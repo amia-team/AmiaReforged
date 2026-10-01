@@ -119,8 +119,18 @@ public static class GlyphFeatureVerifier
                     (def.RestrictToEventType == null || def.RestrictToEventType == e.EventType) &&
                     (def.ScriptCategory == null || def.ScriptCategory == e.Category)), prefix + $": unknown/unavailable stage '{stage}'.");
             if (intrinsic.ReceiverMethods?.Count > 0)
+            {
+                Check(intrinsic.ReceiverPolicy != GlyphReceiverPolicy.None, prefix + ": receiver needs an explicit semantic policy.");
+                Check(intrinsic.ReceiverPolicy != GlyphReceiverPolicy.LanguageValue || intrinsic.ReceiverType is GlyphDataType.Location or GlyphDataType.Effect,
+                    prefix + ": LanguageValue receiver must be a typed Location or Effect.");
+                Check(intrinsic.ReceiverPolicy != GlyphReceiverPolicy.DomainAbstraction || def.Source?.StartsWith("NWScript.", StringComparison.Ordinal) != true,
+                    prefix + ": raw NWScript procedures cannot declare domain receivers.");
+                Check(intrinsic.ReceiverPolicy != GlyphReceiverPolicy.Legacy || !string.IsNullOrWhiteSpace(def.Deprecated),
+                    prefix + ": legacy receiver requires a deprecation/removal plan.");
                 Check(def.InputPins.FirstOrDefault(p => p.DataType != GlyphDataType.Exec)?.DataType == intrinsic.ReceiverType,
                     prefix + ": receiver type must match parameter zero.");
+            }
+            else Check(intrinsic.ReceiverPolicy == GlyphReceiverPolicy.None, prefix + ": receiver policy requires a receiver name.");
             if (intrinsic.WritableAs is { } writable)
             {
                 var parameters = def.InputPins.Where(p => p.DataType != GlyphDataType.Exec).ToArray();

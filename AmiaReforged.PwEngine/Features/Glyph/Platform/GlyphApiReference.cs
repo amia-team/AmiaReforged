@@ -19,7 +19,7 @@ public static class GlyphApiReference
         Row("---", "---", "---", "---");
         foreach (var evt in metadata.Events.OrderBy(e => e.Name, StringComparer.Ordinal))
             Row(evt.Name, evt.EventType, evt.Category, string.Join(", ", evt.Stages));
-        text.AppendLine("\n## Functions and call aliases\n");
+        text.AppendLine("\n## NWN procedures and language/domain functions\n");
         string? category = null;
         foreach (var function in metadata.Functions.OrderBy(f => f.Category, StringComparer.Ordinal).ThenBy(f => f.Name, StringComparer.Ordinal))
         {
@@ -28,6 +28,7 @@ public static class GlyphApiReference
             text.AppendLine("`" + function.Name + "(" + Signature(function.Parameters) + ") → " + function.ReturnType + "`\n");
             text.AppendLine(function.Description + "\n");
             if (function.Source != null) text.AppendLine("Source: `" + function.Source + "`. Backend: " + function.Backend + ".\n");
+            if (function.Backend == "NWScript.AssignCommand") text.AppendLine("The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.\n");
             if (function.Deprecated != null) text.AppendLine("Deprecated: " + function.Deprecated + "\n");
             text.AppendLine("Kind: " + function.Kind + ". Canonical: `" + function.CanonicalName + "`." +
                 (function.ImplicitArgument == null ? "" : " Implicit parameter: `" + function.ImplicitArgument + "`.") + "\n");
@@ -42,11 +43,11 @@ public static class GlyphApiReference
             foreach (var constant in domain) Row(constant.Name, constant.Type, Convert.ToString(constant.Value, System.Globalization.CultureInfo.InvariantCulture), constant.Source);
             text.AppendLine("\n</details>\n");
         }
-        text.AppendLine("## Receiver methods\n");
-        Row("Receiver", "Method", "Parameters", "Returns", "Canonical", "Availability");
-        Row("---", "---", "---", "---", "---", "---");
-        foreach (var receiver in metadata.ReceiverMethods.OrderBy(r => r.Name, StringComparer.Ordinal))
-            Row(receiver.ReceiverType, receiver.Name, Signature(receiver.Parameters), receiver.ReturnType, receiver.CanonicalName, Scopes(receiver.AvailableIn));
+        text.AppendLine("## Receiver methods\n\nThese deliberately classified methods belong to known Glyph value types or explicit domain abstractions. Object is an opaque NWN handle; engine procedures use `nwn.*`.\n");
+        Row("Receiver", "Policy", "Method", "Parameters", "Returns", "Canonical", "Availability");
+        Row("---", "---", "---", "---", "---", "---", "---");
+        foreach (var receiver in metadata.ReceiverMethods.Where(r => r.Policy != "Legacy").OrderBy(r => r.Name, StringComparer.Ordinal))
+            Row(receiver.ReceiverType, receiver.Policy, receiver.Name, Signature(receiver.Parameters), receiver.ReturnType, receiver.CanonicalName, Scopes(receiver.AvailableIn));
         text.AppendLine("\n## Context and property aliases\n");
         foreach (var context in metadata.Contexts.OrderBy(c => c.Event, StringComparer.Ordinal).ThenBy(c => c.Stage, StringComparer.Ordinal))
         {

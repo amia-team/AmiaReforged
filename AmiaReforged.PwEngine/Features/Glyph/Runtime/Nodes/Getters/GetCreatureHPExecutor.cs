@@ -37,9 +37,7 @@ public sealed partial class GetCreatureHPExecutor : GlyphPureNode
     {
         TypeId = NodeTypeId, Source = "NWScript.GetCurrentHitPoints / GetMaxHitPoints", Backend = "NWScript adapter",
         Exports = [
-            new("nwn.get_current_hit_points", "current_hp", ReceiverMethods: ["get_current_hit_points"]), new("nwn.get_max_hit_points", "max_hp", ReceiverMethods: ["get_max_hit_points"]),
-            new("creature.hp", "current_hp", null, PropertyAliases: [new("creature.hp", "creature.hp", "creature")]),
-            new("creature.max_hp", "max_hp", null, PropertyAliases: [new("creature.max_hp", "creature.max_hp", "creature")])
+            new("nwn.get_current_hit_points", "current_hp"), new("nwn.get_max_hit_points", "max_hp"),
         ],
         DisplayName = "Get Creature HP",
         Category = "Getters",

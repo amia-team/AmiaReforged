@@ -3772,7 +3772,7 @@
       "signature": "uint GetNearestObject(int nObjectType = 32767, uint oTarget = 2130706432, int nNth = 1)",
       "status": "adapted",
       "name": "nwn.get_nearest_object_by_type",
-      "reason": "Explicit origin and OBJECT_TYPE mask, preserving legacy string-based Object.nearest_object_by_type separately."
+      "reason": "Explicit origin and OBJECT_TYPE mask, with the curated string-filter adapter exposed separately as nwn.nearest_object_by_kind."
     },
     {
       "member": "GetNearestObjectByTag",

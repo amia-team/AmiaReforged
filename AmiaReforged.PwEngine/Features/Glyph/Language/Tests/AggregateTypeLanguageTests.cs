@@ -80,7 +80,7 @@ public class AggregateTypeLanguageTests
                 tick {
                     let target = Target(object: player)
 
-                    if target.object.is_player() {
+                    if nwn.is_player(target.object) {
                         message(target.object, "pc")
                     }
                 }

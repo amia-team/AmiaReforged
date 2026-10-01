@@ -203,116 +203,62 @@ Pattern bindings are scoped to their arm. Arms may contain loops, nested matches
 `context.<name>` exposes only the current event/stage's registered data outputs.
 `creature`, `player`, `party.size`, `time.hour`, `spawn.count`, and `chaos.danger`,
 `chaos.corruption`, `chaos.density`, `chaos.mutation` are domain aliases, available only
-where corresponding context exists. `creature.hp`, `.max_hp`, `.name`, `.ac` call registered
-getters with the current creature. `party.members` returns an object list.
+where corresponding context exists. Creature queries use registered `nwn.*` procedures with explicit object arguments. `party.members` returns an object list.
 
 The callable vocabulary is intentionally curated by executor-local descriptors and projected into `GlyphLanguageCatalog`. Examples include
-`heal`, `damage`, `distance`, `random`, `floating_text`, `message`, `play_vfx`, `set_name`,
+`heal`, `damage`, `nwn.get_distance_between`, `random`, `floating_text`, `message`, `play_vfx`, `nwn.set_name`,
 `spawn.modify_count`, `spawn.cancel`, `spawn.skip_bonuses`, `spawn.skip_mutations`,
 `has_trait`, `has_item`, `has_knowledge`, `industry.is_member`, `industry.level`,
-`spawn_resource_node`, `store_session_object`, and `session_object`, plus the curated NWN object surface `Object.nearest_object_by_type` and `Object.is_player`.
+`spawn_resource_node`, `store_session_object`, and `session_object`, plus the broad procedural NWN surface under `nwn.*`.
 Parameters, default values, result types, and event/category restrictions come from the
 registered runtime definitions. Adding an alias does not require another binder switch.
 Operations not exposed by this catalog are deliberately unavailable in v1.
 
-## Curated object API (`Object.*`)
+## Procedural NWN API and typed members
 
-Glyph exposes a small, curated NWN/Anvil object surface under the `Object.` namespace. These
-are ordinary Glyph intrinsics backed by registered node executors — not arbitrary .NET member
-dispatch, reflection, or general Anvil property access. Returned values are ordinary Glyph
-`NwObject` values and compose with the rest of the vocabulary (distance, tags, resrefs, session
-storage, foreach, etc.).
+`Object` is an opaque NWN handle, not a statically known creature, item, door or store.
+Engine procedures are exposed under `nwn.*`. No general Object receiver methods are generated.
 
 ```glyph
-let nearest_door = Object.nearest_object_by_type(player, "door")
-let nearest_creature = Object.nearest_object_by_type(player, "creature")
-
-if Object.is_player(nearest_creature) {
-    message(player, "Another player is nearby.")
+let target = nwn.get_nearest_object_by_type(player, OBJECT_TYPE.CREATURE)
+if nwn.get_is_object_valid(target) {
+    nwn.set_local_int(target, "visited", 1)
+    nwn.action_attack(player, target)
 }
 ```
 
-| Intrinsic | Returns | Description |
-| --- | --- | --- |
-| `Object.nearest_object_by_type(origin, type)` | `Object` | The nearest object of `type` from `origin`, ordered by distance. |
-| `Object.is_player(object)` | `Bool` | Whether `object` is a player character (`NWScript.GetIsPC`). |
-| `Object.get_distance(object_a, object_b)` | `Float` | The distance in meters between `object_a` and `object_b`. |
+Action commands take an explicit actor and use NWScript `AssignCommand` internally. Local storage,
+queries and mutations take their objects explicitly. NWScript names remain recognizable:
+`nwn.get_ability_score(object, ABILITY.STRENGTH)`, `nwn.get_item_stack_size(object)` and
+`nwn.get_locked(object)` do not promise that the object is of an appropriate engine subtype.
+Existing native default/no-op behavior is preserved.
 
-Supported object types for `Object.nearest_object_by_type` (case-insensitive; **lowercase is
-canonical**): `trigger`, `door`, `placeable`, `creature`, `waypoint`.
-
-- `Object.nearest_object_by_type` takes an explicit `origin`. Glyph runs in several contexts
-  (encounters, creature/trait events, interactions), so there is no implicit current object —
-  pass any `NwObject`, including a foreach element or the result of another query.
-- When the origin is invalid or unresolvable, the type is unsupported, or nothing matches, the
-  function returns the NWN invalid-object value (`NWScript.OBJECT_INVALID`). Invalid types are
-  accepted by the compiler and rejected at runtime, keeping the binder generic.
-- `Object.is_player` returns `false` for invalid or unresolvable objects. It is a read-only query
-  with no side effects.
-- `Object.get_distance` returns the distance in meters between the two objects as a `Float`. Invalid-object behavior is inherited from `GetDistanceBetweenExecutor`: it returns `0.0` when either object is invalid or unresolvable.
-
-### Receiver-style calls
-
-Any Glyph expression whose type is `Object` can invoke these same intrinsics in receiver form.
-Receiver syntax is **compiler sugar only**: it lowers to exactly the same curated intrinsic and the
-same runtime node as the static form, with the receiver expression injected as the first argument.
-There is a single executor for each operation — no duplicate runtime behavior.
+Known typed Glyph values retain deliberate methods:
 
 ```glyph
-// Static
-let target = Object.nearest_object_by_type(player, "creature")
-if Object.is_player(target) {
-    message(player, "PC")
-}
-
-// Receiver style — equivalent
-let target = player.get_nearest_object_by_type("creature")
-if target.is_player() {
-    message(player, "PC")
-}
+let location = nwn.get_location(player)
+let x = location.get_x()
+let area = location.get_area()
+let facing = location.get_facing()
+let aura = effect.haste()
+let kind = aura.get_effect_type()
+let duration = aura.get_effect_duration()
 ```
 
-| Receiver method | Equivalent static call |
-| --- | --- |
-| `object.get_nearest_object_by_type(type)` | `Object.nearest_object_by_type(object, type)` |
-| `object.is_player()` | `Object.is_player(object)` |
-| `object.get_distance(object_b)` | `Object.get_distance(object, object_b)` |
+Location uses getter methods consistently; Effect has reviewed inspection getters. Effects can
+still be constructed through the `effect.*` namespace. Struct fields and ADT payload access are
+unchanged. Domain aliases such as `player.has_knowledge(...)` and `player.has_item(...)` remain
+intentional World Engine APIs and compose with `nwn.*`.
 
-The receiver may be any Object-typed expression — a context pin (`context.object`), `player`,
-a `let`, a foreach element, or the result of another Object query. It is bound exactly once and
-stays an expression; the compiler does not stringify it. Chaining works because the first call
-returns `Object`:
+The old `Object.*` pseudo-namespace, `distance`, `set_name`, `creature.hp`, `creature.max_hp`,
+`creature.ac` and `creature.name` source aliases have been removed. Use canonical `nwn.*` queries
+instead. The curated string-type nearest-object adapter remains available as
+`nwn.nearest_object_by_kind(origin, "door")`; it supports trigger, door, placeable, creature and
+waypoint. Prefer `nwn.get_nearest_object_by_type(origin, OBJECT_TYPE.DOOR)` for engine queries.
+All runtime TypeIds and executors remain stable, including the curated adapter's
+`getter.nearest_object_by_type` identity. Stored IR does not depend on the removed source aliases.
 
-```glyph
-let nearest_door = context.object.get_nearest_object_by_type("door")
-if nearest_door.is_player() { message(player, "A player owns the nearest door.") }
-
-if player.get_nearest_object_by_type("creature").is_player() { message(player, "PC nearby") }
-```
-
-```glyph
-foreach member in party.members {
-    if member.is_player() { damage(member, 1) }
-}
-```
-
-Receiver calls are statically type checked and fail at compile time — not runtime — when the
-receiver is not an `Object` (for example `party.size.is_player()`), when an argument has the wrong
-type (for example `player.get_nearest_object_by_type(42)`), or when the injected parameter is
-supplied again (for example `player.get_nearest_object_by_type(origin: creature, type: "door")`
-or `player.is_player(player)`). Named remaining parameters are still allowed:
-`player.get_nearest_object_by_type(type: "door")`.
-
-`receiver.method(args...)` does **not** expose arbitrary .NET, Anvil, or `NwGameObject` members.
-Only the Glyph receiver methods declared by intrinsic descriptors exist (currently
-`get_nearest_object_by_type`, `is_player`, and `get_distance`). Reflection, CLR/Anvil member lookup, duck typing,
-and runtime string-based dispatch are unavailable. For example `player.Destroy()`, `player.Area`,
-and `player.GetObjectVariable(...)` remain uncallable. Adding a future curated Object member is a
-matter of registering its metadata — receiver type, member name, and target intrinsic — rather
-than writing another binder branch.
-
-This is a deliberately restricted subset of NWN/Anvil functionality, not a general-purpose object
-facility. Other intrinsics are added incrementally as this curated standard library grows.
+See [the standard-library guide](Standard/README.md) and [extension policy](../EXTENDING.md).
 
 ## Interactions
 

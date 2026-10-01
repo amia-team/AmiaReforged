@@ -36,8 +36,7 @@ public partial class GetCreatureACExecutor : IGlyphNodeExecutor
     {
         TypeId = NodeTypeId, Source = "NWScript.GetAC", Backend = "NWScript adapter",
         Exports = [
-            new("nwn.get_ac", "ac", ReceiverMethods: ["get_ac"]),
-            new("creature.ac", "ac", null, PropertyAliases: [new("creature.ac", "creature.ac", "creature")])
+            new("nwn.get_ac", "ac"),
         ],
         DisplayName = "Get Creature AC",
         Category = "Getters",

@@ -78,12 +78,19 @@ test("constant domains and every constant come from compiler metadata", () => {
 });
 
 test("Location, Effect and typed foreach receivers resolve from metadata", () => {
-  const location = complete('glyph p : interaction { completed { let loc = player.get_location() loc.| } }');
+  const location = complete('glyph p : interaction { completed { let loc = nwn.get_location(player) loc.| } }');
   assert.ok(location.some(o => o.label === "get_x"));
   assert.ok(location.some(o => o.label === "get_area"));
-  const effect = complete('glyph p : interaction { completed { foreach aura in player.effects() { aura.| } } }');
+  const effect = complete('glyph p : interaction { completed { foreach aura in nwn.effects(player) { aura.| } } }');
   assert.ok(effect.some(o => o.label === "get_effect_type"));
   assert.ok(!effect.some(o => o.label === "destroy"));
-  const object = complete('glyph p : interaction { completed { foreach item in player.inventory() { item.| } } }');
-  assert.ok(object.some(o => o.label === "destroy"));
+  const object = complete('glyph p : interaction { completed { foreach item in nwn.inventory(player) { item.| } } }');
+  assert.ok(!object.some(o => o.label === "destroy"));
+  assert.ok(metadata.receiverMethods.every(r => r.receiverType !== "Object" && r.policy === "LanguageValue"));
+  const player = complete('glyph p : interaction { completed { player.| } }');
+  assert.ok(player.some(o => o.label === "has_knowledge"));
+  for (const name of ["get_tag", "set_local_int", "action_attack", "get_ability_score"]) {
+    assert.ok(!player.some(o => o.label === name));
+    assert.ok(complete('glyph p : interaction { completed { nwn.| } }').some(o => o.label === name));
+  }
 });

@@ -2,7 +2,7 @@ glyph loop_test : interaction {
     completed {
         var i = 0
         while i < 10 {
-            player.set_local_int("loop_i", i)
+            nwn.set_local_int(player, "loop_i", i)
             i += 1
         }
     }

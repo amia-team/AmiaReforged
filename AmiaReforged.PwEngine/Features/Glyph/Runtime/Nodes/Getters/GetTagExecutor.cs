@@ -40,6 +40,6 @@ public partial class GetTagExecutor : IGlyphNodeExecutor
         Source = "NWScript.GetTag", Backend = "NWScript adapter",
         Archetype = GlyphNodeArchetype.PureFunction,
         Parameters = [Pins.InObject("object", "Object")], Results = [Pins.Out("tag", "Tag", GlyphDataType.String)],
-        Exports = [new("nwn.get_tag", "tag", ReceiverMethods: ["get_tag"])]
+        Exports = [new("nwn.get_tag", "tag")]
     };
 }

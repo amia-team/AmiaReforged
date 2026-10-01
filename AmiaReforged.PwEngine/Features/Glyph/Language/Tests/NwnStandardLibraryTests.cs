@@ -33,61 +33,65 @@ public sealed class NwnStandardLibraryTests
     [Test] public void Typed_locals_constants_locations_effects_and_creation_compose()
     {
         Valid("""
-            let loc = player.get_location()
+            let loc = nwn.get_location(player)
             let summoned = nwn.create_object(OBJECT_TYPE.CREATURE, "amia_restless_spirit", loc)
-            summoned.set_name("Restless Spirit")
-            summoned.set_local_int("uses", summoned.get_local_int("uses") + 1)
-            summoned.set_local_float("scale", 1.5)
-            summoned.set_local_string("role", "guardian")
-            summoned.set_local_object("owner", player)
-            summoned.set_local_location("home", loc)
-            let home = summoned.get_local_location("home")
+            nwn.set_name(summoned, "Restless Spirit")
+            nwn.set_local_int(summoned, "uses", nwn.get_local_int(summoned, "uses") + 1)
+            nwn.set_local_float(summoned, "scale", 1.5)
+            nwn.set_local_string(summoned, "role", "guardian")
+            nwn.set_local_object(summoned, "owner", player)
+            nwn.set_local_location(summoned, "home", loc)
+            let home = nwn.get_local_location(summoned, "home")
             let new_home = nwn.location(home.get_area(), home.get_x(), home.get_y(), home.get_z(), home.get_facing())
-            summoned.jump_to_location(new_home)
-            summoned.apply_effect(effect.visual_effect(VFX.DUR_AURA_PURPLE))
-            summoned.apply_effect(effect.haste(), duration: 30.0)
-            summoned.action_move_to_location(home)
-            summoned.action_attack(player)
-            summoned.clear_actions()
-            summoned.delete_local_int("uses")
-            summoned.delete_local_float("scale")
-            summoned.delete_local_string("role")
-            summoned.delete_local_object("owner")
-            summoned.delete_local_location("home")
-            summoned.destroy()
+            nwn.jump_to_location(summoned, new_home)
+            nwn.apply_effect_to_object(summoned, effect.visual_effect(VFX.DUR_AURA_PURPLE))
+            nwn.apply_effect_to_object(summoned, effect.haste(), duration: 30.0)
+            nwn.action_move_to_location(summoned, home)
+            nwn.action_attack(summoned, player)
+            nwn.clear_all_actions(summoned)
+            nwn.delete_local_int(summoned, "uses")
+            nwn.delete_local_float(summoned, "scale")
+            nwn.delete_local_string(summoned, "role")
+            nwn.delete_local_object(summoned, "owner")
+            nwn.delete_local_location(summoned, "home")
+            nwn.destroy_object(summoned)
             """);
     }
     [Test] public void Inventory_area_and_effect_iteration_keep_their_element_types()
     {
         Valid("""
-            foreach item in player.inventory() {
-                if item.get_tag() == "quest_item" { item.destroy() }
+            foreach item in nwn.inventory(player) {
+                if nwn.get_tag(item) == "quest_item" { nwn.destroy_object(item) }
             }
-            foreach creature in nwn.objects_in_area(player.get_area(), OBJECT_TYPE.CREATURE) {
-                if creature.get_distance(player) < 10.0 { creature.set_local_object("near_player", player) }
+            foreach creature in nwn.objects_in_area(nwn.get_area(player), OBJECT_TYPE.CREATURE) {
+                if nwn.get_distance_between(creature, player) < 10.0 { nwn.set_local_object(creature, "near_player", player) }
             }
-            foreach aura in player.effects() {
-                if nwn.get_effect_type(aura) == EFFECT_TYPE.HASTE { player.remove_effect(aura) }
+            foreach aura in nwn.effects(player) {
+                if nwn.get_effect_type(aura) == EFFECT_TYPE.HASTE { nwn.remove_effect(player, aura) }
             }
             """);
-        var bad = _runtime.Compiler.Compile("glyph t : interaction { completed { foreach aura in player.effects() { aura.destroy() } } }");
+        var bad = _runtime.Compiler.Compile("glyph t : interaction { completed { foreach aura in nwn.effects(player) { nwn.destroy_object(aura) } } }");
         Assert.That(bad.Diagnostics.Any(d => d.Code == "GLYPH2004"), Is.True);
     }
-    [TestCase("player.set_local_int(\"foo\", \"banana\")")]
-    [TestCase("player.set_local_object(\"foo\", 1)")]
-    [TestCase("player.set_local_location(\"foo\", player)")]
-    [TestCase("player.apply_effect(player.get_location())")]
+    [TestCase("nwn.set_local_int(player, \"foo\", \"banana\")")]
+    [TestCase("nwn.set_local_object(player, \"foo\", 1)")]
+    [TestCase("nwn.set_local_location(player, \"foo\", player)")]
+    [TestCase("nwn.apply_effect_to_object(player, nwn.get_location(player))")]
     public void Semantic_type_errors_are_compile_time_diagnostics(string body)
     {
         var result = _runtime.Compiler.Compile("glyph t : interaction { completed { " + body + " } }");
         Assert.That(result.Success, Is.False);
         Assert.That(result.Diagnostics.Any(d => d.Code == "GLYPH2004"), Is.True);
     }
-    [Test] public void Existing_source_names_share_the_authoritative_runtime_identity()
+    [Test] public void Removed_source_aliases_keep_the_authoritative_runtime_identity()
     {
-        foreach (var pair in new[] { ("distance", "nwn.get_distance_between"), ("Object.get_distance", "nwn.get_distance_between"), ("Object.is_player", "nwn.is_player"), ("set_name", "nwn.set_name"), ("creature.hp", "nwn.get_current_hit_points") })
-            Assert.That(_runtime.Compiler.Catalog.Find(pair.Item1)!.Definition.TypeId, Is.EqualTo(_runtime.Compiler.Catalog.Find(pair.Item2)!.Definition.TypeId));
-        Valid("let a = Object.nearest_object_by_type(player, \"door\") let b = player.get_nearest_object_by_type(\"door\") let c = nwn.get_nearest_object_by_type(player, OBJECT_TYPE.DOOR)");
+        var catalog = _runtime.Compiler.Catalog;
+        foreach (string alias in new[] { "distance", "Object.get_distance", "Object.is_player", "Object.nearest_object_by_type", "set_name", "creature.hp", "creature.ac", "creature.name" })
+            Assert.That(catalog.Find(alias), Is.Null, alias);
+        Assert.That(catalog.Find("nwn.get_distance_between")!.Definition.TypeId, Is.EqualTo("getter.distance_between"));
+        Assert.That(catalog.Find("nwn.is_player")!.Definition.TypeId, Is.EqualTo("getter.is_player"));
+        Assert.That(catalog.Find("nwn.nearest_object_by_kind")!.Definition.TypeId, Is.EqualTo("getter.nearest_object_by_type"));
+        Valid("let a = nwn.nearest_object_by_kind(player, \"door\") let b = nwn.get_nearest_object_by_type(player, OBJECT_TYPE.DOOR)");
     }
     [Test] public void Global_functions_constants_and_aggregate_types_are_available_to_event_programs()
     {
@@ -98,7 +102,7 @@ public sealed class NwnStandardLibraryTests
             struct Holder { actor: Object }
             glyph globals : interaction { completed {
                 let holder = Holder(player)
-                if get_kind(effect.haste()) == HASTE_KIND { holder.actor.set_local_int("one", Local.ONE) }
+                if get_kind(effect.haste()) == HASTE_KIND { nwn.set_local_int(holder.actor, "one", Local.ONE) }
             } }
             """);
         Assert.That(result.Success, Is.True, string.Join("\n", result.Diagnostics));
@@ -121,7 +125,7 @@ public sealed class NwnStandardLibraryTests
         var parser = new GlyphParser(new GlyphLexer("fn haste_kind(): Int = EFFECT_TYPE.HASTE").Lex());
         var globals = GlyphGlobalEnvironment.FromDeclarations(parser.Parse()!.GlobalDeclarations, out _);
         var compiler = new GlyphCompiler(_registry, globals);
-        var result = compiler.Compile("glyph t : interaction { completed { player.set_local_int(\"kind\", haste_kind()) } }");
+        var result = compiler.Compile("glyph t : interaction { completed { nwn.set_local_int(player, \"kind\", haste_kind()) } }");
         Assert.That(result.Success, Is.True, string.Join("\n", result.Diagnostics));
         Assert.That(new GlyphCompiler(_registry, GlyphStandardLibrary.Environment).Compile("glyph t : interaction { completed { } }").Success, Is.True);
     }
@@ -157,11 +161,11 @@ public sealed class NwnStandardLibraryTests
     [TestCase("1 - 2147483648")]
     public void Integer_overflow_remains_a_source_diagnostic(string expression)
     {
-        Assert.That(_runtime.Compiler.Compile("glyph t : interaction { completed { player.set_local_int(\"x\", " + expression + ") } }").Success, Is.False);
+        Assert.That(_runtime.Compiler.Compile("glyph t : interaction { completed { nwn.set_local_int(player, \"x\", " + expression + ") } }").Success, Is.False);
     }
     [Test] public void Signed_constants_support_the_native_int32_boundary()
     {
-        Valid("player.set_local_int(\"mask\", -2147483648) player.set_local_int(\"bonus\", DAMAGE_BONUS.VALUE_1)");
+        Valid("nwn.set_local_int(player, \"mask\", -2147483648) nwn.set_local_int(player, \"bonus\", DAMAGE_BONUS.VALUE_1)");
         Assert.That(GlyphStandardLibrary.Environment.GetResolvedConstant("DAMAGE_TYPE.CUSTOM19")!.Value, Is.EqualTo(int.MinValue));
     }
     [Test] public void Upgrade_audit_handles_overloaded_native_members()

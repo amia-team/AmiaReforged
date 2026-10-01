@@ -293,7 +293,7 @@ function receiverCompletion(rm, context) {
 
 // Typed member completion: offer receiver methods whose ReceiverType matches the receiver
 // expression's Glyph type, plus namespace-style `receiver.` completions (context fields, static
-// functions) for untyped prefixes such as `context.` or `Object.`.
+// functions) for untyped prefixes such as `context.` or `nwn.`.
 function memberCompletions(context, word, scope, functions, fields, metadata) {
   const state = context.state;
   const lastDot = word.text.lastIndexOf(".");
@@ -580,6 +580,10 @@ export function glyphCompletions(metadata) {
             ? { ...completion, apply: fn.name }
             : snippetCompletion(template, completion),
         );
+      }
+
+      if (functions.some(fn => fn.name.startsWith("nwn."))) {
+        options.push({ label: "nwn", type: "namespace", detail: "NWN procedures", apply: "nwn.", boost: 10 });
       }
 
       for (const domain of metadata?.constantDomains || []) options.push({ label: domain.name, type: "namespace", detail: `${domain.count} constants`, apply: domain.name + "." });
