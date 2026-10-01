@@ -245,7 +245,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         if (baseName is "List" or "Dictionary" && arguments.Length > 0)
         {
             bool list = baseName == "List";
-            if (arguments.Length == (list ? 1 : 2) && arguments.All(t => t.IsBasic || t.IsTypeParameter))
+            if (arguments.Length == (list ? 1 : 2) && arguments.All(t => t.IsBasic || t.IsTypeParameter || list && _languageVersion >= 6 && t.IsValue))
                 return list ? GlyphTypeSymbol.List(arguments[0]) : GlyphTypeSymbol.Dictionary(arguments[0], arguments[1]);
             Error("GLYPH2004", "Collections require basic Object, String, Int, Float, or Bool type arguments.", span);
             return GlyphTypeSymbol.Error;
@@ -325,6 +325,12 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
                 BoundExpression value = Expression(let.Value);
                 if (value.Type == GlyphTypeSymbol.Void)
                     Error("GLYPH2004", "A binding initializer must produce a value.", let.Span);
+                if (value is BoundIterator iterator)
+                {
+                    if (!_scopes.Peek().TryAdd(let.Name, iterator with { Setup = [] }))
+                        Error("GLYPH2006", $"Duplicate local '{let.Name}'.", let.Span);
+                    return new BoundBlock(iterator.Setup.Cast<BoundStatement>().ToArray(), let.Span);
+                }
                 if (_languageVersion >= 4 && value.Type.IsCollection)
                 {
                     int symbol = _nextSymbol++;
@@ -342,8 +348,8 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
             case VarStatementSyntax variable:
             {
                 BoundExpression value = Expression(variable.Value);
-                if (value.Type == GlyphTypeSymbol.Void)
-                    Error("GLYPH2004", "A variable initializer must produce a value.", variable.Span);
+                if (value.Type == GlyphTypeSymbol.Void || value.Type.IsIterator)
+                    Error("GLYPH2004", "A variable initializer must produce a value; use let for an iterator recipe.", variable.Span);
                 int symbol = _nextSymbol++;
                 if (!_scopes.Peek().TryAdd(variable.Name, new BoundVariableRead(symbol, value.Type, variable.Span)))
                     Error("GLYPH2006", $"Duplicate local '{variable.Name}'.", variable.Span);
@@ -400,7 +406,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
             case ForeachStatementSyntax loop:
             {
                 BoundExpression list = Expression(loop.List);
-                if (list.Type.RuntimeType != GlyphDataType.List || list.Type.ElementType == null)
+                if (list.Type.RuntimeType != GlyphDataType.List && !list.Type.IsIterator || list.Type.ElementType == null)
                     Error("GLYPH2004", "for/foreach requires a typed list.", loop.Span);
                 int symbol = _nextSymbol++;
 
@@ -414,7 +420,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
                 _loops--;
                 _scopes.Pop();
 
-                return new BoundForeach(symbol, list, body, loop.Span);
+                return list is BoundIterator iterator ? new BoundIteratorForeach(symbol, iterator, body, loop.Span) : new BoundForeach(symbol, list, body, loop.Span);
             }
 
             case MatchStatementSyntax match:
@@ -622,6 +628,8 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         }
         switch (syntax)
         {
+            case LambdaExpressionSyntax lambda:
+                return CollectionError("A lambda requires filter, map, or any to infer its parameter type.", lambda.Span);
             case CollectionConstructorSyntax constructor:
             {
                 var type = ResolveType(constructor.TypeName, constructor.Span, canonical: true);
@@ -630,9 +638,9 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
             case ListExpressionSyntax list:
             {
                 var values = list.Values.Select(v => Expression(v)).ToArray();
-                if (values.Length == 0 || !(values[0].Type.IsBasic || values[0].Type.IsTypeParameter))
+                if (values.Length == 0 || !(values[0].Type.IsBasic || values[0].Type.IsTypeParameter || _languageVersion >= 6 && values[0].Type.IsValue))
                 { Error("GLYPH2004", "Use List<T>() for an empty list; list elements must have basic types.", list.Span); return new BoundError(list.Span); }
-                foreach (var value in values) Require(value, values[0].Type);
+                foreach (var value in values) RequireCollection(value, values[0].Type);
                 return new BoundListLiteral(values, GlyphTypeSymbol.List(values[0].Type), list.Span);
             }
             case IndexExpressionSyntax index when _languageVersion >= 4 && !(index.Receiver is NameExpressionSyntax state && catalog.Indexers.Any(i => i.Name == state.Name)):
@@ -804,6 +812,10 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
 
             case MemberAccessExpressionSyntax member:
                 return TryAggregateMember(member, out value);
+
+            case IndexExpressionSyntax index:
+                value = Expression(index);
+                return value.Type.RuntimeType == GlyphDataType.Aggregate;
 
             case InvocationExpressionSyntax invocation:
             {
@@ -1234,12 +1246,23 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         var application = syntax.Function as TypeApplicationExpressionSyntax;
         if ((application?.Target ?? syntax.Function) is not MemberAccessExpressionSyntax member) return null;
         bool authored = globals?.Functions.Values.Any(f => f.DeclaringType != null && f.Name.EndsWith("." + member.Name, StringComparison.Ordinal)) == true;
-        bool collection = _languageVersion >= 4 && member.Name is "count" or "contains" or "append" or "with" or "remove_at" or "contains_key" or "without" or "get" or "keys" or "values";
-        if (!catalog.HasReceiverMethod(member.Name) && !authored && !collection) return null;
+        bool collection = _languageVersion >= 4 && member.Name is "count" or "contains" or "append" or "with" or "remove_at" or "contains_key" or "without" or "get" or "keys" or "values"
+            || _languageVersion >= 6 && member.Name is "any" or "union" or "intersection" or "difference" or "complement";
+        bool pipeline = member.Name is "iter" or "filter" or "map" or "collect" or "any";
+        if (!catalog.HasReceiverMethod(member.Name) && !authored && !collection && !pipeline) return null;
         BoundExpression boundReceiver = Expression(member.Receiver);
+        if (pipeline && (boundReceiver.Type.RuntimeType == GlyphDataType.List || boundReceiver.Type.IsIterator) &&
+            (member.Name != "any" || boundReceiver.Type.IsIterator || suppliedArguments.Count == 0 || suppliedArguments.Any(a => a.Value is LambdaExpressionSyntax)))
+        {
+            if (application?.Arguments.Count > 0) return CollectionError("Iterator type arguments are inferred from the lambda body.", syntax.Span);
+            return IteratorCall(member.Name, boundReceiver, suppliedArguments, syntax.Span);
+        }
         if (boundReceiver.Type.IsCollection && collection)
+        {
+            if (application?.Arguments.Count > 0) return CollectionError("Collection type arguments are determined by the receiver.", syntax.Span);
             return CollectionCall(member.Name, boundReceiver.Type,
                 [new(null, boundReceiver, member.Receiver.Span), ..suppliedArguments.Select(a => new LogicalArgument(a.Name, Expression(a.Value), a.Span))], syntax.Span);
+        }
         string methodName = GlyphTypeNames.Parse(boundReceiver.Type.Name).Name + "." + member.Name;
         if (globals?.GetFunction(methodName) is { IsInstance: true } method)
         {
@@ -1279,69 +1302,123 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
     private BoundExpression CollectionError(string message, SourceSpan span)
     { Error("GLYPH2004", message, span); return new BoundError(span); }
 
+    private void RequireCollection(BoundExpression value, GlyphTypeSymbol type)
+    {
+        if (_languageVersion < 6) { Require(value, type); return; }
+        if (value.Type != GlyphTypeSymbol.Error && type != GlyphTypeSymbol.Error && value.Type != type)
+            Error("GLYPH2004", $"Expected exactly {type.Name}, got {value.Type.Name}.", value.Span);
+    }
+
+    private static bool HasTypeParameters(GlyphTypeSymbol type) => type.IsTypeParameter ||
+        type.ElementType != null && HasTypeParameters(type.ElementType) ||
+        type.KeyType != null && HasTypeParameters(type.KeyType) || type.ValueType != null && HasTypeParameters(type.ValueType);
+
     private BoundExpression CollectionCall(string operation, GlyphTypeSymbol type, IReadOnlyList<LogicalArgument> arguments, SourceSpan span)
     {
-        if ((type.ElementType ?? type.ValueType)?.IsTypeParameter == true || type.KeyType?.IsTypeParameter == true)
-        {
-            bool list = type.RuntimeType == GlyphDataType.List;
-            var templateDefinition = catalog.Registry.Get(Runtime.Nodes.Flow.CollectionExecutor.Id(operation, type.RuntimeType!.Value, GlyphDataType.Int, list ? null : GlyphDataType.Int));
-            if (templateDefinition == null) return CollectionError($"{type.Name} has no operation '{operation}'.", span);
-            GlyphTypeSymbol PinType(string pin) => pin switch
-            {
-                "collection" => type,
-                "index" => GlyphTypeSymbol.Int,
-                "key" => type.KeyType!,
-                _ => (type.ElementType ?? type.ValueType)!
-            };
-            HashSet<string> seen = new(StringComparer.Ordinal);
-            int templatePosition = 0;
-            bool named = false;
-            foreach (var argument in arguments)
-            {
-                if (argument.Name != null) named = true;
-                else if (named) Error("GLYPH2003", "Positional arguments must precede named arguments.", argument.Span);
-                string? pin = argument.Name ?? templateDefinition.InputPins.ElementAtOrDefault(templatePosition++)?.Id;
-                if (pin == null || !templateDefinition.InputPins.Any(p => p.Id == pin) || !seen.Add(pin))
-                    Error("GLYPH2003", "Unknown, excess, or duplicate argument.", argument.Span);
-                else Require(argument.Value, PinType(pin));
-            }
-            foreach (var pin in templateDefinition.InputPins)
-                if (!seen.Contains(pin.Id)) Error("GLYPH2003", $"Missing argument '{pin.Id}'.", span);
-            var result = operation switch
-            {
-                "count" => GlyphTypeSymbol.Int,
-                "contains" or "contains_key" => GlyphTypeSymbol.Bool,
-                "index" or "get" => (type.ElementType ?? type.ValueType)!,
-                "keys" or "values" => GlyphTypeSymbol.List(operation == "keys" ? type.KeyType! : type.ValueType!),
-                _ => type
-            };
-            return new BoundPlaceholder(result, span);
-        }
-        if (type.RuntimeType == GlyphDataType.List && type.ElementType?.IsBasic != true)
-            return CollectionError("Collection operations support only basic element types.", span);
-        string id = Runtime.Nodes.Flow.CollectionExecutor.Id(operation, type.RuntimeType!.Value,
-            (type.ElementType ?? type.ValueType)!.RuntimeType!.Value, type.KeyType?.RuntimeType);
-        var definition = catalog.Registry.Get(id);
+        bool list = type.RuntimeType == GlyphDataType.List;
+        bool symbolic = HasTypeParameters(type);
+        GlyphTypeSymbol element = (type.ElementType ?? type.ValueType)!;
+        var definition = catalog.Registry.Get(Runtime.Nodes.Flow.CollectionExecutor.Id(operation, type.RuntimeType!.Value,
+            symbolic ? GlyphDataType.Int : element.RuntimeType!.Value, list ? null : symbolic ? GlyphDataType.Int : type.KeyType!.RuntimeType));
         if (definition == null) return CollectionError($"{type.Name} has no operation '{operation}'.", span);
-        var symbol = new GlyphLanguageSymbol(operation, definition, "value", GlyphLoweringStrategy.Value);
-        int before = Diagnostics.Count;
-        var bound = BindArguments(symbol, arguments, span);
-        if (Diagnostics.Count != before) return new BoundError(span);
-        // Capture every input in source order before evaluating the operation.
-        List<BoundVariableAssignment> captures = [];
+        GlyphTypeSymbol PinType(string pin) => pin switch
+        {
+            "collection" or "other" => type, "index" => GlyphTypeSymbol.Int, "key" => type.KeyType!, _ => element
+        };
+        GlyphTypeSymbol result = operation switch
+        {
+            "count" => GlyphTypeSymbol.Int, "contains" or "contains_key" or "any" => GlyphTypeSymbol.Bool,
+            "index" or "get" => element, "keys" or "values" => GlyphTypeSymbol.List(operation == "keys" ? type.KeyType! : type.ValueType!), _ => type
+        };
         Dictionary<string, BoundExpression> reads = new(StringComparer.Ordinal);
-        int position = 0;
+        List<BoundVariableAssignment> captures = [];
+        int position = 0, before = Diagnostics.Count;
+        bool named = false;
         foreach (var argument in arguments)
         {
-            string? pin = argument.Name ?? symbol.Parameters.ElementAtOrDefault(position++)?.Id;
-            if (pin == null || reads.ContainsKey(pin)) continue;
+            if (argument.Name != null) named = true;
+            else if (named) Error("GLYPH2003", "Positional arguments must precede named arguments.", argument.Span);
+            string? pin = argument.Name ?? definition.InputPins.ElementAtOrDefault(position++)?.Id;
+            if (pin == null || !definition.InputPins.Any(p => p.Id == pin) || reads.ContainsKey(pin))
+            { Error("GLYPH2003", "Unknown, excess, or duplicate argument.", argument.Span); continue; }
+            var target = PinType(pin);
+            RequireCollection(argument.Value, target);
             int slot = _nextSymbol++;
-            var targetType = GlyphTypeSymbol.From(symbol.Parameters.First(p => p.Id == pin));
-            captures.Add(new(slot, targetType, argument.Value, argument.Span));
-            reads[pin] = new BoundVariableRead(slot, targetType, argument.Span, Mutable: false);
+            captures.Add(new(slot, target, argument.Value, argument.Span));
+            reads[pin] = new BoundVariableRead(slot, target, argument.Span, Mutable: false);
         }
-        if (arguments.Count == 0) return new BoundCall(symbol, bound, span);
-        return new BoundFunctionCall(captures, new([new BoundReturn(new BoundCall(symbol, reads, span), span)], span), _nextSymbol++, symbol.ReturnType, span);
+        foreach (var pin in definition.InputPins)
+            if (!reads.ContainsKey(pin.Id)) Error("GLYPH2003", $"Missing argument '{pin.Id}'.", span);
+        if (Diagnostics.Count != before) return new BoundError(span);
+        if (symbolic) return new BoundPlaceholder(result, span);
+        var call = new BoundCollectionOperation(operation, type, reads, result, span);
+        if (captures.Count == 0) return call;
+        return new BoundFunctionCall(captures, new([new BoundReturn(call, span)], span), _nextSymbol++, result, span);
+    }
+
+    private BoundIterator StartIterator(BoundExpression source, SourceSpan span)
+    {
+        int slot = _nextSymbol++;
+        return new(new BoundVariableRead(slot, source.Type, span, false), [], [new(slot, source.Type, source, span)], source.Type.ElementType!, span);
+    }
+
+    private BoundExpression IteratorCall(string operation, BoundExpression receiver, IReadOnlyList<ArgumentSyntax> arguments, SourceSpan span)
+    {
+        if (_languageVersion < 6) return CollectionError("Iterator operations require language version 6.", span);
+        var iterator = receiver as BoundIterator ?? StartIterator(receiver, span);
+        if (operation == "iter" || operation == "collect" || operation == "any" && arguments.Count == 0)
+        {
+            if (arguments.Count != 0) return CollectionError($"{operation} takes no arguments.", span);
+            return operation == "iter" ? iterator : new BoundIteratorTerminal(iterator, operation, span);
+        }
+        if (arguments.Count != 1 || arguments[0].Value is not LambdaExpressionSyntax lambda ||
+            arguments[0].Name != null && arguments[0].Name != (operation == "map" ? "selector" : "predicate"))
+            return CollectionError($"{operation} requires one {(operation == "map" ? "selector" : "predicate")} lambda: |element| expression.", span);
+        int parameter = _nextSymbol++;
+        List<BoundVariableAssignment> setup = [.. iterator.Setup];
+        Dictionary<string, BoundExpression> scope = new(StringComparer.Ordinal);
+        foreach (string name in LambdaNames(lambda.Body).Distinct())
+        {
+            if (name == lambda.Parameter) continue;
+            BoundExpression? local = _scopes.Select(s => s.GetValueOrDefault(name)).FirstOrDefault(v => v != null);
+            if (local == null) continue;
+            if (local.Type.IsIterator) { Error("GLYPH2004", "Iterator recipes cannot be captured by a lambda; collect them first.", lambda.Span); continue; }
+            int capture = _nextSymbol++;
+            setup.Add(new(capture, local.Type, local, lambda.Span));
+            scope[name] = new BoundVariableRead(capture, local.Type, lambda.Span, false);
+        }
+        scope[lambda.Parameter] = new BoundVariableRead(parameter, iterator.Element, lambda.Span, false);
+        _scopes.Push(scope);
+        BoundExpression body = Expression(lambda.Body);
+        _scopes.Pop();
+        if (operation != "map") RequireCollection(body, GlyphTypeSymbol.Bool);
+        else if (!body.Type.IsValue) Error("GLYPH2004", "map must produce a list element value.", lambda.Span);
+        if (GlyphBoundLimits.Descendants(body).OfType<BoundCall>().Any(c => c.Symbol.Strategy != GlyphLoweringStrategy.Value))
+            Error("GLYPH2007", "Iterator lambdas cannot call actions or branch predicates.", lambda.Span);
+        var step = new BoundIteratorStep(operation == "map" ? "map" : "filter", parameter, iterator.Element, body, lambda.Span);
+        var pipeline = new BoundIterator(iterator.Source, [.. iterator.Steps, step], setup, operation == "map" ? body.Type : iterator.Element, span);
+        return operation == "any" ? new BoundIteratorTerminal(pipeline, "any", span) : pipeline;
+    }
+
+    private static IEnumerable<string> LambdaNames(ExpressionSyntax syntax)
+    {
+        if (syntax is NameExpressionSyntax name) yield return name.Name;
+        if (syntax is LambdaExpressionSyntax nestedLambda)
+        {
+            foreach (string nestedName in LambdaNames(nestedLambda.Body))
+                if (nestedName != nestedLambda.Parameter) yield return nestedName;
+            yield break;
+        }
+        IEnumerable<ExpressionSyntax> children = syntax switch
+        {
+            MemberAccessExpressionSyntax member => [member.Receiver],
+            InvocationExpressionSyntax call => [call.Function, .. call.Arguments.Select(a => a.Value)],
+            BinaryExpressionSyntax binary => [binary.Left, binary.Right], UnaryExpressionSyntax unary => [unary.Operand],
+            IndexExpressionSyntax index => [index.Receiver, index.Index], ListExpressionSyntax list => list.Values,
+            TypeApplicationExpressionSyntax application => [application.Target],
+            LambdaExpressionSyntax lambda => [], _ => []
+        };
+        foreach (var child in children) foreach (var nested in LambdaNames(child)) yield return nested;
     }
 
     private BoundExpression CaptureImpure(BoundExpression value, List<BoundLet> prefix)
@@ -1363,7 +1440,8 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
 
     private bool HasSideEffects(BoundExpression value) => value switch
     {
-        BoundFunctionCall or BoundListLiteral => true,
+        BoundFunctionCall or BoundListLiteral or BoundIteratorTerminal or BoundIterator => true,
+        BoundCollectionOperation call => call.Arguments.Values.Any(HasSideEffects),
         BoundAggregateField field => _languageVersion >= 4 && HasSideEffects(field.Receiver),
         BoundStruct structure => structure.Fields.Values.Any(HasSideEffects),
         BoundVariant variant => variant.Fields.Values.Any(HasSideEffects),

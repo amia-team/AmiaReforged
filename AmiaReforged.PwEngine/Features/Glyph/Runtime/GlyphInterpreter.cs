@@ -257,6 +257,7 @@ public class GlyphInterpreter
         {
             context.ActiveStack = null;
             context.LoopStates.Clear();
+            context.CollectionBuilders.Clear();
         }
     }
 

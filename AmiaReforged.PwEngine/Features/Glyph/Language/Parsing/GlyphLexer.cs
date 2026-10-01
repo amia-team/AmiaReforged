@@ -105,7 +105,7 @@ public sealed class GlyphLexer(string source, string sourceId = "source.glyph", 
                     kind = pair;
                     if (pair == ".." && Peek() == '=') { Take(); kind = "..="; }
                 }
-                else if ("{}()[],.:;=<>+-*/%!".Contains(first)) kind = first.ToString();
+                else if ("{}()[],.:;=<>+-*/%!|".Contains(first)) kind = first.ToString();
                 else
                 {
                     Diagnostics.Add(new("GLYPH1005", $"Invalid character '{first}'.", span with { Length = 1 }));

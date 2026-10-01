@@ -119,7 +119,7 @@ public sealed class GlyphModuleBinding
 
     public static GlyphCompilationUnitSyntax? Parse(string source, string sourceId, List<GlyphDiagnostic> diagnostics, int version = GlyphLanguageVersion.Current)
     {
-        if (version is not (1 or 2 or 3 or 4 or 5))
+        if (version is not (1 or 2 or 3 or 4 or 5 or 6))
         { diagnostics.Add(new("GLYPH1007", "Unsupported language version.", new(sourceId, 0, 0, 1, 1))); return null; }
         if (source.Length > 128 * 1024)
         { diagnostics.Add(new("GLYPH1007", "Source exceeds 128 KiB.", new(sourceId, 0, 0, 1, 1))); return null; }
@@ -157,7 +157,7 @@ public sealed class GlyphModuleBinding
             }
             if (depth > 32 || selected.Count >= 64 || sourceSize + revision.SourceText.Length > 1024 * 1024)
             { result.Diagnostics.Add(new("GLYPH1007", "Module dependency budget exceeded (64 modules, depth 32, 1 MiB).", at)); return; }
-            if (revision.LanguageVersion is not (2 or 3 or 4 or 5) || revision.LanguageVersion > root.LanguageVersion)
+            if (revision.LanguageVersion is not (2 or 3 or 4 or 5 or 6) || revision.LanguageVersion > root.LanguageVersion)
             { result.Diagnostics.Add(new("GLYPH1007", $"Unsupported module language version {revision.LanguageVersion}.", at)); return; }
             bool legacyCollectionName = revision.LanguageVersion < 4 && revision.Name is "List" or "Dictionary" or "Self";
             if (namespaces.Contains(revision.Name) && !legacyCollectionName || revision.SourceHash != GlyphModuleRevision.Hash(revision.SourceText))

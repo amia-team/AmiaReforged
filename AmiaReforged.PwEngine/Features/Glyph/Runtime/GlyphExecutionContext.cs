@@ -258,6 +258,7 @@ public class GlyphExecutionContext
     /// </summary>
     /// <summary>Compiler-assigned identities isolate lexical locals from graph variables.</summary>
     public Dictionary<int, GlyphLocalValue> Locals { get; } = new();
+    public Dictionary<int, Nodes.Flow.GlyphListBuilder> CollectionBuilders { get; } = new();
     public int MaxCollectionSize { get; init; } = 10_000;
     public int MaxCollectionAllocations { get; init; } = 100_000;
     public int CollectionAllocations { get; private set; }

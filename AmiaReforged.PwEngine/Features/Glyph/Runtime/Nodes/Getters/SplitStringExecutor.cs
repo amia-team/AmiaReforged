@@ -71,7 +71,7 @@ public partial class SplitStringExecutor : IGlyphNodeExecutor
         ],
         OutputPins =
         [
-            new GlyphPin { Id = "parts", Name = "Parts", DataType = GlyphDataType.List, Direction = GlyphPinDirection.Output },
+            new GlyphPin { Id = "parts", Name = "Parts", DataType = GlyphDataType.List, ElementType = GlyphDataType.String, Direction = GlyphPinDirection.Output },
             new GlyphPin { Id = "count", Name = "Count", DataType = GlyphDataType.Int, Direction = GlyphPinDirection.Output }
         ]
     };

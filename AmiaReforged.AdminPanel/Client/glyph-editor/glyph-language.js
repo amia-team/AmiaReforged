@@ -10,7 +10,7 @@ export const glyphLanguage = LRLanguage.define({
         'StageName/...': tags.keyword,
         'ProgramName/... ModuleName/...': tags.definition(tags.variableName),
         'EventName/... TypeName/... TypeParameters/... CollectionKind/... VariantName/...': tags.typeName,
-        'BindingName/... VariableName/...': tags.variableName,
+        'BindingName/... LambdaParameter/... VariableName/...': tags.variableName,
         'VariantPattern/Identifier': tags.typeName,
         'PropertyName/... ArgumentName/... FieldName/...': tags.propertyName,
         'CallExpression/VariableName/...': tags.function(tags.variableName),

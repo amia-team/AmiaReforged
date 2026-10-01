@@ -1,0 +1,22 @@
+struct Label { name: String, }
+
+fn combined<T>(left: List<T>, right: List<T>): List<T> = left.union(right)
+
+glyph generic_operations : encounter.before_group_spawn {
+    let names = "goblin,,orc,goblin".split(",")
+    let lengths = names.iter()
+        .filter(|name| name.length() > 0)
+        .map(|name| name.length())
+        .collect()
+
+    let common = names.intersection(["orc", "troll"])
+    let remaining = names.difference(["goblin"])
+    // Complement treats its argument as the universe: ["troll"].
+    let missing = names.complement(["orc", "troll"])
+    let labels = combined([Label(name: "goblin")], [Label(name: "orc")])
+    let contains_orc = labels.contains(Label(name: "orc"))
+
+    if contains_orc && lengths.any(|length| length > 2) {
+        spawn.modify_count(common.count() + missing.count())
+    }
+}

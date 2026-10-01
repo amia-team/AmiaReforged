@@ -121,8 +121,8 @@ public static class GlyphFeatureVerifier
             if (intrinsic.ReceiverMethods?.Count > 0)
             {
                 Check(intrinsic.ReceiverPolicy != GlyphReceiverPolicy.None, prefix + ": receiver needs an explicit semantic policy.");
-                Check(intrinsic.ReceiverPolicy != GlyphReceiverPolicy.LanguageValue || intrinsic.ReceiverType is GlyphDataType.Location or GlyphDataType.Effect,
-                    prefix + ": LanguageValue receiver must be a typed Location or Effect.");
+                Check(intrinsic.ReceiverPolicy != GlyphReceiverPolicy.LanguageValue || intrinsic.ReceiverType is GlyphDataType.Location or GlyphDataType.Effect or GlyphDataType.String,
+                    prefix + ": LanguageValue receiver must be a String, Location, or Effect.");
                 Check(intrinsic.ReceiverPolicy != GlyphReceiverPolicy.DomainAbstraction || def.Source?.StartsWith("NWScript.", StringComparison.Ordinal) != true,
                     prefix + ": raw NWScript procedures cannot declare domain receivers.");
                 Check(intrinsic.ReceiverPolicy != GlyphReceiverPolicy.Legacy || !string.IsNullOrWhiteSpace(def.Deprecated),

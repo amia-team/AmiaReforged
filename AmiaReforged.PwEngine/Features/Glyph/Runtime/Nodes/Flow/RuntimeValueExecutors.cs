@@ -21,6 +21,11 @@ public sealed class RuntimeValueModule : IGlyphModule
             Register(glyph, GlyphDataType.List, type);
             if (type is not (GlyphDataType.NwObject or GlyphDataType.Effect)) glyph.Add(new TypedForEachExecutor(type));
         }
+        foreach (var element in new[] { GlyphDataType.List, GlyphDataType.Dictionary })
+        {
+            Register(glyph, GlyphDataType.List, element);
+            glyph.Add(new TypedForEachExecutor(element));
+        }
         foreach (var key in GlyphCollections.BasicTypes)
         foreach (var value in GlyphCollections.BasicTypes)
         foreach (string operation in new[] { "write", "read", "field", "with_field" })
@@ -34,7 +39,7 @@ public sealed class RuntimeValueModule : IGlyphModule
 
     private sealed class TypedForEachExecutor(GlyphDataType elementType) : ForEachExecutor
     {
-        public override string TypeId => "flow.for_each_" + Suffix(elementType);
+        public override string TypeId => "flow.for_each_" + elementType.ToString().ToLowerInvariant();
         public override GlyphNodeDefinition CreateDefinition() => Definition(TypeId, elementType);
     }
 }
@@ -73,7 +78,7 @@ public sealed class RuntimeValueExecutor(string operation, GlyphDataType type, G
         GlyphDataType.Int => await cx.InInt(pin), GlyphDataType.Float => await cx.InFloat(pin),
         GlyphDataType.Bool => await cx.InBool(pin), GlyphDataType.String => await cx.InString(pin),
         GlyphDataType.NwObject => await cx.InObject(pin),
-        GlyphDataType.List when elementType is { } element && GlyphCollections.BasicTypes.Contains(element) && cx.Prop("snapshot", false) => GlyphCollections.Snapshot(await cx.Raw(pin), element, cx.Execution),
+        GlyphDataType.List when elementType is { } element && cx.Prop("snapshot", false) => GlyphCollections.Snapshot(await cx.Raw(pin), element, cx.Execution, Language.Syntax.GlyphTypeNames.Parse(cx.Prop("nominal", $"List<{GlyphCollections.TypeName(element)}>" )).Arguments.Single()),
         GlyphDataType.Dictionary => DictionaryValue(await cx.Raw(pin)), _ => await cx.Raw(pin)
     };
     private GlyphDictionaryValue DictionaryValue(object? raw) => raw is GlyphDictionaryValue dictionary && dictionary.KeyType == keyType && dictionary.ValueType == valueType

@@ -83,7 +83,7 @@ public class GlyphLanguageMetadataTests
     [Test] public void Receiver_methods_match_the_compiler_catalog()
     {
         var catalog = _runtime.Compiler.Catalog;
-        Assert.That(_metadata.ReceiverMethods.Count(m => !m.CanonicalName.StartsWith("collection.", StringComparison.Ordinal)), Is.EqualTo(catalog.ReceiverMethods.Count));
+        Assert.That(_metadata.ReceiverMethods.Count(m => !m.CanonicalName.StartsWith("collection.", StringComparison.Ordinal) && !m.CanonicalName.StartsWith("language.", StringComparison.Ordinal)), Is.EqualTo(catalog.ReceiverMethods.Count));
         foreach (var method in _metadata.ReceiverMethods.Where(m => m.CanonicalName.StartsWith("collection.", StringComparison.Ordinal)))
         {
             var definition = catalog.Registry.Get(method.CanonicalName)!;

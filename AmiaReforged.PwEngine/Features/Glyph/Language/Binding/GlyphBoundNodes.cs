@@ -25,7 +25,7 @@ public sealed record GlyphTypeSymbol(
         Objects = new("List<Object>", GlyphDataType.List, Object),
         Effects = new("List<Effect>", GlyphDataType.List, Effect);
 
-    public static GlyphTypeSymbol From(GlyphPin pin) => pin.DataType == GlyphDataType.Aggregate && pin.AggregateTypeName != null
+    public static GlyphTypeSymbol From(GlyphPin pin) => pin.TypeName != null ? FromName(pin.TypeName) : pin.DataType == GlyphDataType.Aggregate && pin.AggregateTypeName != null
         ? new(pin.AggregateTypeName, GlyphDataType.Aggregate)
         : pin.DataType == GlyphDataType.Dictionary
         ? Dictionary(From(pin.KeyType!.Value), From(pin.ValueType!.Value))
@@ -50,6 +50,21 @@ public sealed record GlyphTypeSymbol(
     public static GlyphTypeSymbol Dictionary(GlyphTypeSymbol key, GlyphTypeSymbol value) => new($"Dictionary<{key.Name}, {value.Name}>", GlyphDataType.Dictionary, null, key, value);
     public bool IsCollection => RuntimeType is GlyphDataType.List or GlyphDataType.Dictionary;
     public bool IsBasic => RuntimeType is GlyphDataType.NwObject or GlyphDataType.String or GlyphDataType.Int or GlyphDataType.Float or GlyphDataType.Bool;
+
+    public static GlyphTypeSymbol FromName(string name)
+    {
+        var parsed = Syntax.GlyphTypeNames.Parse(name);
+        if (parsed.Name == "List" && parsed.Arguments.Count == 1) return List(FromName(parsed.Arguments[0]));
+        if (parsed.Name == "Dictionary" && parsed.Arguments.Count == 2) return Dictionary(FromName(parsed.Arguments[0]), FromName(parsed.Arguments[1]));
+        return name switch
+        {
+            "Bool" => Bool, "Int" => Int, "Float" => Float, "String" => String, "Object" => Object,
+            "Location" => Location, "Effect" => Effect, _ => new(name, GlyphDataType.Aggregate)
+        };
+    }
+    public static GlyphTypeSymbol Iterator(GlyphTypeSymbol element) => new($"Iterator<{element.Name}>", ElementType: element);
+    public bool IsIterator => RuntimeType == null && ElementType != null;
+    public bool IsValue => this != Void && this != Error && !IsIterator && (RuntimeType != null || IsTypeParameter);
 
     public bool IsNumeric => RuntimeType is GlyphDataType.Int or GlyphDataType.Float;
 }
@@ -127,3 +142,12 @@ public sealed record BoundWildcardPattern : BoundPattern;
 public sealed record BoundValuePattern(BoundExpression Value) : BoundPattern;
 public sealed record BoundVariantPattern(string TypeName, string Variant) : BoundPattern;
 public sealed record BoundAggregateField(BoundExpression Receiver, string Field, GlyphTypeSymbol FieldType, SourceSpan Span) : BoundExpression(FieldType, Span);
+
+public sealed record BoundCollectionOperation(string Operation, GlyphTypeSymbol CollectionType,
+    IReadOnlyDictionary<string, BoundExpression> Arguments, GlyphTypeSymbol ResultType, SourceSpan Span) : BoundExpression(ResultType, Span);
+public sealed record BoundIterator(BoundExpression Source, IReadOnlyList<BoundIteratorStep> Steps,
+    IReadOnlyList<BoundVariableAssignment> Setup, GlyphTypeSymbol Element, SourceSpan Span) : BoundExpression(GlyphTypeSymbol.Iterator(Element), Span);
+public sealed record BoundIteratorStep(string Operation, int Parameter, GlyphTypeSymbol InputType, BoundExpression Body, SourceSpan Span);
+public sealed record BoundIteratorTerminal(BoundIterator Iterator, string Operation, SourceSpan Span)
+    : BoundExpression(Operation == "collect" ? GlyphTypeSymbol.List(Iterator.Element) : GlyphTypeSymbol.Bool, Span);
+public sealed record BoundIteratorForeach(int SymbolId, BoundIterator Iterator, BoundBlock Body, SourceSpan Span) : BoundStatement(Span);

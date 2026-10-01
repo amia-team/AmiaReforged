@@ -13,6 +13,7 @@ function text(state, node) {
 
 // Node names that may stand as the receiver of a member access (`receiver.`).
 const EXPR_NODES = new Set([
+  "LambdaExpression",
   "GenericExpression",
   "ListExpression",
   "CollectionConstructor",
@@ -124,6 +125,18 @@ export function completionScope(state, pos, from = pos, suppress = true) {
       });
     }
   }
+  // Lambda parameters are scoped to their body and derive their type from the pipeline receiver.
+  const lambdas = [];
+  for (let node = leaf; node; node = node.parent) if (node.name === "LambdaExpression") lambdas.unshift(node);
+  for (const lambda of lambdas) {
+    const parameter = lambda.getChild("LambdaParameter");
+    if (!parameter || pos <= parameter.to) continue;
+    const call = lambda.parent?.parent?.parent;
+    const member = call?.firstChild;
+    const name = text(state, parameter);
+    locals.set(name, { label: name, type: null, init: member?.name === "MemberExpression" ? member.firstChild : null,
+      elementOf: true, detail: "Lambda parameter", boost: 20 });
+  }
   return {
     event,
     stage,
@@ -229,9 +242,9 @@ function specialize(fn, bindings) {
     receiverType: fn.receiverType ? substituteType(fn.receiverType, bindings) : undefined,
     parameters: fn.parameters.map(p => ({ ...p, type: substituteType(p.type, bindings) })) };
 }
-function receiverMethod(metadata, name, type) {
+function receiverMethod(metadata, name, type, lambdaArgument = false) {
   for (const method of metadata?.receiverMethods || []) {
-    if (method.name !== name) continue;
+    if (method.name !== name || lambdaArgument && !method.parameters.some(p => p.type.startsWith("Fn<"))) continue;
     const bindings = new Map();
     if (inferType(method.receiverType, type, method.typeParameters || [], bindings)) return specialize(method, bindings);
   }
@@ -297,6 +310,16 @@ function expressionType(state, node, scope, metadata) {
       const element = expressionType(state, firstExprChild(node), scope, metadata);
       return element ? `List<${element}>` : null;
     }
+    case "UnaryExpression": {
+      const operand = expressionType(state, firstExprChild(node), scope, metadata);
+      return text(state, node).trimStart().startsWith("!") ? "Bool" : operand ? "Float" : null;
+    }
+    case "BinaryExpression": {
+      let operator = node.firstChild;
+      while (operator && EXPR_NODES.has(operator.name)) operator = operator.nextSibling;
+      const spelling = text(state, operator);
+      return /^(==|!=|<|<=|>|>=|&&|\|\|)$/.test(spelling) ? "Bool" : "Float";
+    }
     case "Number":
       return text(state, node).includes(".") ? "Float" : "Int";
     case "String":
@@ -333,7 +356,7 @@ function expressionType(state, node, scope, metadata) {
       if (direct) return direct.returnType;
       if (callee.name === "MemberExpression") {
         const type = expressionType(state, memberReceiver(callee), scope, metadata);
-        const rm = receiverMethod(metadata, memberName(state, callee), type);
+        const rm = receiverMethod(metadata, memberName(state, callee), type, !!node.getChild("ArgumentList")?.getChild("Argument")?.getChild("LambdaExpression"));
         if (rm) {
           const receiverType = expressionType(
             state,
@@ -341,7 +364,18 @@ function expressionType(state, node, scope, metadata) {
             scope,
             metadata,
           );
-          return receiverType === rm.receiverType ? rm.returnType : null;
+          if (!inferType(rm.receiverType, receiverType, rm.typeParameters || [], new Map())) return null;
+          if (memberName(state, callee) === "map") {
+            const lambda = node.getChild("ArgumentList")?.getChild("Argument")?.getChild("LambdaExpression");
+            const element = parseType(receiverType).args[0];
+            if (lambda && element) {
+              const locals = new Map(scope.localsByName);
+              locals.set(text(state, lambda.getChild("LambdaParameter")), { type: element });
+              const output = expressionType(state, firstExprChild(lambda), { ...scope, localsByName: locals }, metadata);
+              return output ? substituteType(rm.returnType, new Map([["U", output]])) : null;
+            }
+          }
+          return rm.returnType;
         }
       }
       return functionByName(metadata, text(state, callee))?.returnType ?? null;
@@ -405,7 +439,8 @@ function functionCompletion(fn, context) {
 // preserved and the popup shows the bare member name.
 function receiverCompletion(rm, context) {
   const followsParen = /^\s*\(/.test(context.state.sliceDoc(context.pos));
-  const template = functionSnippet(rm);
+  const callback = rm.parameters.find(p => p.type.startsWith("Fn<"));
+  const template = callback ? `${rm.name}(|\${element}| \${${rm.name === "map" ? "element" : "true"}})` : functionSnippet(rm);
 
   const completion = {
     label: rm.name,
@@ -438,12 +473,13 @@ function memberCompletions(context, word, scope, functions, fields, metadata) {
 
   if (receiverType) {
     for (const rm of metadata?.receiverMethods || []) {
+      const bindings = new Map();
       if (
-        inferType(rm.receiverType, receiverType, rm.typeParameters || [], new Map()) &&
+        inferType(rm.receiverType, receiverType, rm.typeParameters || [], bindings) &&
         (!metadata?.events?.some(e => e.name === scope.event) || available(rm, scope)) &&
         rm.name.startsWith(memberPrefix)
       ) {
-        completions.push(receiverCompletion(receiverMethod(metadata, rm.name, receiverType), context));
+        completions.push(receiverCompletion(specialize(rm, bindings), context));
       }
     }
   }
@@ -498,7 +534,7 @@ function memberCompletions(context, word, scope, functions, fields, metadata) {
   for (const field of aggregate?.fields || []) completions.push({ label: field.name, type: "property", detail: field.typeName });
   return {
     from: dotPos + 1,
-    options: completions,
+    options: [...new Map(completions.map(c => [c.label + ":" + c.detail, c])).values()],
   };
 }
 
@@ -512,7 +548,7 @@ function callBinding(call, state, scope, metadata) {
   if (direct) return { name: direct.name, signature: signature(direct), parameters: direct.parameters, description: direct.description };
   if (callee.name === "MemberExpression") {
     const type = expressionType(state, memberReceiver(callee), scope, metadata);
-    const rm = receiverMethod(metadata, memberName(state, callee), type);
+    const rm = receiverMethod(metadata, memberName(state, callee), type, !!call.getChild("ArgumentList")?.getChild("Argument")?.getChild("LambdaExpression"));
     if (rm)
       return {
         name: rm.name,
@@ -655,16 +691,12 @@ export function glyphCompletions(metadata) {
 
         // Property shorthand wins over a same-named call.
         const unique = new Map();
-
+        const properties = new Set(memberResult.options.filter(o => o.type !== "function").map(o => o.label));
         for (const option of memberResult.options) {
-          const previous = unique.get(option.label);
-
-          if (
-            !previous ||
-            (option.boost || 0) > (previous.boost || 0)
-          ) {
-            unique.set(option.label, option);
-          }
+          if (option.type === "function" && properties.has(option.label)) continue;
+          const key = option.type === "function" ? option.label + ":" + option.detail : option.label;
+          const previous = unique.get(key);
+          if (!previous || (option.boost || 0) > (previous.boost || 0)) unique.set(key, option);
         }
 
         return {
@@ -800,7 +832,7 @@ function resolveLocalTypes(state, scope, metadata) {
     }
     if (local.init) {
       const type = expressionType(state, local.init, scope, metadata);
-      local.type = local.range ? "Int" : local.elementOf ? /^List<(.+)>$/.exec(type || "")?.[1] ?? null : type;
+      local.type = local.range ? "Int" : local.elementOf ? /^(?:List|Iterator)<(.+)>$/.exec(type || "")?.[1] ?? null : type;
     }
   }
 }
@@ -823,7 +855,7 @@ export function resolveFunctionAt(state, pos, metadata) {
       const property = node.getChild("PropertyName");
       if (!property || pos < property.from || pos > property.to) continue;
       const type = expressionType(state, memberReceiver(node), scope, metadata);
-      const member = receiverMethod(metadata, memberName(state, node), type);
+      const member = receiverMethod(metadata, memberName(state, node), type, !!call?.getChild("ArgumentList")?.getChild("Argument")?.getChild("LambdaExpression"));
       if (member) {
         const target = functionByName(metadata, member.canonicalName);
         return { from: property.from, to: property.to,

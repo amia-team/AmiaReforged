@@ -535,6 +535,13 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
             Expect("]");
             left = new ListExpressionSyntax(values, Through(start));
         }
+        else if (Eat("|"))
+        {
+            if (languageVersion < 6) Diagnostics.Add(new("GLYPH1014", "Lambdas require language version 6.", start));
+            string parameter = Expect("identifier").Text;
+            Expect("|");
+            left = new LambdaExpressionSyntax(parameter, Expression(), Through(start));
+        }
         else if (languageVersion >= 4 && Current.Text is ("List" or "Dictionary") && tokens[Math.Min(_position + 1, tokens.Count - 1)].Kind == "<")
         {
             RequireVersion4(start);

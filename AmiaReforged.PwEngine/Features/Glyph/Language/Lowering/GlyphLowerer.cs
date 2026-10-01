@@ -114,8 +114,11 @@ public sealed class GlyphLowerer
                 List<Output> trueTails = Statement(conditional.Then, [new(branch, yes)]);
                 List<Output> falseTails = conditional.Else == null ? [new(branch, no)] : Statement(conditional.Else, [new(branch, no)]);
                 trueTails.AddRange(falseTails); return trueTails;
+            case BoundIteratorForeach loop:
+                LowerIterator(loop.Iterator, null, loop.Span, ref tails, loop.SymbolId, loop.Body);
+                return tails;
             case BoundForeach loop:
-                GlyphNodeInstance each = Node(loop.List.Type.ElementType == GlyphTypeSymbol.Object ? "flow.for_each" : loop.List.Type.ElementType == GlyphTypeSymbol.Effect ? "flow.for_each_effect" : "flow.for_each_" + Suffix(loop.List.Type.ElementType!), loop.Span);
+                GlyphNodeInstance each = Each(loop.List.Type, loop.Span);
                 if (_languageVersion >= 4) each.PropertyOverrides["snapshot"] = "true";
                 Wire(Expression(loop.List, ref tails), each, "list"); Connect(tails, each);
                 _loops[loop.SymbolId] = each;
@@ -133,6 +136,10 @@ public sealed class GlyphLowerer
     private List<Output> Write(int id, GlyphTypeSymbol type, BoundExpression value, SourceSpan span, List<Output> tails)
     {
         Output input = Expression(value, ref tails);
+        return WriteOutput(id, type, input, span, tails);
+    }
+    private List<Output> WriteOutput(int id, GlyphTypeSymbol type, Output input, SourceSpan span, List<Output> tails)
+    {
         GlyphNodeInstance write = Node("local.write_" + Suffix(type), span, SlotProperties(id, type));
         if (_languageVersion >= 4) write.PropertyOverrides["snapshot"] = "true";
         Wire(input, write, "value"); Connect(tails, write);
@@ -188,6 +195,80 @@ public sealed class GlyphLowerer
         foreach (var argument in call.Arguments) Wire(Expression(argument.Value, ref tails), node, argument.Key);
         return node;
     }
+    private GlyphNodeInstance CollectionNode(string operation, GlyphTypeSymbol type, GlyphTypeSymbol result, SourceSpan span) =>
+        Node(Runtime.Nodes.Flow.CollectionExecutor.Id(operation, type.RuntimeType!.Value,
+            (type.ElementType ?? type.ValueType)!.RuntimeType!.Value, type.KeyType?.RuntimeType), span,
+            new() { ["collection_type"] = type.Name, ["element_type"] = (type.ElementType ?? type.ValueType)!.Name, ["result_type"] = result.Name, ["strict"] = (_languageVersion >= 6).ToString().ToLowerInvariant() });
+
+    private GlyphNodeInstance Each(GlyphTypeSymbol list, SourceSpan span) =>
+        Node(list.ElementType == GlyphTypeSymbol.Object ? "flow.for_each" : list.ElementType == GlyphTypeSymbol.Effect ? "flow.for_each_effect"
+            : "flow.for_each_" + list.ElementType!.RuntimeType!.Value.ToString().ToLowerInvariant(), span,
+            new() { ["list_type"] = list.Name, ["element_type"] = list.ElementType!.Name, ["snapshot"] = (_languageVersion >= 4).ToString().ToLowerInvariant() });
+
+    private Output LowerIterator(BoundIterator iterator, string? operation, SourceSpan span, ref List<Output> tails,
+        int? loopSymbol = null, BoundBlock? loopBody = null)
+    {
+        foreach (var capture in iterator.Setup) tails = Statement(capture, tails);
+        int result = _temporary--;
+        GlyphTypeSymbol resultType = operation == "collect" ? GlyphTypeSymbol.List(iterator.Element) : GlyphTypeSymbol.Bool;
+        Dictionary<string, string> BufferProperties() => new()
+        {
+            ["slot"] = result.ToString(CultureInfo.InvariantCulture), ["element_type"] = iterator.Element.Name,
+            ["result_type"] = resultType.Name
+        };
+        if (operation == "collect")
+        {
+            var buffer = Node("iterator.new_" + iterator.Element.RuntimeType!.Value.ToString().ToLowerInvariant(), span, BufferProperties());
+            Connect(tails, buffer); tails = [new(buffer, "exec_out")];
+        }
+        else if (operation == "any") tails = Write(result, GlyphTypeSymbol.Bool, new BoundLiteral(false, GlyphTypeSymbol.Bool, span), span, tails);
+        var each = Each(iterator.Source.Type, span);
+        Wire(Expression(iterator.Source, ref tails), each, "list"); Connect(tails, each);
+        List<Output> body = [new(each, "loop_body")];
+        Output current = new(each, "element");
+        foreach (var step in iterator.Steps)
+        {
+            body = WriteOutput(step.Parameter, step.InputType, current, step.Span, body);
+            if (step.Operation == "filter")
+            {
+                var branch = Node("flow.branch", step.Span);
+                Wire(Expression(step.Body, ref body), branch, "condition"); Connect(body, branch);
+                Connect([new(branch, "false")], Node("flow.continue", step.Span));
+                body = [new(branch, "true")];
+                current = Local(step.Parameter, step.InputType, step.Span);
+            }
+            else
+            {
+                int mapped = _temporary--;
+                body = Write(mapped, step.Body.Type, step.Body, step.Span, body);
+                current = Local(mapped, step.Body.Type, step.Span);
+            }
+        }
+        if (operation == "collect")
+        {
+            var add = Node("iterator.add_" + iterator.Element.RuntimeType!.Value.ToString().ToLowerInvariant(), span, BufferProperties());
+            Wire(current, add, "value"); Connect(body, add);
+        }
+        else if (operation == "any")
+        {
+            body = Write(result, GlyphTypeSymbol.Bool, new BoundLiteral(true, GlyphTypeSymbol.Bool, span), span, body);
+            Connect(body, Node("flow.break", span));
+        }
+        else if (loopSymbol is { } symbol)
+        {
+            _stored[symbol] = current;
+            Block(loopBody!, body);
+            _stored.Remove(symbol);
+        }
+        tails = [new(each, "completed")];
+        if (operation == "collect")
+        {
+            var finish = Node("iterator.finish_" + iterator.Element.RuntimeType!.Value.ToString().ToLowerInvariant(), span, BufferProperties());
+            tails = WriteOutput(result, resultType, new(finish, "value"), span, tails);
+        }
+        return operation == null ? current : Local(result, resultType, span);
+    }
+
     private Output ShortCircuit(BoundBinary binary, ref List<Output> tails)
     {
         Output left = Expression(binary.Left, ref tails);
@@ -211,6 +292,14 @@ public sealed class GlyphLowerer
     {
         switch (expression)
         {
+            case BoundIteratorTerminal terminal:
+                return LowerIterator(terminal.Iterator, terminal.Operation, terminal.Span, ref tails);
+            case BoundCollectionOperation collection:
+            {
+                var node = CollectionNode(collection.Operation, collection.CollectionType, collection.Type, collection.Span);
+                foreach (var argument in collection.Arguments) Wire(Expression(argument.Value, ref tails), node, argument.Key);
+                return new(node, "value");
+            }
             case BoundListLiteral list:
             {
                 var element = list.Type.ElementType!;
@@ -221,10 +310,10 @@ public sealed class GlyphLowerer
                     tails = Write(slot, element, item, item.Span, tails);
                     items.Add(Local(slot, element, item.Span));
                 }
-                Output output = new(Node(Runtime.Nodes.Flow.CollectionExecutor.Id("new", GlyphDataType.List, element.RuntimeType!.Value), list.Span), "value");
+                Output output = new(CollectionNode("new", list.Type, list.Type, list.Span), "value");
                 foreach (var item in items)
                 {
-                    var append = Node(Runtime.Nodes.Flow.CollectionExecutor.Id("append", GlyphDataType.List, element.RuntimeType!.Value), list.Span);
+                    var append = CollectionNode("append", list.Type, list.Type, list.Span);
                     Wire(output, append, "collection"); Wire(item, append, "value"); output = new(append, "value");
                 }
                 return output;
@@ -254,7 +343,7 @@ public sealed class GlyphLowerer
                 string value = Convert.ToString(literal.Value, CultureInfo.InvariantCulture) ?? "";
                 return new(Node("constant." + type, literal.Span, new() { ["value"] = value }), "out");
             case BoundContext context: return new(_entries[context.EntryTypeId], context.Pin);
-            case BoundLoopElement element: return new(_loops[element.SymbolId], "element");
+            case BoundLoopElement element: return _stored.TryGetValue(element.SymbolId, out var pipelineElement) ? pipelineElement : new(_loops[element.SymbolId], "element");
             case BoundSequence sequence:
                 foreach (var let in sequence.Prefix) _stored[let.SymbolId] = Expression(let.Value, ref tails);
                 return Expression(sequence.Value, ref tails);

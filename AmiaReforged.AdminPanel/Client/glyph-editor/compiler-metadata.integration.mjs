@@ -48,8 +48,10 @@ test("receivers, context, writable state and stage filtering consume live compil
     for (const scope of receiver.availableIn) {
       const context = metadata.contexts.find(c => c.event === scope.event && c.stage === scope.stage);
       const object = context.fields.find(f => f.name.startsWith("context.") && f.type === receiver.receiverType);
-      const expression = object?.name ?? (receiver.receiverType === "Location" ? "nwn.get_location(OBJECT.INVALID)" : "effect.haste()");
-      const option = complete(source(scope, `(${expression}).|`)).find(o => o.label === receiver.name);
+      const type = receiver.receiverType.replace(/<T>/g, "<Int>");
+      const expression = object?.name ?? (type === "Location" ? "nwn.get_location(OBJECT.INVALID)" : type === "Effect" ? "effect.haste()" :
+        type === "String" ? '"text"' : type.startsWith("Iterator<") ? "List<Int>().iter()" : `${type}()`);
+      const option = complete(source(scope, `(${expression}).|`)).find(o => o.label === receiver.name && o.info === receiver.description);
       assert.ok(option, receiver.name);
       assert.equal(option.info, receiver.description);
     }
@@ -86,7 +88,7 @@ test("Location, Effect and typed foreach receivers resolve from metadata", () =>
   assert.ok(!effect.some(o => o.label === "destroy"));
   const object = complete('glyph p : interaction { completed { foreach item in nwn.inventory(player) { item.| } } }');
   assert.ok(!object.some(o => o.label === "destroy"));
-  assert.ok(metadata.receiverMethods.every(r => r.receiverType !== "Object" && r.policy === "LanguageValue"));
+  assert.ok(metadata.receiverMethods.every(r => r.receiverType !== "Object" && (r.policy === "LanguageValue" || r.canonicalName.startsWith("collection."))));
   const player = complete('glyph p : interaction { completed { player.| } }');
   assert.ok(player.some(o => o.label === "has_knowledge"));
   for (const name of ["get_tag", "set_local_int", "action_attack", "get_ability_score"]) {

@@ -45,6 +45,9 @@ public record GlyphPin
     /// <summary>Nominal type identity for aggregate API arguments and results.</summary>
     public string? AggregateTypeName { get; init; }
 
+    /// <summary>Complete nominal or nested value type, when enum pin types are insufficient.</summary>
+    public string? TypeName { get; init; }
+
     /// <summary>
     /// When true, the pin accepts multiple connections (fan-in for inputs, fan-out for outputs).
     /// Exec output pins typically allow only one connection; data output pins may fan out.

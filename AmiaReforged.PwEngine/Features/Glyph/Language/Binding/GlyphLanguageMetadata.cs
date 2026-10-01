@@ -116,23 +116,47 @@ public static class GlyphLanguageMetadata
                     .Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray()) { Policy = rm.Policy.ToString(), Deprecated = symbol.Definition.Deprecated };
         }).ToArray();
         var collectionMethods = catalog.Registry.GetAll().Where(d => d.TypeId.StartsWith("collection.", StringComparison.Ordinal) &&
-            d.InputPins.FirstOrDefault()?.Id == "collection" && !d.TypeId.StartsWith("collection.index_", StringComparison.Ordinal))
+            d.InputPins.FirstOrDefault()?.DataType == GlyphDataType.Dictionary && !d.TypeId.StartsWith("collection.index_", StringComparison.Ordinal))
             .Select(d => new GlyphReceiverMethodMetadataDto(d.DisplayName, GlyphTypeSymbol.From(d.InputPins[0]).Name, d.TypeId,
                 "Immutable collection operation; updates return a new value.", GlyphTypeSymbol.From(d.OutputPins[0]).Name, "Value",
                 d.InputPins.Skip(1).Select(p => new GlyphParameterMetadataDto(p.Id, p.Name, GlyphTypeSymbol.From(p).Name, true, null)).ToArray(),
                 scopes.Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray())).ToArray();
+        var allScopes = scopes.Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray();
+        var genericMethods = catalog.Registry.GetAll().Where(d => d.TypeId.StartsWith("collection.", StringComparison.Ordinal) &&
+            d.InputPins.FirstOrDefault()?.DataType == GlyphDataType.List && d.InputPins[0].ElementType == GlyphDataType.Int &&
+            !d.TypeId.StartsWith("collection.index_", StringComparison.Ordinal))
+            .Select(d => new GlyphReceiverMethodMetadataDto(d.DisplayName, "List<T>", "language.list." + d.DisplayName,
+                "Immutable list operation. Elements and other lists must have exactly the same type. Set operations return distinct values in first-occurrence order.",
+                d.OutputPins[0].DataType == GlyphDataType.List ? "List<T>" : d.OutputPins[0].DataType == GlyphDataType.Int ? "Int" : "Bool", "Value",
+                d.InputPins.Skip(1).Select(p => new GlyphParameterMetadataDto(p.Id, p.Name, p.Id switch { "other" => "List<T>", "index" => "Int", _ => "T" }, true, null)).ToArray(),
+                allScopes) { TypeParameters = ["T"], Policy = "LanguageValue" }).ToArray();
+        GlyphReceiverMethodMetadataDto Pipeline(string name, string receiver, string result, string description, params GlyphParameterMetadataDto[] parameters) =>
+            new(name, receiver, "language.iterator." + name, description, result, "Value", parameters, allScopes)
+            { TypeParameters = name == "map" ? ["T", "U"] : ["T"], Policy = "LanguageValue" };
+        var pipelineMethods = new[]
+        {
+            Pipeline("iter", "List<T>", "Iterator<T>", "Create a lazy, reusable iterator recipe over a snapshot of the list."),
+            Pipeline("filter", "Iterator<T>", "Iterator<T>", "Keep elements satisfying a Bool predicate. Capture local values when the recipe is constructed.", new GlyphParameterMetadataDto("predicate", "Predicate", "Fn<T, Bool>", true, null)),
+            Pipeline("map", "Iterator<T>", "Iterator<U>", "Transform each element; infer the result element type from the selector.", new GlyphParameterMetadataDto("selector", "Selector", "Fn<T, U>", true, null)),
+            Pipeline("filter", "List<T>", "Iterator<T>", "Start a lazy recipe retaining elements satisfying a Bool predicate.", new GlyphParameterMetadataDto("predicate", "Predicate", "Fn<T, Bool>", true, null)),
+            Pipeline("map", "List<T>", "Iterator<U>", "Start a lazy recipe transforming each element.", new GlyphParameterMetadataDto("selector", "Selector", "Fn<T, U>", true, null)),
+            Pipeline("collect", "List<T>", "List<T>", "Return an immutable snapshot of the list."),
+            Pipeline("collect", "Iterator<T>", "List<T>", "Evaluate the recipe once into an immutable list, preserving order and duplicates."),
+            Pipeline("any", "Iterator<T>", "Bool", "Stop at the first element satisfying the predicate; without a predicate, test whether any element exists.", new GlyphParameterMetadataDto("predicate", "Predicate", "Fn<T, Bool>", false, null)),
+            Pipeline("any", "List<T>", "Bool", "Test a predicate with short-circuiting, or test whether the list is nonempty.", new GlyphParameterMetadataDto("predicate", "Predicate", "Fn<T, Bool>", false, null))
+        };
         return new(GlyphLanguageVersion.Current, functions,
             Platform.GlyphEvents.All.Select(e => new GlyphEventMetadataDto(e.Name, e.EventType.ToString(), e.Category.ToString(),
                 e.Stages?.Select(s => s.Name).ToArray() ?? [])).ToArray(), contexts,
             catalog.Indexers.Select(i => new GlyphIndexerMetadataDto(i.Name, i.Getter, i.Setter)).ToArray(),
-            receiverMethods.Concat(collectionMethods).ToArray())
+            receiverMethods.Concat(collectionMethods).Concat(genericMethods).Concat(pipelineMethods).ToArray())
         {
             Documentation = Documentation.GlyphLexicon.ForSources(functions.Select(f => f.DocumentationSource ?? f.Source)),
             Constants = Nwn.GlyphNwnSurface.Constants,
             ConstantDomains = Nwn.GlyphNwnSurface.Constants.GroupBy(c => c.Namespace).OrderBy(g => g.Key, StringComparer.Ordinal)
                 .Select(g => new GlyphConstantDomainMetadataDto(g.Key, g.Select(c => c.Type).Distinct().OrderBy(t => t, StringComparer.Ordinal).ToArray(), g.Count())).ToArray(),
             Aggregates = [new("Option", [], option.Variants) { TypeParameters = option.TypeParameters }],
-            Types = new[] { "Option<T>", "Void", "Bool", "Int", "Float", "String", "Object", "Location", "Effect", "List<Effect>" }
+            Types = new[] { "Option<T>", "Void", "Bool", "Int", "Float", "String", "Object", "Location", "Effect", "List<Effect>", "List<Location>", "List<T>", "Iterator<T>" }
                 .Concat(Runtime.GlyphCollections.BasicTypes.Select(t => GlyphTypeSymbol.List(GlyphTypeSymbol.From(t)).Name))
                 .Concat(Runtime.GlyphCollections.BasicTypes.SelectMany(k => Runtime.GlyphCollections.BasicTypes.Select(v => GlyphTypeSymbol.Dictionary(GlyphTypeSymbol.From(k), GlyphTypeSymbol.From(v)).Name))).ToArray(),
             NwnApiVersion = Nwn.GlyphNwnSurface.ApiVersion,

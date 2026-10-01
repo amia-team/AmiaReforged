@@ -22,6 +22,30 @@ public sealed class GlyphIrValidator(IGlyphNodeDefinitionRegistry registry)
         return null;
     }
 
+    public static string? PinTypeName(GlyphNodeInstance node, GlyphPin pin)
+    {
+        if (pin.TypeName != null) return pin.TypeName;
+        if (node.TypeId.StartsWith("collection.", StringComparison.Ordinal))
+        {
+            if (pin.Id is "collection" or "other") return node.PropertyOverrides.GetValueOrDefault("collection_type");
+            if (pin.Id == "value") return node.PropertyOverrides.GetValueOrDefault(pin.Direction == GlyphPinDirection.Output ? "result_type" : "element_type");
+        }
+        if (node.TypeId.StartsWith("iterator.", StringComparison.Ordinal) && pin.Id == "value")
+            return node.PropertyOverrides.GetValueOrDefault(pin.Direction == GlyphPinDirection.Output ? "result_type" : "element_type");
+        if (node.TypeId.StartsWith("flow.for_each", StringComparison.Ordinal))
+            return node.PropertyOverrides.GetValueOrDefault(pin.Id == "list" ? "list_type" : pin.Id == "element" ? "element_type" : "");
+        if (pin.Id == "value" && node.TypeId.StartsWith("local.", StringComparison.Ordinal) ||
+            pin.Id == "field_value" && node.TypeId.StartsWith("aggregate.with_", StringComparison.Ordinal) ||
+            pin.Id == "value" && node.TypeId.StartsWith("aggregate.field_", StringComparison.Ordinal))
+            return node.PropertyOverrides.GetValueOrDefault("nominal");
+        if (pin.DataType == GlyphDataType.Aggregate) return AggregateIdentity(node, pin);
+        if (pin.DataType == GlyphDataType.List && pin.ElementType is not (GlyphDataType.Aggregate or GlyphDataType.List or GlyphDataType.Dictionary))
+            return $"List<{Runtime.GlyphCollections.TypeName(pin.ElementType ?? GlyphDataType.NwObject)}>";
+        if (pin.DataType == GlyphDataType.Dictionary && pin.KeyType != null && pin.ValueType != null)
+            return $"Dictionary<{Runtime.GlyphCollections.TypeName(pin.KeyType.Value)}, {Runtime.GlyphCollections.TypeName(pin.ValueType.Value)}>";
+        return pin.DataType is GlyphDataType.Aggregate or GlyphDataType.List or GlyphDataType.Dictionary ? null : Runtime.GlyphCollections.TypeName(pin.DataType);
+    }
+
     public IReadOnlyList<GlyphIrDiagnostic> Validate(GlyphGraph ir)
     {
         List<GlyphIrDiagnostic> errors = [];
@@ -38,6 +62,16 @@ public sealed class GlyphIrValidator(IGlyphNodeDefinitionRegistry registry)
                 continue;
             }
             definitions[node.InstanceId] = def;
+            foreach (var pin in def.InputPins.Concat(def.OutputPins).Where(p => p.DataType != GlyphDataType.Exec))
+            {
+                if (PinTypeName(node, pin) is not { } identity) continue;
+                var declared = Language.Binding.GlyphTypeSymbol.FromName(identity);
+                if (declared.RuntimeType != pin.DataType ||
+                    pin.DataType == GlyphDataType.List && pin.ElementType != null && declared.ElementType?.RuntimeType != pin.ElementType ||
+                    pin.DataType == GlyphDataType.Dictionary && (pin.KeyType != null && declared.KeyType?.RuntimeType != pin.KeyType ||
+                        pin.ValueType != null && declared.ValueType?.RuntimeType != pin.ValueType))
+                    errors.Add(new("GLYPH4010", $"Pin '{pin.Id}' type {identity} disagrees with its registered signature.", node.InstanceId));
+            }
             if (def.RestrictToEventType is { } evt && evt != ir.EventType)
                 errors.Add(new("GLYPH4003", $"'{node.TypeId}' is unavailable for {ir.EventType}.", node.InstanceId));
             if (def.ScriptCategory is { } category && category != ir.EventType.GetCategory())
@@ -72,10 +106,17 @@ public sealed class GlyphIrValidator(IGlyphNodeDefinitionRegistry registry)
                 errors.Add(new("GLYPH4009", "Invalid pin direction.", EdgeId: edge.Id));
             if (!CanConnect(output.DataType, input.DataType) ||
                 output.DataType == GlyphDataType.List && input.DataType == GlyphDataType.List &&
-                (output.ElementType ?? GlyphDataType.NwObject) != (input.ElementType ?? GlyphDataType.NwObject))
+                (output.ElementType ?? GlyphDataType.NwObject) != (input.ElementType ?? GlyphDataType.NwObject) &&
+                (PinTypeName(ir.GetNode(edge.SourceNodeId)!, output) == null || PinTypeName(ir.GetNode(edge.TargetNodeId)!, input) == null))
                 errors.Add(new("GLYPH4010", $"Cannot connect {output.DataType} to {input.DataType}.", EdgeId: edge.Id));
+            if (PinTypeName(ir.GetNode(edge.SourceNodeId)!, output) is { } outputIdentity &&
+                PinTypeName(ir.GetNode(edge.TargetNodeId)!, input) is { } inputIdentity && outputIdentity != inputIdentity &&
+                (output.DataType is GlyphDataType.List or GlyphDataType.Dictionary or GlyphDataType.Aggregate ||
+                    target.TypeId.StartsWith("collection.", StringComparison.Ordinal) && ir.GetNode(edge.TargetNodeId)!.PropertyOverrides.GetValueOrDefault("strict") == "true"))
+                errors.Add(new("GLYPH4010", $"Cannot connect {outputIdentity} to {inputIdentity}.", EdgeId: edge.Id));
             if (output.DataType == GlyphDataType.Dictionary && input.DataType == GlyphDataType.Dictionary &&
-                (output.KeyType != input.KeyType || output.ValueType != input.ValueType))
+                (output.KeyType != input.KeyType || output.ValueType != input.ValueType) &&
+                (PinTypeName(ir.GetNode(edge.SourceNodeId)!, output) == null || PinTypeName(ir.GetNode(edge.TargetNodeId)!, input) == null))
                 errors.Add(new("GLYPH4010", "Dictionary key/value types do not match.", EdgeId: edge.Id));
             if (output.DataType == GlyphDataType.Aggregate && input.DataType == GlyphDataType.Aggregate &&
                 AggregateIdentity(ir.GetNode(edge.SourceNodeId)!, output) is { } outputName &&

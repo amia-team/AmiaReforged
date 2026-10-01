@@ -131,7 +131,6 @@ public class CollectionAndImplTests
     [TestCase("let x = [1].append(true)")]
     [TestCase("let x = []")]
     [TestCase("let x = [1, true]")]
-    [TestCase("let x = List<Location>()")]
     [TestCase("let x = Dictionary<String, Effect>()")]
     [TestCase("let x = [1] x[0] = 2")]
     [TestCase("let x = Dictionary<String, Int>() x[\"a\"] = 2")]

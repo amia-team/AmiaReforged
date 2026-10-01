@@ -10,15 +10,15 @@ for (int i = 0; i < args.Length; i++)
     if (args[i] == "--module-root" && i + 1 < args.Length) moduleRoot = args[++i];
     else if (args[i] == "--language-version")
     {
-        if (i + 1 >= args.Length || !int.TryParse(args[++i], out languageVersion) || languageVersion is not (1 or 2 or 3 or 4 or 5))
-        { Console.Error.WriteLine("--language-version requires 1, 2, 3, 4, or 5."); return 2; }
+        if (i + 1 >= args.Length || !int.TryParse(args[++i], out languageVersion) || languageVersion is not (1 or 2 or 3 or 4 or 5 or 6))
+        { Console.Error.WriteLine("--language-version requires 1, 2, 3, 4, 5, or 6."); return 2; }
     }
     else if (args[i].StartsWith("--", StringComparison.Ordinal)) { Console.Error.WriteLine("Unknown option, missing value, or unsupported language version."); return 2; }
     else files.Add(args[i]);
 }
 if (files.Count == 0)
 {
-    Console.Error.WriteLine("Usage: Glyph.Cli [--language-version 1|2|3|4|5] [--module-root directory] <file.glyph> [file.glyph ...]");
+    Console.Error.WriteLine("Usage: Glyph.Cli [--language-version 1|2|3|4|5|6] [--module-root directory] <file.glyph> [file.glyph ...]");
     return 2;
 }
 if (moduleRoot != null && languageVersion < 2) { Console.Error.WriteLine("Modules require language version 2, 3, 4, or 5."); return 2; }

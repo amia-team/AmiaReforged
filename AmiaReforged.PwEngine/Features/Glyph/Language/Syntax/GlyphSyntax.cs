@@ -123,3 +123,5 @@ public sealed record ParameterSyntax(string Name, string? TypeName, SourceSpan S
 public sealed record UnaryExpressionSyntax(string Operator, ExpressionSyntax Operand, SourceSpan Span) : ExpressionSyntax(Span);
 public sealed record BinaryExpressionSyntax(ExpressionSyntax Left, string Operator, ExpressionSyntax Right, SourceSpan Span) : ExpressionSyntax(Span);
 public sealed record IndexExpressionSyntax(ExpressionSyntax Receiver, ExpressionSyntax Index, SourceSpan Span) : ExpressionSyntax(Span);
+
+public sealed record LambdaExpressionSyntax(string Parameter, ExpressionSyntax Body, SourceSpan Span) : ExpressionSyntax(Span);

@@ -2,81 +2,47 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Language.Binding;
 
 internal static class GlyphBoundLimits
 {
+    public static IEnumerable<object> Children(object node) => node switch
+    {
+        BoundReturn ret => ret.Value == null ? [] : [ret.Value],
+        BoundFunctionStatement call => [call.Call],
+        BoundFunctionCall call => [.. call.Arguments, call.Body],
+        BoundBlock block => block.Statements,
+        BoundIf branch => branch.Else == null ? [branch.Condition, branch.Then] : [branch.Condition, branch.Then, branch.Else],
+        BoundForeach loop => [loop.List, loop.Body], BoundIteratorForeach loop => [loop.Iterator, loop.Body],
+        BoundVar variable => [variable.Value], BoundVariableAssignment assignment => [assignment.Value],
+        BoundWhile loop => [loop.Condition, loop.Body],
+        BoundForRange loop => loop.Step == null ? [loop.Start, loop.End, loop.Body] : [loop.Start, loop.End, loop.Step, loop.Body],
+        BoundMatch match => [match.Value, .. match.Arms], BoundMatchArm arm => [arm.Pattern, arm.Body],
+        BoundValuePattern pattern => [pattern.Value], BoundListLiteral list => list.Values,
+        BoundAggregateField field => [field.Receiver], BoundSequence sequence => [.. sequence.Prefix, sequence.Value],
+        BoundLet let => [let.Value], BoundExpressionStatement action => [action.Call],
+        BoundCall call => call.Arguments.Values, BoundCollectionOperation call => call.Arguments.Values,
+        BoundUnary unary => [unary.Operand], BoundBinary binary => [binary.Left, binary.Right],
+        BoundStruct aggregate => aggregate.Fields.Values, BoundVariant variant => variant.Fields.Values,
+        BoundIteratorTerminal terminal => [terminal.Iterator],
+        BoundIterator iterator => [iterator.Source, .. iterator.Setup, .. iterator.Steps], BoundIteratorStep step => [step.Body],
+        _ => []
+    };
+    public static IEnumerable<object> Descendants(object root)
+    {
+        Stack<object> pending = new(); pending.Push(root);
+        while (pending.TryPop(out var node))
+        {
+            yield return node;
+            foreach (var child in Children(node)) pending.Push(child);
+        }
+    }
     public static bool IsWithinLimits(BoundProgram program)
     {
         Stack<(object Node, int Depth)> pending = new();
         foreach (var stage in program.Stages) pending.Push((stage.Body, 0));
-
         int expanded = 0;
-
         while (pending.TryPop(out var next))
         {
             if (next.Depth > 128 || ++expanded > 16384) return false;
-            void Push(object node) => pending.Push((node, next.Depth + 1));
-
-            switch (next.Node)
-            {
-                case BoundReturn ret:
-                    if (ret.Value != null) Push(ret.Value);
-                    break;
-                case BoundFunctionStatement call: Push(call.Call); break;
-                case BoundFunctionCall call:
-                    foreach (var argument in call.Arguments) Push(argument);
-                    Push(call.Body);
-                    break;
-                case BoundBlock block:
-                    foreach (var statement in block.Statements) Push(statement);
-                    break;
-                case BoundIf branch:
-                    Push(branch.Condition);
-                    Push(branch.Then);
-                    if (branch.Else != null) Push(branch.Else);
-                    break;
-                case BoundForeach loop:
-                    Push(loop.List);
-                    Push(loop.Body);
-                    break;
-                case BoundVar variable: Push(variable.Value); break;
-                case BoundVariableAssignment assignment: Push(assignment.Value); break;
-                case BoundWhile loop: Push(loop.Condition); Push(loop.Body); break;
-                case BoundForRange loop:
-                    Push(loop.Start); Push(loop.End); if (loop.Step != null) Push(loop.Step); Push(loop.Body); break;
-                case BoundMatch match:
-                    Push(match.Value); foreach (var arm in match.Arms) Push(arm); break;
-                case BoundMatchArm arm:
-                    Push(arm.Pattern); Push(arm.Body); break;
-                case BoundValuePattern pattern: Push(pattern.Value); break;
-                case BoundListLiteral list: foreach (var value in list.Values) Push(value); break;
-                case BoundAggregateField field: Push(field.Receiver); break;
-                case BoundSequence sequence:
-                    foreach (var let in sequence.Prefix) Push(let);
-                    Push(sequence.Value);
-                    break;
-                case BoundLet let:
-                    Push(let.Value);
-                    break;
-                case BoundExpressionStatement action:
-                    Push(action.Call);
-                    break;
-                case BoundCall call:
-                    foreach (var value in call.Arguments.Values) Push(value);
-                    break;
-                case BoundUnary unary:
-                    Push(unary.Operand);
-                    break;
-                case BoundBinary binary:
-                    Push(binary.Left);
-                    Push(binary.Right);
-                    break;
-                case BoundStruct aggregate:
-                    foreach (var value in aggregate.Fields.Values) Push(value);
-                    break;
-                case BoundVariant variant:
-                    foreach (var value in variant.Fields.Values) Push(value);
-                    break;
-            }
+            foreach (var child in Children(next.Node)) pending.Push((child, next.Depth + 1));
         }
-
         return true;
     }
 }

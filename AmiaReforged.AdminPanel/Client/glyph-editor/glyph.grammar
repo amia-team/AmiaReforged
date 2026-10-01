@@ -8,7 +8,7 @@ PublicDeclaration { kw<"pub"> (GlobalDeclaration | TypeDeclaration) }
 @precedence {
   member @left, call @left, unary @right,
   multiply @left, add @left, compare @left, equal @left,
-  and @left, or @left, statement
+  and @left, or @left, lambda @right, statement
 }
 
 @skip { whitespace | LineComment }
@@ -79,10 +79,12 @@ AssignmentStatement { expression AssignmentOperator expression !statement }
 ExpressionStatement { expression !statement }
 
 expression {
-  GenericExpression | CollectionConstructor | ListExpression | VariableName | Number | String | UnterminatedString | Boolean | ParenthesizedExpression |
+  LambdaExpression | GenericExpression | CollectionConstructor | ListExpression | VariableName | Number | String | UnterminatedString | Boolean | ParenthesizedExpression |
   UnaryExpression | BinaryExpression | MemberExpression | IndexExpression | CallExpression
 }
 
+LambdaExpression { "|" LambdaParameter "|" expression !lambda }
+LambdaParameter { Identifier }
 VariableName { Identifier }
 Boolean { kw<"true"> | kw<"false"> }
 ParenthesizedExpression { "(" expression ")" }
@@ -118,7 +120,7 @@ kw<term> { @specialize[@name={term}]<Identifier, term> }
 CompareOperator { "<" ~generic | "<=" | ">" | ">=" }
 
 @tokens {
-  "(" ")" "{" "}" "[" "]" "<" ">" "<=" ">=" "." "," ":" ";"
+  "|" "(" ")" "{" "}" "[" "]" "<" ">" "<=" ">=" "." "," ":" ";"
   "+" "-" "!" "&&" "||" "=" "+=" "-=" "*=" "/=" ".." "..="
   whitespace { $[\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+ }
   LineComment { "//" ![\n]* }

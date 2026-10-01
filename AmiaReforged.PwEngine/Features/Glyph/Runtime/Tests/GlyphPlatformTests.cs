@@ -82,10 +82,10 @@ public class GlyphPlatformTests
             foreach (var scope in receiver.AvailableIn)
             {
                 var fields = metadata.Contexts.Single(c => c.Event == scope.Event && c.Stage == scope.Stage).Fields;
-                string first = new GlyphParameterMetadataDto("receiver", "Receiver", receiver.ReceiverType, true, null).TestValue(fields);
-                string args = string.Join(", ", receiver.Parameters.Select(p => p.TestValue(fields)));
+                string first = new GlyphParameterMetadataDto("receiver", "Receiver", receiver.ReceiverType.Replace("<T>", "<Int>"), true, null).TestValue(fields);
+                string args = string.Join(", ", receiver.Parameters.Select(p => (p with { Type = p.Type.Replace("T", "Int").Replace("U>", "Int>") }).TestValue(fields)));
                 string call = "(" + first + ")." + receiver.Name + "(" + args + ")";
-                Compile(scope, Consume(call, receiver.Kind, receiver.ReturnType, fields), receiver.Name);
+                Compile(scope, Consume(call, receiver.Kind, receiver.ReturnType.Replace("<T>", "<Int>").Replace("<U>", "<Int>"), fields), receiver.Name);
             }
     }
 
@@ -104,6 +104,7 @@ public class GlyphPlatformTests
             "Option<Object>" => $"match {call} {{ Some {{ value }} {{ nwn.set_local_object({obj}, \"probe\", value) }} None {{}} {{ nwn.set_local_int({obj}, \"probe\", 0) }} }}",
             "List<Object>" => $"foreach element in {call} {{ nwn.set_local_int(element, \"probe\", 1) }}",
             "List<Effect>" => $"foreach element in {call} {{ nwn.remove_effect({obj}, element) }}",
+            string type when type.StartsWith("Iterator<", StringComparison.Ordinal) => $"let value = ({call}).collect()",
             string type when type.StartsWith("List<", StringComparison.Ordinal) || type.StartsWith("Dictionary<", StringComparison.Ordinal) => $"let value = {call}",
             _ => throw new InvalidOperationException("Add a conformance consumer for " + returnType)
         };
@@ -185,7 +186,7 @@ public class GlyphPlatformTests
     }
 
     [TestCase(GlyphReceiverPolicy.None, GlyphDataType.Location, null, "explicit semantic policy")]
-    [TestCase(GlyphReceiverPolicy.LanguageValue, GlyphDataType.NwObject, null, "typed Location or Effect")]
+    [TestCase(GlyphReceiverPolicy.LanguageValue, GlyphDataType.NwObject, null, "String, Location, or Effect")]
     [TestCase(GlyphReceiverPolicy.DomainAbstraction, GlyphDataType.NwObject, "NWScript.GetTag", "cannot declare domain receivers")]
     [TestCase(GlyphReceiverPolicy.Legacy, GlyphDataType.NwObject, null, "deprecation/removal plan")]
     public void Invalid_receiver_policies_fail_conformance(GlyphReceiverPolicy policy, GlyphDataType type, string? source, string expected)
@@ -296,6 +297,9 @@ internal static class GlyphParameterTestValues
         "Int" => "1",
         "Float" => "1.0",
         "Bool" => "true",
+        "Iterator<Int>" => "List<Int>().iter()",
+        "Fn<Int, Bool>" => "|element| true",
+        "Fn<Int, Int>" => "|element| element",
         string type when type.StartsWith("List<", StringComparison.Ordinal) || type.StartsWith("Dictionary<", StringComparison.Ordinal) => type + "()",
         _ => throw new InvalidOperationException("Add a representative value for " + parameter.Type)
     };

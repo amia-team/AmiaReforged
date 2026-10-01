@@ -54,8 +54,8 @@ public partial class ForEachExecutor : IGlyphNodeExecutor
 
         IReadOnlyList<object?> inputItems;
         var element = CreateDefinition().InputPins.First(p => p.Id == "list").ElementType ?? GlyphDataType.NwObject;
-        if (node.PropertyOverrides.GetValueOrDefault("snapshot") == "true" && GlyphCollections.BasicTypes.Contains(element))
-            inputItems = GlyphCollections.Snapshot(listValue, element, context);
+        if (node.PropertyOverrides.GetValueOrDefault("snapshot") == "true")
+            inputItems = GlyphCollections.Snapshot(listValue, element, context, node.PropertyOverrides.GetValueOrDefault("element_type"));
         else if (listValue is IEnumerable<object?> enumerable)
         {
             inputItems = enumerable.ToList();

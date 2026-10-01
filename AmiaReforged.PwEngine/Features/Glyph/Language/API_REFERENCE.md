@@ -73,6 +73,13 @@ collection operations, and `impl` methods for structs and ADTs. See
 and execution limits. A complete [example](Examples/collections_and_impl.glyph) combines
 collections, struct methods, and ADT methods.
 
+### Generic operations and iterator recipes
+
+Language version 6 adds String operations, exact element typing, generic set operations, and lazy
+`iter`/`filter`/`map`/`collect` recipes with expression lambdas. Lists support aggregate and nested
+value types. See [string operations](#string-operations-and-generic-sets-glyph-6) and
+[iterator recipes](#lazy-iterator-recipes-and-expression-lambdas-glyph-6).
+
 ### Statement functions and returns
 
 Language version 3 adds statement bodies while retaining `fn name(args): Type = expression`.
@@ -110,7 +117,7 @@ New scripts and module publications use version 5. Retained version 1/2/3/4 scri
 histories keep their versions. Consumers can import modules of the same or an older language
 version; older consumers cannot import modules of a newer version. The editor selects version 3 when a statement function body is
 added to an older script. Use `--language-version 3` with Glyph.Cli to validate the new syntax.
-For an older script importing a version 3 module, choose **Upgrade to Glyph 5** in the
+For an older script importing a version 3 module, choose **Upgrade to Glyph 6** in the
 editor, then compile and activate it. Upgrading invalidates earlier validation.
 
 ### Syntax and capabilities
@@ -413,7 +420,7 @@ The UI does not yet provide automatic formatting.
 
 ## Reusable Glyph modules
 
-Modules require language version 2, 3, or 4. Existing version 1 scripts and published histories
+Modules require language version 2 through 6. Existing version 1 scripts and published histories
 remain supported; the editor retains a legacy script's version until a module import is added. Generated standard functions, constants, context, and documentation
 are automatically available; an authored `global.glyph` is not required.
 
@@ -576,7 +583,7 @@ legacy histories without dependencies restore with an empty lock.
 Glyph 4 adds immutable lists and dictionaries, and inherent methods for structs and ADTs.
 New scripts and module publications use version 5. Retained Glyph 1–4 sources and executables
 keep their versions. Consumers can import modules using their language version or an older version;
-older consumers cannot import newer modules. Use the editor's **Upgrade to Glyph 5** action when migrating a script.
+older consumers cannot import newer modules. Use the editor's **Upgrade to Glyph 6** action when migrating a script.
 
 ### Lists
 
@@ -629,9 +636,12 @@ This differs from the tolerance used by Glyph numeric comparison operators.
 
 ### Types and evaluation
 
-Both collections support only `Object`, `String`, `Int`, `Float`, and `Bool`. They are homogeneous;
-`List<Item>`, `List<List<Int>>`, and collection arguments involving Location or Effect are not
-supported. Existing native Effect list iteration remains available.
+In language versions 4 and 5, constructed collections support only `Object`, `String`, `Int`,
+`Float`, and `Bool`. Version 6 lists accept any value type, including `Location`, `Effect`,
+structs, ADTs, dictionaries, and nested lists. Dictionaries retain their basic key/value types.
+Collections remain homogeneous: version 6 rejects mixed literals and element arguments requiring
+numeric coercion. For example, `[1].contains(1.0)` and `[1].union([1.0])` fail compilation.
+Older source versions retain their existing numeric collection coercions.
 
 Collection types can appear in function parameters and return types, struct fields, and ADT
 payloads:
@@ -664,6 +674,75 @@ allocations per execution. Snapshotting native lists, copying list updates, and 
 construction charge their entry counts; persistent dictionary updates charge one update.
 Exceeding a limit halts execution with a source-aware trace. Execution-step and cancellation
 limits continue to apply.
+
+### String operations and generic sets (Glyph 6)
+
+String values support `split(delimiter): List<String>`, `contains(fragment): Bool`, and
+`length(): Int`. `contains` uses ordinal, case-sensitive comparison; an empty fragment is present
+in every string. `length` counts UTF-16 code units, so an emoji represented by a surrogate pair
+has length 2. `split` requires a nonempty literal delimiter, preserves whitespace and empty
+entries, and returns `[""]` for an empty source. The older graph split node retains its trimming
+and empty-entry removal behavior, with a corrected `List<String>` output signature.
+
+```glyph
+let parts = " a,,b,".split(",") // [" a", "", "b", ""]
+let has_a = parts.contains(" a")
+let length = "hello".length()
+```
+
+All list membership and set operations require the exact same element type, including complete
+nominal and nested generic identities. `any(value)` is an alias for `contains(value)`.
+`any()` tests whether a list is nonempty. These set operations return new immutable lists:
+
+| Operation | Meaning | Result order |
+| --- | --- | --- |
+| `A.union(B)` | Distinct values present in either list | First occurrence in A, then new values in B |
+| `A.intersection(B)` | Distinct values present in both lists | First occurrence in A |
+| `A.difference(B)` | Distinct values in A absent from B | First occurrence in A |
+| `A.complement(B)` | Distinct values in universe B absent from A | First occurrence in B |
+
+String equality is ordinal and case-sensitive. Float membership uses exact .NET `Double.Equals`
+semantics, including equality between NaNs and between signed zeros. Struct and ADT values compare
+by nominal type, variant, and fields recursively. Nested lists compare ordered elements, including
+duplicates; dictionaries compare their key/value entries independent of insertion order. Object,
+Location, and Effect values compare their opaque handles. No operation changes either input.
+
+### Lazy iterator recipes and expression lambdas (Glyph 6)
+
+`iter()` starts an `Iterator<T>` recipe. `filter(|element| predicate)` retains elements for which
+the expression returns Bool. `map(|element| selector)` infers a new element type from the selector's
+result. `collect()` evaluates the recipe into an immutable `List<T>`, preserving order and duplicates.
+Lists also support `filter`, `map`, and `collect` directly as conveniences.
+
+```glyph
+var minimum = 1
+let recipe = "a,,bb,ccc".split(",").iter()
+    .filter(|part| part.length() > minimum)
+    .map(|part| part.length())
+minimum = 9
+let lengths = recipe.collect() // List<Int>: [2, 3]
+let has_long_name = recipe.any(|length| length > 2)
+for length in recipe { spawn.modify_count(length) }
+```
+
+The source list and referenced local values are snapshotted when a recipe is constructed.
+Selectors and predicates execute only when `collect`, `any`, or a `for`/`foreach` loop consumes
+the recipe. Recipes stored with `let` can be consumed repeatedly; each consumption evaluates
+callbacks again. Native queries inside a callback observe the game state at evaluation time.
+`any(predicate)` stops at the first match; `any()` stops at the first element. Empty recipes
+produce an empty list or false without running callbacks.
+
+Lambdas have one inferred parameter and an expression body. They may read captures and call
+value-returning helpers, but cannot call actions or branch predicates, including indirectly
+through helpers. Recipes are compiler-owned expressions: they can be stored with `let` and used
+locally, but cannot be mutable variables, aggregate payloads, function parameters/results, or
+lambda captures. Collect a recipe when a regular value is needed. Lambdas are not standalone
+first-class function values; `Fn<T, U>` in editor metadata describes a callback contract.
+
+Pipeline stages lower to ordinary typed loops and share execution-step, cancellation, and source
+trace behavior. Collection buffers and set membership tables charge allocation budgets; `collect`
+builds its result in linear time without allocating a list for every intermediate stage.
+See [the complete example](Examples/generic_operations.glyph).
 
 ### Struct and ADT implementations
 
@@ -763,8 +842,8 @@ retain their existing `Object` return types and sentinel behavior.
 Type parameters are unconstrained. Generic bodies are checked using opaque parameter types,
 and calls are specialized before lowering to the existing runtime. Passing, storing, returning,
 and matching generic values are supported; operations that require a particular concrete type
-cannot be applied to an unconstrained parameter. Collections retain their basic element/key/value
-restrictions, including when specialized through generic functions. There are no constraints,
+cannot be applied to an unconstrained parameter. In Glyph 6, generic list operations work with
+any value type; dictionary keys and values retain their basic-type restrictions. There are no constraints,
 variance, default type arguments, specialized implementations, or recursive functions. Type expansion is bounded to depth 64
 and 1024 specializations per compilation.
 
@@ -8348,6 +8427,38 @@ Kind: Action. Canonical: `nwn.summon_familiar`.
 
 Available in: all Glyph events/stages.
 
+### Text
+
+#### `string.contains`
+
+`string.contains(text: String, fragment: String) → Bool`
+
+Whether text contains a fragment using ordinal, case-sensitive comparison.
+
+Kind: Value. Canonical: `string.contains`.
+
+Available in: all Glyph events/stages.
+
+#### `string.length`
+
+`string.length(text: String) → Int`
+
+The number of UTF-16 code units in the string.
+
+Kind: Value. Canonical: `string.length`.
+
+Available in: all Glyph events/stages.
+
+#### `string.split`
+
+`string.split(text: String, delimiter: String) → List<String>`
+
+Split by a nonempty literal delimiter. Preserve whitespace and empty entries; return List<String>.
+
+Kind: Value. Canonical: `string.split`.
+
+Available in: all Glyph events/stages.
+
 ### Traits
 
 #### `has_trait`
@@ -11964,16 +12075,15 @@ These deliberately classified methods belong to known Glyph value types or expli
 
 | Receiver | Policy | Method | Parameters | Returns | Canonical | Availability |
 | --- | --- | --- | --- | --- | --- | --- |
-| List<Bool> | None | append | value: Bool | List<Bool> | collection.append_list_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Float> | None | append | value: Float | List<Float> | collection.append_list_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Int> | None | append | value: Int | List<Int> | collection.append_list_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Object> | None | append | value: Object | List<Object> | collection.append_list_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<String> | None | append | value: String | List<String> | collection.append_list_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Bool> | None | contains | value: Bool | Bool | collection.contains_list_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Float> | None | contains | value: Float | Bool | collection.contains_list_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Int> | None | contains | value: Int | Bool | collection.contains_list_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Object> | None | contains | value: Object | Bool | collection.contains_list_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<String> | None | contains | value: String | Bool | collection.contains_list_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | any | value: T | Bool | language.list.any | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Iterator<T> | LanguageValue | any | predicate: Fn<T, Bool> =  | Bool | language.iterator.any | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | any | predicate: Fn<T, Bool> =  | Bool | language.iterator.any | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | append | value: T | List<T> | language.list.append | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | collect |  | List<T> | language.iterator.collect | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Iterator<T> | LanguageValue | collect |  | List<T> | language.iterator.collect | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | complement | other: List<T> | List<T> | language.list.complement | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| String | LanguageValue | contains | fragment: String | Bool | string.contains | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | contains | value: T | Bool | language.list.contains | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Bool> | None | contains_key | key: Bool | Bool | collection.contains_key_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Float> | None | contains_key | key: Bool | Bool | collection.contains_key_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Int> | None | contains_key | key: Bool | Bool | collection.contains_key_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
@@ -12024,11 +12134,10 @@ These deliberately classified methods belong to known Glyph value types or expli
 | Dictionary<String, Int> | None | count |  | Int | collection.count_dictionary_string_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<String, Object> | None | count |  | Int | collection.count_dictionary_string_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<String, String> | None | count |  | Int | collection.count_dictionary_string_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Bool> | None | count |  | Int | collection.count_list_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Float> | None | count |  | Int | collection.count_list_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Int> | None | count |  | Int | collection.count_list_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Object> | None | count |  | Int | collection.count_list_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<String> | None | count |  | Int | collection.count_list_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | count |  | Int | language.list.count | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | difference | other: List<T> | List<T> | language.list.difference | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Iterator<T> | LanguageValue | filter | predicate: Fn<T, Bool> | Iterator<T> | language.iterator.filter | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | filter | predicate: Fn<T, Bool> | Iterator<T> | language.iterator.filter | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Bool> | None | get | key: Bool, fallback: Bool | Bool | collection.get_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Float> | None | get | key: Bool, fallback: Float | Float | collection.get_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Int> | None | get | key: Bool, fallback: Int | Int | collection.get_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
@@ -12075,6 +12184,8 @@ These deliberately classified methods belong to known Glyph value types or expli
 | Location | LanguageValue | get_x |  | Float | nwn.location_x | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Location | LanguageValue | get_y |  | Float | nwn.location_y | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Location | LanguageValue | get_z |  | Float | nwn.location_z | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | intersection | other: List<T> | List<T> | language.list.intersection | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | iter |  | Iterator<T> | language.iterator.iter | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Bool> | None | keys |  | List<Bool> | collection.keys_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Float> | None | keys |  | List<Bool> | collection.keys_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Int> | None | keys |  | List<Bool> | collection.keys_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
@@ -12100,11 +12211,12 @@ These deliberately classified methods belong to known Glyph value types or expli
 | Dictionary<String, Int> | None | keys |  | List<String> | collection.keys_dictionary_string_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<String, Object> | None | keys |  | List<String> | collection.keys_dictionary_string_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<String, String> | None | keys |  | List<String> | collection.keys_dictionary_string_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Bool> | None | remove_at | index: Int | List<Bool> | collection.remove_at_list_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Float> | None | remove_at | index: Int | List<Float> | collection.remove_at_list_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Int> | None | remove_at | index: Int | List<Int> | collection.remove_at_list_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Object> | None | remove_at | index: Int | List<Object> | collection.remove_at_list_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<String> | None | remove_at | index: Int | List<String> | collection.remove_at_list_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| String | LanguageValue | length |  | Int | string.length | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| Iterator<T> | LanguageValue | map | selector: Fn<T, U> | Iterator<U> | language.iterator.map | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | map | selector: Fn<T, U> | Iterator<U> | language.iterator.map | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | remove_at | index: Int | List<T> | language.list.remove_at | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| String | LanguageValue | split | delimiter: String | List<String> | string.split | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | union | other: List<T> | List<T> | language.list.union | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Bool> | None | values |  | List<Bool> | collection.values_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Float> | None | values |  | List<Float> | collection.values_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Int> | None | values |  | List<Int> | collection.values_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
@@ -12155,11 +12267,7 @@ These deliberately classified methods belong to known Glyph value types or expli
 | Dictionary<String, Int> | None | with | key: String, value: Int | Dictionary<String, Int> | collection.with_dictionary_string_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<String, Object> | None | with | key: String, value: Object | Dictionary<String, Object> | collection.with_dictionary_string_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<String, String> | None | with | key: String, value: String | Dictionary<String, String> | collection.with_dictionary_string_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Bool> | None | with | index: Int, value: Bool | List<Bool> | collection.with_list_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Float> | None | with | index: Int, value: Float | List<Float> | collection.with_list_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Int> | None | with | index: Int, value: Int | List<Int> | collection.with_list_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<Object> | None | with | index: Int, value: Object | List<Object> | collection.with_list_nwobject | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
-| List<String> | None | with | index: Int, value: String | List<String> | collection.with_list_string | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
+| List<T> | LanguageValue | with | index: Int, value: T | List<T> | language.list.with | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Bool> | None | without | key: Bool | Dictionary<Bool, Bool> | collection.without_dictionary_bool_bool | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Float> | None | without | key: Bool | Dictionary<Bool, Float> | collection.without_dictionary_bool_float | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |
 | Dictionary<Bool, Int> | None | without | key: Bool | Dictionary<Bool, Int> | collection.without_dictionary_bool_int | encounter.after_group_spawn, encounter.before_group_spawn, encounter.on_boss_spawn, encounter.on_creature_death, encounter.on_creature_spawn, trait.on_granted, trait.on_removed, interaction/attempted, interaction/started, interaction/tick, interaction/completed |

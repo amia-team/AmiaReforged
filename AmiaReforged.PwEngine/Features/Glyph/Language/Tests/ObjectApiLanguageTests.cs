@@ -34,9 +34,9 @@ public sealed class ObjectApiLanguageTests
     {
         var catalog = _runtime.Compiler.Catalog;
         Assert.That(catalog.ReceiverMethods, Is.Not.Empty);
-        Assert.That(catalog.ReceiverMethods.All(r => r.ReceiverType is GlyphDataType.Location or GlyphDataType.Effect &&
+        Assert.That(catalog.ReceiverMethods.All(r => r.ReceiverType is GlyphDataType.Location or GlyphDataType.Effect or GlyphDataType.String &&
             r.Policy == GlyphReceiverPolicy.LanguageValue), Is.True);
-        Assert.That(catalog.ReceiverMethods.Count, Is.EqualTo(21));
+        Assert.That(catalog.ReceiverMethods.Count, Is.EqualTo(24));
     }
 
     [TestCase("let score = nwn.get_ability_score(player, ABILITY.STRENGTH)")]
