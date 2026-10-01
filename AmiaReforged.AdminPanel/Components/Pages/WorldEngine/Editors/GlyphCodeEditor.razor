@@ -48,7 +48,7 @@
             _attempted = true;
             try
             {
-                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=9");
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=10");
                 if (_disposed) { await ReleaseAsync(); return; }
                 _callback = DotNetObjectReference.Create(this);
                 await _module.InvokeVoidAsync("create", _host, _callback, _source, ReadOnly);

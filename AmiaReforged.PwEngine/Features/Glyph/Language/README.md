@@ -51,6 +51,46 @@ pins the exact module revisions; publishing a new library revision does not chan
 See [modules and publication](MODULES.md) for syntax, visibility, dependency behavior,
 CLI validation, and a complete prospecting example.
 
+## Statement functions and returns
+
+Language version 3 adds statement bodies while retaining `fn name(args): Type = expression`.
+Declare functions before the `glyph` block, or inside a module; `pub` exports a module function.
+
+```glyph
+fn larger(a: Int, b: Int): Int {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+fn notify(actor: Object): Void {
+    nwn.send_message_to_pc(actor, "Hello")
+    return;
+}
+```
+
+Block functions support local bindings, assignments, branches, loops, matches, and action calls.
+A value function must return a compatible value on every reachable path. Loops are conservatively
+considered capable of executing zero times, so a return inside a loop needs a fallback return.
+An exhaustive match whose arms all return satisfies this check. `Void` functions allow `return;`
+and normal fallthrough; they cannot return a value. `return` is only valid inside a function.
+A return exits the current function, including any nested loops, and resumes its caller.
+
+Parameters are immutable. Block-function arguments are evaluated once, in written order, even
+when a parameter is unused. Parameters and locals do not capture caller-local variables.
+A block-function call assigned to `let` executes once; existing expression-bodied functions and
+lazy pure `let` bindings retain their behavior. Returning does not replace `fail`: failing an
+interaction retains its existing behavior. Recursion remains unsupported, and calls share the
+script's execution budget and cancellation token.
+
+New scripts and module publications use version 3. Retained version 1/2 scripts and module
+histories keep their versions. Version 3 consumers can import version 2 modules; older consumers
+cannot import version 3 modules. The editor selects version 3 when a statement function body is
+added to an older script. Use `--language-version 3` with Glyph.Cli to validate the new syntax.
+For an older script importing a version 3 module, choose **Upgrade to Glyph 3** in the
+editor, then compile and activate it. Upgrading invalidates earlier validation.
+
 ## Syntax and capabilities
 
 ```glyph

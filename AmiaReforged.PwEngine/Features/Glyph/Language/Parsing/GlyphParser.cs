@@ -3,7 +3,7 @@ using AmiaReforged.PwEngine.Features.Glyph.Language.Syntax;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Language.Parsing;
 
-public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
+public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVersion = Compilation.GlyphLanguageVersion.Current)
 {
     public List<GlyphDiagnostic> Diagnostics { get; } = [];
     private int _position, _depth;
@@ -128,10 +128,19 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
 
                     Expect(":");
                     string returnType = QualifiedIdentifier();
-                    Expect("=");
-                    ExpressionSyntax bodyExpression = Expression();
-
-                    globalDeclarations.Add(new FunctionDeclarationSyntax(fnName, parameters, returnType, bodyExpression, Through(declarationStart)) { IsPublic = isPublic });
+                    FunctionBodySyntax functionBody;
+                    if (At("{"))
+                    {
+                        if (languageVersion < 3)
+                            Diagnostics.Add(new("GLYPH1011", "Statement function bodies require language version 3.", Current.Span));
+                        functionBody = new BlockFunctionBodySyntax(Block());
+                    }
+                    else
+                    {
+                        Expect("=");
+                        functionBody = new ExpressionFunctionBodySyntax(Expression());
+                    }
+                    globalDeclarations.Add(new FunctionDeclarationSyntax(fnName, parameters, returnType, functionBody, Through(declarationStart)) { IsPublic = isPublic });
                 }
                 else if (Eat("struct"))
                 {
@@ -184,7 +193,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
 
             Expect("eof");
 
-            return new(globalDeclarations, declarations, name, evt, body, Through(unitStart)) { Imports = imports, ModuleName = moduleName };
+            return new(globalDeclarations, declarations, name, evt, body, Through(unitStart)) { Imports = imports, ModuleName = moduleName, LanguageVersion = languageVersion };
         }
         catch (SyntaxDepthException)
         {
@@ -260,6 +269,8 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
         SourceSpan start = Current.Span;
 
         if (At("{")) return Block();
+        if (Eat("return"))
+            return new ReturnStatementSyntax(At(";") || At("}") ? null : Expression(), Through(start));
 
         if (At("attempted") || At("started") || At("tick") || At("completed"))
         {

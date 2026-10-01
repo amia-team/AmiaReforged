@@ -14,6 +14,7 @@ public sealed class GlyphLowerer
     private readonly Dictionary<int, GlyphNodeInstance> _loops = [];
     private readonly Dictionary<int, Output> _stored = [];
     private int _identity;
+    private readonly Stack<(int? Symbol, GlyphTypeSymbol Type)> _returns = new();
     private readonly record struct Output(GlyphNodeInstance Node, string Pin);
     public (GlyphGraph Ir, IReadOnlyDictionary<Guid, SourceSpan> SourceMap) Lower(BoundProgram program)
     {
@@ -52,6 +53,17 @@ public sealed class GlyphLowerer
         switch (statement)
         {
             case BoundBlock block: return Block(block, tails);
+            case BoundFunctionStatement invocation:
+                Expression(invocation.Call, ref tails);
+                return tails;
+            case BoundReturn ret:
+            {
+                var target = _returns.Peek();
+                if (ret.Value != null && target.Symbol is { } symbol)
+                    tails = Write(symbol, target.Type, ret.Value, ret.Span, tails);
+                Connect(tails, Node("flow.return", ret.Span));
+                return [];
+            }
             case BoundLet let:
                 _stored[let.SymbolId] = Expression(let.Value, ref tails);
                 return tails;
@@ -196,6 +208,17 @@ public sealed class GlyphLowerer
     {
         switch (expression)
         {
+            case BoundFunctionCall call:
+            {
+                foreach (var argument in call.Arguments) tails = Statement(argument, tails);
+                GlyphNodeInstance function = Node("flow.function", call.Span);
+                Connect(tails, function);
+                _returns.Push((call.ResultSymbol, call.Type));
+                Block(call.Body, [new(function, "body")]);
+                _returns.Pop();
+                tails = [new(function, "completed")];
+                return call.ResultSymbol is { } symbol ? Local(symbol, call.Type, call.Span) : new(function, "completed");
+            }
             case BoundVariableRead variable: return Local(variable.SymbolId, variable.Type, variable.Span);
             case BoundStruct structure: return Aggregate(structure.Definition.Name, null, structure.Fields, structure.Definition.Fields, structure.Span, ref tails);
             case BoundVariant variant: return Aggregate(variant.Definition.Name, variant.Variant.Name, variant.Fields, variant.Variant.Fields, variant.Span, ref tails);

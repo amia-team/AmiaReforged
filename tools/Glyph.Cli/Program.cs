@@ -10,18 +10,18 @@ for (int i = 0; i < args.Length; i++)
     if (args[i] == "--module-root" && i + 1 < args.Length) moduleRoot = args[++i];
     else if (args[i] == "--language-version")
     {
-        if (i + 1 >= args.Length || !int.TryParse(args[++i], out languageVersion) || languageVersion is not (1 or 2))
-        { Console.Error.WriteLine("--language-version requires 1 or 2."); return 2; }
+        if (i + 1 >= args.Length || !int.TryParse(args[++i], out languageVersion) || languageVersion is not (1 or 2 or 3))
+        { Console.Error.WriteLine("--language-version requires 1, 2, or 3."); return 2; }
     }
     else if (args[i].StartsWith("--", StringComparison.Ordinal)) { Console.Error.WriteLine("Unknown option, missing value, or unsupported language version."); return 2; }
     else files.Add(args[i]);
 }
 if (files.Count == 0)
 {
-    Console.Error.WriteLine("Usage: Glyph.Cli [--language-version 1|2] [--module-root directory] <file.glyph> [file.glyph ...]");
+    Console.Error.WriteLine("Usage: Glyph.Cli [--language-version 1|2|3] [--module-root directory] <file.glyph> [file.glyph ...]");
     return 2;
 }
-if (moduleRoot != null && languageVersion != 2) { Console.Error.WriteLine("Modules require language version 2."); return 2; }
+if (moduleRoot != null && languageVersion < 2) { Console.Error.WriteLine("Modules require language version 2 or 3."); return 2; }
 // Registration only. No Anvil service container, game engine, or database is started.
 NLog.LogManager.Configuration = new NLog.Config.LoggingConfiguration();
 var runtime = new GlyphBootstrap(new GlyphNodeDefinitionRegistry());
@@ -38,11 +38,11 @@ try
         foreach (string file in Directory.EnumerateFiles(moduleRoot, "*.glyph", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.Ordinal))
         {
             string source = await File.ReadAllTextAsync(file); List<GlyphDiagnostic> diagnostics = [];
-            var syntax = GlyphModuleBinding.Parse(source, file, diagnostics); Report(diagnostics);
+            var syntax = GlyphModuleBinding.Parse(source, file, diagnostics, languageVersion); Report(diagnostics);
             if (diagnostics.Count > 0 || syntax?.ModuleName == null)
             { Console.Error.WriteLine($"{file}: module root accepts standalone mod libraries."); return 1; }
             string hash = GlyphModuleRevision.Hash(source);
-            revisions.Add(new(syntax.ModuleName, new Guid(Convert.FromHexString(hash)[..16]), source, hash, []));
+            revisions.Add(new(syntax.ModuleName, new Guid(Convert.FromHexString(hash)[..16]), source, hash, [], languageVersion));
         }
         if (revisions.Select(r => r.Name).Distinct(StringComparer.Ordinal).Count() != revisions.Count)
         { Console.Error.WriteLine("Module root contains duplicate module names."); return 1; }
@@ -60,7 +60,7 @@ try
         var syntax = GlyphModuleBinding.Parse(source, file, diagnostics, languageVersion);
         if (syntax?.ModuleName != null)
         {
-            var validation = runtime.Compiler.CompileModule(GlyphModuleRevision.Create(syntax.ModuleName, source)); Report(validation.Diagnostics);
+            var validation = runtime.Compiler.CompileModule(GlyphModuleRevision.Create(syntax.ModuleName, source) with { LanguageVersion = languageVersion }); Report(validation.Diagnostics);
             if (!validation.Success) exitCode = 1; else Console.WriteLine($"{file}: valid module");
         }
         else

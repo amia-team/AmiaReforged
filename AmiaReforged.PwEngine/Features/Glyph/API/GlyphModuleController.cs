@@ -179,7 +179,7 @@ public sealed class GlyphModuleController
         return new(200, GlyphModuleMetadata.Create(Runtime.Compiler, request.SourceText, request.LanguageVersion));
     }
     internal static string Fingerprint(GlyphModuleRevision revision, GlyphModuleCompilationResult result) =>
-        GlyphModuleBinding.CompilationHash(revision.SourceHash, 2, result.Binding?.Dependencies.Where(d => d.Name != revision.Name) ?? []);
+        GlyphModuleBinding.CompilationHash(revision.SourceHash, revision.LanguageVersion, result.Binding?.Dependencies.Where(d => d.Name != revision.Name) ?? []);
     private static ApiResult Response(GlyphModuleRevision revision, GlyphModuleCompilationResult result) => new(200, new
     { result.Success, result.Diagnostics, revision.SourceHash, CompilationHash = Fingerprint(revision, result), Dependencies = result.Binding?.Dependencies.Where(d => d.Name != revision.Name).Select(d => new GlyphModuleReference(d.Name, d.RevisionId, d.SourceHash)).ToArray() ?? [] });
     private static bool Identifier(string? name) => name is { Length: > 0 and <= 128 } && (char.IsLetter(name[0]) || name[0] == '_') && name.All(c => char.IsLetterOrDigit(c) || c == '_');

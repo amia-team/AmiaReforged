@@ -34,6 +34,7 @@ public class GlyphExecFrame
     /// is needed (the executor manages the iteration state).
     /// </summary>
     public bool IsLoop { get; init; }
+    public bool IsFunction { get; init; }
 
     /// <summary>Exit continuation selected when this loop receives a break.</summary>
     public string CompletedPinId { get; init; } = "completed";
@@ -43,6 +44,7 @@ public class GlyphExecFrame
     /// prelude and nested loops. On each iteration advance, the interpreter clears
     /// the <see cref="GlyphExecutionContext.PinValueCache"/> entries for these nodes so
     /// that pure-function nodes are re-evaluated with fresh upstream values.
+    /// Function frames also track their body's nodes for cleanup on return or fallthrough.
     /// </summary>
     public HashSet<Guid> LoopBodyNodeIds { get; } = [];
 }

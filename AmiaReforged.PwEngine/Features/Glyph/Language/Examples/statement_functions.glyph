@@ -1,0 +1,21 @@
+fn find_key(actor: Object): Object {
+    foreach candidate in nwn.inventory(actor) {
+        if nwn.get_tag(candidate) == "quest_key" {
+            return candidate
+        }
+    }
+    return OBJECT.INVALID
+}
+
+fn notify(actor: Object): Void {
+    nwn.send_message_to_pc(actor, "You have the key.")
+}
+
+glyph check_key : interaction {
+    attempted {
+        if find_key(player) == OBJECT.INVALID {
+            fail "You need the quest key."
+        }
+        notify(player)
+    }
+}

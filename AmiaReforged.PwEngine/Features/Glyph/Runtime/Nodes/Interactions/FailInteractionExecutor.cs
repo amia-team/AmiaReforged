@@ -62,6 +62,7 @@ public partial class FailInteractionExecutor : IGlyphNodeExecutor
                       "Terminates the execution chain.",
         ColorClass = "node-action",
         Archetype = GlyphNodeArchetype.Action,
+        ExecutionOutputs = [],
         RestrictToEventType = GlyphEventType.InteractionPipeline,
         ScriptCategory = GlyphScriptCategory.Interaction,
         Parameters =

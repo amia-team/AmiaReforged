@@ -17,7 +17,7 @@ GlobalDeclaration { ConstantDeclaration | FunctionDeclaration }
 TypeDeclaration { StructDeclaration | AdtDeclaration }
 
 ConstantDeclaration { kw<"const"> ConstantName (":" TypeName)? ("=" expression)? ";"? }
-FunctionDeclaration { kw<"fn"> FunctionName "(" Parameters ")" ":" TypeName "=" expression ";"? }
+FunctionDeclaration { kw<"fn"> FunctionName "(" Parameters ")" ":" TypeName ("=" expression | Block) ";"? }
 Parameters { Parameter* }
 Parameter { ParameterName (":" TypeName)? ("," | ";")? }
 
@@ -39,7 +39,7 @@ Block { "{" (statement | ";")* "}" }
 
 statement {
   Block | StageDeclaration | LetStatement | VarStatement | IfStatement | WhileStatement | ForeachStatement | ForStatement |
-  MatchStatement | BreakStatement | ContinueStatement | FailStatement | AssignmentStatement | ExpressionStatement
+  MatchStatement | BreakStatement | ContinueStatement | ReturnStatement | FailStatement | AssignmentStatement | ExpressionStatement
 }
 
 StageDeclaration { StageName Block }
@@ -60,6 +60,7 @@ ValuePattern { Identifier ("." PropertyName)* ~pattern | Number | String | Boole
 WildcardPattern { kw<"_"> }
 BreakStatement { kw<"break"> }
 ContinueStatement { kw<"continue"> }
+ReturnStatement { kw<"return"> (expression | ";")? !statement }
 
 FailStatement[@dynamicPrecedence=1] {
   @extend[@name=FailKeyword]<Identifier, "fail"> expression !statement
@@ -97,7 +98,7 @@ ArgumentName {
   Identifier | kw<"mod"> | kw<"using"> | kw<"pub"> | kw<"glyph"> | kw<"struct"> | kw<"type"> | kw<"match"> | kw<"let"> |
   kw<"var"> | kw<"while"> | kw<"for"> | kw<"continue"> | kw<"step"> |
   kw<"if"> | kw<"else"> | kw<"foreach"> | kw<"in"> | kw<"break"> |
-  kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | kw<"fn"> | kw<"const">
+  kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | kw<"fn"> | kw<"const"> | kw<"return">
 }
 AssignmentOperator { "=" | "+=" | "-=" | "*=" | "/=" }
 kw<term> { @specialize[@name={term}]<Identifier, term> }

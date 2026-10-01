@@ -17,6 +17,36 @@ public sealed class GlyphModuleTests
     private GlyphCompilationResult Compile(string prelude, string body) => _runtime.Compiler.Compile(prelude + " glyph t : interaction { attempted { " + body + " } }");
     private static void Valid(GlyphCompilationResult result) => Assert.That(result.Success, Is.True, string.Join("\n", result.Diagnostics));
 
+    [Test] public void Statement_module_functions_validate_unused_bodies_and_preserve_private_helpers()
+    {
+        var good = Module("helpers", "fn tag(): String { return \"module\" } pub fn target(): String { return tag() }");
+        Assert.That(_runtime.Compiler.CompileModule(good).Success, Is.True);
+        Install(good);
+        Valid(Compile("using helpers", "fail target()"));
+        var bad = Module("bad", "pub fn unused(): Int { if true { return 1 } }");
+        Assert.That(_runtime.Compiler.CompileModule(bad).Diagnostics.Any(d => d.Code == "GLYPH2030"), Is.True);
+    }
+    [Test] public void Version_three_scripts_import_version_two_modules_but_older_consumers_reject_newer_modules()
+    {
+        var old = Module("old", "pub fn value(): String = \"old\"") with { LanguageVersion = 2 };
+        Install(old);
+        Valid(Compile("using old", "fail value()"));
+        Install(Module("newer", "pub fn value(): String { return \"new\" }"));
+        var result = _runtime.Compiler.Compile("using newer glyph t : interaction { attempted { fail value() } }", new(LanguageVersion: 2));
+        Assert.That(result.Diagnostics.Any(d => d.Code == "GLYPH1007"), Is.True);
+    }
+    [Test] public void Statement_function_availability_includes_body_actions()
+    {
+        var revision = Module("helpers", "pub fn count(): Int { var value = spawn.count return value }");
+        var result = _runtime.Compiler.CompileModule(revision);
+        Assert.That(result.Success, Is.True, string.Join("\n", result.Diagnostics));
+        Install(revision);
+        Assert.That(Compile("using helpers", "let n = count()").Success, Is.False);
+        var metadata = GlyphModuleMetadata.Create(_runtime.Compiler, revision.SourceText);
+        Assert.That(metadata.Diagnostics, Is.Empty);
+        Assert.That(metadata.Functions.Single(f => f.Name == "count").AvailableIn.All(a => a.Event.StartsWith("encounter.")), Is.True);
+    }
+
     [Test] public void Public_function_keeps_its_private_helpers_and_does_not_capture_caller_names()
     {
         var helpers = Module("helpers", "const TAG = \"module\" fn tag(): String = TAG pub fn target(): String = tag()");

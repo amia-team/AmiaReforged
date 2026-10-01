@@ -44,6 +44,9 @@ export function completionScope(state, pos, from = pos, suppress = true) {
   let functionNode = null;
   for (let node = leaf; node; node = node.parent) if (node.name === "FunctionDeclaration") { functionNode = node; break; }
   const inFunction = !!functionNode;
+  const functionBody = functionNode?.getChild("Block");
+  const inFunctionBody = !!functionBody && inside(functionBody, pos, "}");
+  const functionReturnType = text(state, functionNode?.getChild("TypeName"));
   const moduleBody = tree.topNode.getChild("ModuleDeclaration")?.getChild("ModuleBody");
   const blocks = [];
   let argumentsNode = null,
@@ -109,6 +112,8 @@ export function completionScope(state, pos, from = pos, suppress = true) {
     stage,
     inLoop,
     inFunction,
+    inFunctionBody,
+    functionReturnType,
     moduleBody,
     blocks,
     argumentsNode,
@@ -118,6 +123,7 @@ export function completionScope(state, pos, from = pos, suppress = true) {
   };
 }
 
+const functionSnippetCompletion = snippetCompletion("fn ${name}(${value}: ${Int}): ${Int} {\n\treturn ${value}\n}", { label: "fn", type: "keyword" });
 const statementSnippets = [
   snippetCompletion("var ${name} = ${value}", { label: "var", type: "keyword" }),
   snippetCompletion("while ${condition} {\n\t${}\n}", { label: "while", type: "keyword" }),
@@ -449,6 +455,7 @@ export function glyphCompletions(metadata) {
     } else if ((!body || context.pos <= body.from) && !scope.inFunction) {
       if (!prefix.trim()) {
         options = [
+          functionSnippetCompletion,
           snippetCompletion("mod ${name} {\n\t${}\n}", { label: "mod", type: "keyword" }),
           snippetCompletion("using ${module}", { label: "using", type: "keyword" }),
           snippetCompletion(
@@ -461,10 +468,10 @@ export function glyphCompletions(metadata) {
         ];
       }
     } else if (scope.moduleBody && !scope.inFunction) {
-      options = ["pub", "const", "fn", "struct", "type", "using"].map(label => ({ label, type: "keyword" }));
+      options = [functionSnippetCompletion, ...["pub", "const", "struct", "type", "using"].map(label => ({ label, type: "keyword" }))];
     } else if (
       (scope.event === "interaction" || metadata?.events.find(e => e.name === scope.event)?.stages?.length > 0) &&
-      !scope.stage &&
+      !scope.stage && !scope.inFunction &&
       scope.blocks.length === 1
     ) {
       const declared = new Set(
@@ -577,8 +584,11 @@ export function glyphCompletions(metadata) {
         { label: "false", type: "keyword" },
       );
 
-      if (!scope.argumentsNode && !scope.inFunction) {
+      if (!scope.argumentsNode && (!scope.inFunction || scope.inFunctionBody)) {
         options.push(...statementSnippets);
+        if (scope.inFunctionBody) options.push(scope.functionReturnType === "Void"
+          ? { label: "return", type: "keyword", apply: "return;" }
+          : snippetCompletion("return ${value}", { label: "return", type: "keyword" }));
         for (const state of metadata?.writableState || []) {
           if (!knownEvent || available(state, scope)) {
             options.push({ label: state.name, type: "variable", detail: `${state.type} (writable)`,

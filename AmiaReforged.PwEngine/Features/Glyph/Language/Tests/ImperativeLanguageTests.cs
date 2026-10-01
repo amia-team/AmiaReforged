@@ -380,6 +380,195 @@ public class ImperativeLanguageTests
         Assert.That(graph.Nodes.All(n => program.SourceMap.ContainsKey(n.InstanceId)), Is.True);
     }
 
+    [TestCase("fn f(): Int { return \"bad\" }", "record(f())", "GLYPH2004")]
+    [TestCase("fn f(): Int { return; }", "record(f())", "GLYPH2004")]
+    [TestCase("fn f(): Void { return 1 }", "f()", "GLYPH2004")]
+    [TestCase("fn f(): Int { if true { return 1 } }", "record(f())", "GLYPH2030")]
+    [TestCase("fn f(): Int { while true { return 1 } }", "record(f())", "GLYPH2030")]
+    [TestCase("fn f(): Int { for i in 0..3 { return i } }", "record(f())", "GLYPH2030")]
+    [TestCase("fn f(): Int { match 1 { 1 { return 1 } } }", "record(f())", "GLYPH2030")]
+    [TestCase("", "return 1", "GLYPH2029")]
+    [TestCase("fn f(): Void { break }", "for i in 0..3 { f() }", "GLYPH3004")]
+    [TestCase("fn f(): Void { continue }", "for i in 0..3 { f() }", "GLYPH3004")]
+    [TestCase("fn f(): Int { return secret }", "var secret = 1 record(f())", "GLYPH3002")]
+    [TestCase("fn f(value: Int): Int { value = 2 return value }", "record(f(1))", "GLYPH2008")]
+    [TestCase("fn f(): Int { return f() }", "record(f())", "GLYPH2012")]
+    [TestCase("fn f(): Void {}", "let value = f()", "GLYPH2004")]
+    [TestCase("fn unused(): Int {}", "", "GLYPH2030")]
+    [TestCase("fn unused(): Void { return 1 }", "", "GLYPH2004")]
+    [TestCase("fn unused(value: Void): Int { return 1 }", "", "GLYPH2004")]
+    [TestCase("fn unused(value: Int, value: Int): Int { return value }", "", "GLYPH2006")]
+    [TestCase("fn f(value: Void): Int { return 1 } fn empty(): Void {}", "record(f(empty()))", "GLYPH2004")]
+    public void statement_functions_reject_invalid_returns_and_scope_leaks(string declarations, string body, string code)
+    {
+        var result = _runtime.Compiler.Compile(declarations + Script(body));
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Diagnostics.Any(d => d.Code == code), Is.True, string.Join("\n", result.Diagnostics));
+    }
+
+    [Test]
+    public async Task functions_return_through_nested_loops_without_exiting_the_callers_loop()
+    {
+        await Run("for n in 0..3 { record(find(n)) record(n) }", prelude: """
+            fn find(value: Int): Int {
+                for outer in 0..3 {
+                    for inner in 0..3 {
+                        if inner == 1 { return value }
+                    }
+                }
+                return 99
+            }
+            """);
+        Assert.That(_probe.Values, Is.EqualTo(new[] { 0, 0, 1, 1, 2, 2 }));
+    }
+
+    [Test]
+    public async Task block_function_arguments_are_eager_ordered_and_evaluated_once()
+    {
+        await Run("record(first(second: next_value(), first: next_value())) record(next_value())", prelude: """
+            fn first(first: Int, second: Int): Int {
+                record(first)
+                record(first)
+                record(second)
+                return first
+            }
+            """);
+        Assert.That(_probe.Calls, Is.EqualTo(3));
+        Assert.That(_probe.Values, Is.EqualTo(new[] { 2, 2, 1, 2, 3 }));
+    }
+
+    [Test]
+    public async Task unused_parameters_are_evaluated_and_mutable_arguments_are_snapshots()
+    {
+        await Run("record(first(spawn.count, mutate())) record(spawn.count)", prelude: """
+            fn first(value: Int, ignored: Int): Int {
+                return value
+            }
+            fn mutate(): Int { spawn.modify_count(5) return next_value() }
+            """);
+        Assert.That(_probe.Calls, Is.EqualTo(1));
+        Assert.That(_probe.Values, Is.EqualTo(new[] { 3, 5 }));
+    }
+
+    [Test]
+    public async Task void_helpers_support_early_returns_fallthrough_and_nested_calls()
+    {
+        await Run("emit(1) emit(2) wrapper() record(9)", prelude: """
+            fn emit(value: Int): Void {
+                if value == 1 { return; }
+                record(value)
+            }
+            fn wrapper(): Void { emit(3) return; record(99) }
+            """);
+        Assert.That(_probe.Values, Is.EqualTo(new[] { 2, 3, 9 }));
+    }
+
+    [Test]
+    public async Task nested_value_calls_and_let_bindings_execute_each_function_once()
+    {
+        await Run("let captured = outer() record(captured) record(captured)", prelude: """
+            fn inner(): Int { return next_value() }
+            fn outer(): Int { var value = inner() record(value) return value }
+            """);
+        Assert.That(_probe.Calls, Is.EqualTo(1));
+        Assert.That(_probe.Values, Is.EqualTo(new[] { 1, 1, 1 }));
+    }
+
+    [Test]
+    public async Task return_values_survive_loop_cache_cleanup_and_calls_reinitialize_locals()
+    {
+        await Run("for item in numbers() { record(count(item)) }", prelude: """
+            fn count(value: Int): Int {
+                var result = 0
+                while result < value { result += 1 }
+                for item in numbers() { return result }
+                return result
+            }
+            """);
+        Assert.That(_probe.Values, Is.EqualTo(new[] { 1, 2, 3 }));
+    }
+
+    [Test]
+    public async Task exhaustive_matches_return_nominal_aggregate_values()
+    {
+        await Run("var r = wrap(2) record(extract(r))", prelude: ResultType + """
+            fn wrap(value: Int): TestResult {
+                return TestResult.Found(value, "value", OBJECT.INVALID)
+            }
+            fn extract(result: TestResult): Int {
+                match result {
+                    Found { number } { return number }
+                    Missing {} { return 0 }
+                }
+            }
+            """);
+        Assert.That(_probe.Values, Is.EqualTo(new[] { 2 }));
+    }
+
+    [Test]
+    public async Task short_circuit_skips_function_bodies_and_function_loops_share_the_execution_budget()
+    {
+        await Run("if false && query() { record(99) } if true || query() { record(1) }", prelude: "fn query(): Bool { record(9) return true }");
+        Assert.That(_probe.Values, Is.EqualTo(new[] { 1 }));
+        var program = Compile("fn spin(): Void { while true {} }" + Script("spin() record(99)"));
+        var context = new GlyphExecutionContext { Graph = program.CreateExecutionGraph(), MaxExecutionSteps = 30 };
+        Assert.That(await _runtime.Interpreter.ExecuteAsync(context), Is.False);
+        Assert.That(context.ExecutionHalted, Is.True);
+        Assert.That(_probe.Values, Is.EqualTo(new[] { 1 }));
+    }
+
+    [Test]
+    public async Task numeric_parameters_and_returns_use_the_declared_type()
+    {
+        await Run("record(identity(2.5))", prelude: "fn identity(value: Int): Int { return value }");
+        Assert.That(_probe.Values, Is.EqualTo(new[] { 2 }));
+    }
+
+    [Test]
+    public void older_versions_preserve_return_identifiers_and_reject_statement_bodies()
+    {
+        foreach (int version in new[] { 1, 2 })
+        {
+            var old = _runtime.Compiler.Compile("fn return(value: Int): Int = value " + Script("record(return(1))"), new(LanguageVersion: version));
+            Assert.That(old.Success, Is.True, string.Join("\n", old.Diagnostics));
+            var block = _runtime.Compiler.Compile("fn f(): Int { return 1 } " + Script("record(f())"), new(LanguageVersion: version));
+            Assert.That(block.Diagnostics.Any(d => d.Code == "GLYPH1011"), Is.True);
+        }
+    }
+
+    [Test]
+    public async Task function_returns_in_while_conditions_reevaluate_on_each_iteration()
+    {
+        await Run("while query() { spawn.modify_count(spawn.count - 1) } record(spawn.count)",
+            prelude: "fn query(): Bool { return spawn.count > 0 }");
+        Assert.That(_probe.Values, Is.EqualTo(new[] { 0 }));
+    }
+
+    [Test]
+    public async Task cancelled_functions_do_not_resume_their_caller()
+    {
+        var executable = Compile("fn f(): Void { record(1) }" + Script("f() record(2)"));
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var context = new GlyphExecutionContext { Graph = executable.CreateExecutionGraph(), CancellationToken = cancellation.Token };
+        Assert.That(await _runtime.Interpreter.ExecuteAsync(context), Is.False);
+        Assert.That(context.ExecutionHalted, Is.True);
+        Assert.That(_probe.Values, Is.Empty);
+        Assert.That(context.LoopStates, Is.Empty);
+    }
+
+    [Test]
+    public async Task fail_inside_a_function_preserves_interaction_failure_and_stops_the_caller()
+    {
+        var executable = Compile("fn reject(): Int { fail \"blocked\" } glyph t : interaction { attempted { for i in 0..3 { let n = reject() record(n) } } }");
+        var context = new GlyphExecutionContext { Graph = executable.CreateExecutionGraph() };
+        await _runtime.Interpreter.ExecuteStageAsync(context, "stage.interaction_attempted");
+        Assert.That(context.ExecutionHalted, Is.False);
+        Assert.That(context.ShouldBlockInteraction, Is.True);
+        Assert.That(context.BlockInteractionMessage, Is.EqualTo("blocked"));
+        Assert.That(_probe.Values, Is.Empty);
+    }
+
     private sealed class ProbeModule : IGlyphModule
     {
         public List<int> Values { get; } = [];

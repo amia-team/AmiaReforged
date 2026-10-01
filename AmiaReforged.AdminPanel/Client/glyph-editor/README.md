@@ -154,3 +154,14 @@ Consumers receive public imported declarations; a module editor also receives it
 private declarations. Completion and function hovers use the same compiler-projected
 signatures and availability. The module source editor shares the script editor's
 capture, draft, and validation behavior, with publication and module revision history.
+
+## Statement functions
+
+Language version 3 supports both `fn name(args): Type = expression` and
+`fn name(args): Type { ... }`. The browser grammar highlights `return`, provides
+function declaration snippets, and suggests statements, parameters, scoped locals,
+and `return` inside block functions. `Void` return completion inserts `return;`.
+The source editor preserves existing script versions until a statement body is added.
+The compiler remains authoritative for return types, missing returns, and API availability.
+`glyph-functions.test.mjs` covers parsing and scope-aware completion; the production
+browser feature test verifies return highlighting and function-local suggestions.

@@ -16,6 +16,7 @@ public sealed record GlyphCompilationUnitSyntax(
 {
     public IReadOnlyList<GlyphImportSyntax> Imports { get; init; } = [];
     public string? ModuleName { get; init; }
+    public int LanguageVersion { get; init; } = Compilation.GlyphLanguageVersion.Current;
 }
 
 public sealed record GlyphImportSyntax(string Name, SourceSpan Span) : GlyphSyntax(Span);
@@ -39,8 +40,16 @@ public sealed record FunctionDeclarationSyntax(
     string Name,
     IReadOnlyList<ParameterSyntax> Parameters,
     string ReturnType,
-    ExpressionSyntax Body,
-    SourceSpan Span) : GlobalDeclarationSyntax(Name, Span);
+    FunctionBodySyntax Body,
+    SourceSpan Span) : GlobalDeclarationSyntax(Name, Span)
+{
+    public FunctionDeclarationSyntax(string name, IReadOnlyList<ParameterSyntax> parameters, string returnType,
+        ExpressionSyntax body, SourceSpan span) : this(name, parameters, returnType, new ExpressionFunctionBodySyntax(body), span) { }
+}
+
+public abstract record FunctionBodySyntax;
+public sealed record ExpressionFunctionBodySyntax(ExpressionSyntax Expression) : FunctionBodySyntax;
+public sealed record BlockFunctionBodySyntax(BlockStatementSyntax Block) : FunctionBodySyntax;
 
 public abstract record TypeDeclarationSyntax(string Name, SourceSpan Span) : GlyphDeclarationSyntax(Name, Span);
 
@@ -77,6 +86,7 @@ public sealed record ExpressionStatementSyntax(ExpressionSyntax Expression, Sour
 public sealed record IfStatementSyntax(ExpressionSyntax Condition, BlockStatementSyntax Then, StatementSyntax? Else, SourceSpan Span) : StatementSyntax(Span);
 public sealed record ForeachStatementSyntax(string Name, ExpressionSyntax List, BlockStatementSyntax Body, SourceSpan Span) : StatementSyntax(Span);
 public sealed record BreakStatementSyntax(SourceSpan Span) : StatementSyntax(Span);
+public sealed record ReturnStatementSyntax(ExpressionSyntax? Value, SourceSpan Span) : StatementSyntax(Span);
 
 public sealed record MatchStatementSyntax(
     ExpressionSyntax Value,

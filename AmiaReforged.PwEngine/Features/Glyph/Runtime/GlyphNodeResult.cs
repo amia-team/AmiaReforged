@@ -45,6 +45,8 @@ public class GlyphNodeResult
     /// </summary>
     public bool IsBreak { get; init; }
     public bool IsContinue { get; init; }
+    public bool IsFunction { get; init; }
+    public bool IsReturn { get; init; }
     public int? WrittenLocal { get; init; }
     public static GlyphNodeResult ContinueLoop() => new() { IsContinue = true };
 

@@ -74,6 +74,24 @@ public sealed class GlyphModuleEditorTests
         source.Find("textarea").Input("const TEXT = \"using helpers\" using helpers glyph t : interaction {}");
         source.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
         source.WaitForAssertion(() => Assert.That(_handler.LastLanguageVersion, Is.EqualTo(2)));
+        source.Find("textarea").Input("// fn f(): Int { return 1 }\nconst TEXT = \"fn f(): Int { return 1 }\" glyph t : interaction {}");
+        source.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
+        source.WaitForAssertion(() => Assert.That(_handler.LastLanguageVersion, Is.EqualTo(1)));
+        source.Find("textarea").Input("fn f(): Int { return 1 } glyph t : interaction { attempted { let n = f() } }");
+        source.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
+        source.WaitForAssertion(() => Assert.That(_handler.LastLanguageVersion, Is.EqualTo(3)));
+    }
+    [Test] public void Explicit_language_upgrade_preserves_source_and_invalidates_validation()
+    {
+        var source = _context.RenderComponent<GlyphSourceEditor>(p => p.Add(c => c.DefinitionId, _handler.Module.Id));
+        source.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
+        source.WaitForAssertion(() => Assert.That(source.FindAll("button").Single(b => b.TextContent == "Activate").HasAttribute("disabled"), Is.False));
+        string original = source.Find("textarea").GetAttribute("value")!;
+        source.FindAll("button").Single(b => b.TextContent == "Upgrade to Glyph 3").Click();
+        Assert.That(source.FindAll("button").Single(b => b.TextContent == "Activate").HasAttribute("disabled"), Is.True);
+        Assert.That(source.Find("textarea").GetAttribute("value"), Is.EqualTo(original));
+        source.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
+        source.WaitForAssertion(() => Assert.That(_handler.LastLanguageVersion, Is.EqualTo(3)));
     }
     private sealed class Handler : HttpMessageHandler
     {

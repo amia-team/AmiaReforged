@@ -44,6 +44,13 @@ test('browser completion insertion, scope filtering, diagnostics and revision gu
             });
         }
         const menu = page.locator('.cm-tooltip-autocomplete');
+        await document('fn choose(value: Int): Int { var local = value | return local } glyph g : interaction { tick {} }');
+        assert.equal(await page.locator('.glyph-keyword').filter({ hasText: /^return$/ }).count(), 1);
+        await page.keyboard.press('Control+Space');
+        await menu.waitFor();
+        for (const label of ['value', 'local', 'return'])
+            assert.equal(await menu.getByText(label, { exact: true }).count(), 1);
+        await page.keyboard.press('Escape');
         await document('glyph g : interaction { tick { | } }');
         await page.keyboard.type('player.');
         await menu.waitFor();

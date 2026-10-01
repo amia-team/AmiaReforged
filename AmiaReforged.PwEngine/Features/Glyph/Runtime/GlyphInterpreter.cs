@@ -180,9 +180,18 @@ public class GlyphInterpreter
                 GlyphNodeResult result = await ExecuteNode(targetNode, context);
 
                 if (context.ExecutionHalted) return;
+                if (result.IsReturn)
+                {
+                    var resume = HandleReturn(stack, context);
+                    if (resume == null) return;
+                    (currentNodeId, currentPinId) = resume.Value;
+                    continue;
+                }
                 if (result.IsContinue)
                 {
-                    while (stack.Count > 0 && !stack.Peek().IsLoop) stack.Pop();
+                    while (stack.Count > 0 && !stack.Peek().IsLoop && !stack.Peek().IsFunction) stack.Pop();
+                    if (stack.Count == 0 || stack.Peek().IsFunction)
+                    { context.ExecutionHalted = true; return; }
                     var resume = await TryResumeFromStack(stack, context);
                     if (resume == null) return;
                     (currentNodeId, currentPinId) = resume.Value;
@@ -200,6 +209,8 @@ public class GlyphInterpreter
 
                 if (result.NextExecPinId == null)
                 {
+                    if (_registry.Get(targetNode.TypeId) is { Archetype: GlyphNodeArchetype.Action } definition &&
+                        !definition.OutputPins.Any(pin => pin.DataType == GlyphDataType.Exec)) return;
                     // Node terminates this branch — check stack
                     (Guid nodeId, string pinId)? resume = await TryResumeFromStack(stack, context);
                     if (resume == null) return;
@@ -219,6 +230,9 @@ public class GlyphInterpreter
                     stack.Push(frame);
                     Trace(context, $"Pushed Sequence frame for node {targetNode.TypeId} with {result.BranchPinIds.Length} remaining branches.");
                 }
+
+                if (result.IsFunction)
+                    stack.Push(new GlyphExecFrame { Node = targetNode, IsFunction = true });
 
                 // Handle loop continuations
                 if (result.IsLoopNode)
@@ -260,6 +274,12 @@ public class GlyphInterpreter
         {
             GlyphExecFrame frame = stack.Peek();
 
+            if (frame.IsFunction)
+            {
+                stack.Pop();
+                ClearLoopBodyCaches(frame, context);
+                return (frame.Node.InstanceId, frame.CompletedPinId);
+            }
             if (frame.IsLoop)
             {
                 // Re-execute the loop node to advance the iteration
@@ -320,6 +340,8 @@ public class GlyphInterpreter
         while (stack.Count > 0)
         {
             GlyphExecFrame frame = stack.Pop();
+            if (frame.IsFunction)
+            { context.ExecutionHalted = true; return null; }
 
             if (frame.IsLoop)
             {
@@ -350,8 +372,31 @@ public class GlyphInterpreter
     }
 
     /// <summary>
-    /// Clears cached output values for a node so it can be re-evaluated (used for loop iterations).
+    /// Unwinds the current function's continuations while preserving the caller's stack.
     /// </summary>
+    private (Guid nodeId, string pinId)? HandleReturn(Stack<GlyphExecFrame> stack, GlyphExecutionContext context)
+    {
+        while (stack.TryPop(out var frame))
+        {
+            if (frame.IsLoop)
+            {
+                context.LoopStates.Remove(frame.Node.InstanceId);
+                context.Variables.Remove($"__foreach_{frame.Node.InstanceId}_list");
+                context.Variables.Remove($"__foreach_{frame.Node.InstanceId}_index");
+                ClearNodeOutputCache(frame.Node, context);
+                ClearLoopBodyCaches(frame, context);
+            }
+            if (frame.IsFunction)
+            {
+                ClearLoopBodyCaches(frame, context);
+                return (frame.Node.InstanceId, frame.CompletedPinId);
+            }
+        }
+        context.ExecutionHalted = true;
+        return null;
+    }
+
+    /// <summary>Clears cached output values so the node can be re-evaluated.</summary>
     private static void ClearNodeOutputCache(GlyphNodeInstance node, GlyphExecutionContext context)
     {
         string prefix = $"{node.InstanceId}:";
@@ -397,7 +442,7 @@ public class GlyphInterpreter
     {
         foreach (GlyphExecFrame frame in stack)
         {
-            if (frame.IsLoop)
+            if (frame.IsLoop || frame.IsFunction)
             {
                 frame.LoopBodyNodeIds.Add(nodeId);
             }

@@ -14,7 +14,7 @@ public sealed record GlyphModuleMetadataDto(IReadOnlyList<GlyphFunctionMetadataD
 
 public static class GlyphModuleMetadata
 {
-    public static GlyphModuleMetadataDto Create(GlyphCompiler compiler, string source, int languageVersion = 2)
+    public static GlyphModuleMetadataDto Create(GlyphCompiler compiler, string source, int languageVersion = GlyphLanguageVersion.Current)
     {
         List<GlyphDiagnostic> diagnostics = [];
         var syntax = GlyphModuleBinding.Parse(source, "source.glyph", diagnostics, languageVersion);
@@ -22,7 +22,7 @@ public static class GlyphModuleMetadata
         var moduleNames = snapshot.Names.ToArray();
         string registryHash = snapshot.Fingerprint;
         if (syntax == null) return new([], [], [], [], moduleNames, new Dictionary<string, SourceSpan>(), registryHash, diagnostics);
-        GlyphModuleRevision? library = syntax.ModuleName == null ? null : new(syntax.ModuleName, new Guid(Convert.FromHexString(GlyphModuleRevision.Hash(source))[..16]), source, GlyphModuleRevision.Hash(source), []);
+        GlyphModuleRevision? library = syntax.ModuleName == null ? null : new(syntax.ModuleName, new Guid(Convert.FromHexString(GlyphModuleRevision.Hash(source))[..16]), source, GlyphModuleRevision.Hash(source), [], languageVersion);
         var binding = GlyphModuleBinding.Build(syntax, compiler.Globals, compiler.Catalog, snapshot, library);
         diagnostics.AddRange(binding.Diagnostics);
         var binder = new GlyphBinder(compiler.Catalog, binding.Environment, binding);

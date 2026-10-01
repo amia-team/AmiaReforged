@@ -16,6 +16,14 @@ internal static class GlyphBoundLimits
 
             switch (next.Node)
             {
+                case BoundReturn ret:
+                    if (ret.Value != null) Push(ret.Value);
+                    break;
+                case BoundFunctionStatement call: Push(call.Call); break;
+                case BoundFunctionCall call:
+                    foreach (var argument in call.Arguments) Push(argument);
+                    Push(call.Body);
+                    break;
                 case BoundBlock block:
                     foreach (var statement in block.Statements) Push(statement);
                     break;

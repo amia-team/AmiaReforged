@@ -103,6 +103,10 @@ public sealed record BoundVariableAssignment(int SymbolId, GlyphTypeSymbol Value
 public sealed record BoundWhile(BoundExpression Condition, BoundBlock Body, SourceSpan Span) : BoundStatement(Span);
 public sealed record BoundForRange(int SymbolId, BoundExpression Start, BoundExpression End, bool Inclusive, BoundExpression? Step, BoundBlock Body, SourceSpan Span) : BoundStatement(Span);
 public sealed record BoundContinue(SourceSpan Span) : BoundStatement(Span);
+public sealed record BoundReturn(BoundExpression? Value, SourceSpan Span) : BoundStatement(Span);
+public sealed record BoundFunctionStatement(BoundExpression Call, SourceSpan Span) : BoundStatement(Span);
+public sealed record BoundFunctionCall(IReadOnlyList<BoundVariableAssignment> Arguments, BoundBlock Body, int? ResultSymbol,
+    GlyphTypeSymbol ReturnType, SourceSpan Span) : BoundExpression(ReturnType, Span);
 public sealed record BoundMatch(int SymbolId, BoundExpression Value, IReadOnlyList<BoundMatchArm> Arms, SourceSpan Span) : BoundStatement(Span);
 public sealed record BoundMatchArm(BoundPattern Pattern, BoundBlock Body, SourceSpan Span);
 public abstract record BoundPattern;

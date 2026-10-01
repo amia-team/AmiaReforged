@@ -6,7 +6,7 @@ export const glyphLanguage = LRLanguage.define({
     name: 'glyph',
     parser: parser.configure({ props: [styleTags({
         'glyph struct type let var fn const mod using pub': tags.definitionKeyword,
-        'if else while for foreach in step match break continue': tags.controlKeyword,
+        'if else while for foreach in step match break continue return': tags.controlKeyword,
         'StageName/...': tags.keyword,
         'ProgramName/... ModuleName/...': tags.definition(tags.variableName),
         'EventName/... TypeName/... VariantName/...': tags.typeName,

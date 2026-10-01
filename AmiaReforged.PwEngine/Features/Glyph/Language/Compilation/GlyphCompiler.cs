@@ -10,7 +10,7 @@ using AmiaReforged.PwEngine.Features.Glyph.Language.Syntax;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime.Programs;
 namespace AmiaReforged.PwEngine.Features.Glyph.Language.Compilation;
 
-public static class GlyphLanguageVersion { public const int Current = 2; }
+public static class GlyphLanguageVersion { public const int Current = 3; }
 public sealed record GlyphCompilationOptions(string SourceId = "source.glyph", int LanguageVersion = GlyphLanguageVersion.Current, IReadOnlyList<GlyphModuleRevision>? DependencyLock = null);
 public sealed record GlyphCompilationResult(IReadOnlyList<GlyphDiagnostic> Diagnostics,
     GlyphCompilationUnitSyntax? SyntaxTree, BoundProgram? BoundProgram, GlyphExecutable? Executable, string SourceHash)
@@ -29,10 +29,10 @@ public sealed class GlyphCompiler(IGlyphNodeDefinitionRegistry registry, GlyphGl
         options ??= new();
         string hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)));
         SourceSpan start = new(options.SourceId, 0, 0, 1, 1);
-        if (source.Length > 128 * 1024 || options.LanguageVersion is not (1 or 2))
+        if (source.Length > 128 * 1024 || options.LanguageVersion is not (1 or 2 or 3))
             return new([new("GLYPH1007", "Unsupported language version or source exceeds 128 KiB.", start)], null, null, null, hash);
-        GlyphLexer lexer = new(source, options.SourceId, options.LanguageVersion >= 2);
-        GlyphParser parser = new(lexer.Lex());
+        GlyphLexer lexer = new(source, options.SourceId, options.LanguageVersion >= 2, options.LanguageVersion >= 3);
+        GlyphParser parser = new(lexer.Lex(), options.LanguageVersion);
         var syntax = parser.Parse();
         List<GlyphDiagnostic> diagnostics = [..lexer.Diagnostics, ..parser.Diagnostics];
         if (diagnostics.Count > 0 || syntax == null) return new(diagnostics.AsReadOnly(), syntax, null, null, hash);
@@ -64,7 +64,7 @@ public sealed class GlyphCompiler(IGlyphNodeDefinitionRegistry registry, GlyphGl
     public GlyphModuleCompilationResult CompileModule(GlyphModuleRevision revision, IGlyphModuleResolver? resolver = null)
     {
         List<GlyphDiagnostic> diagnostics = [];
-        var syntax = GlyphModuleBinding.Parse(revision.SourceText, $"{revision.Name}@{revision.RevisionId}.glyph", diagnostics);
+        var syntax = GlyphModuleBinding.Parse(revision.SourceText, $"{revision.Name}@{revision.RevisionId}.glyph", diagnostics, revision.LanguageVersion);
         if (syntax == null || diagnostics.Count > 0) return new(diagnostics, null, new Dictionary<string, IReadOnlyList<GlyphAvailabilityDto>>());
         var binding = GlyphModuleBinding.Build(syntax, Globals, Catalog, resolver ?? Modules.Snapshot, revision);
         diagnostics.AddRange(binding.Diagnostics);

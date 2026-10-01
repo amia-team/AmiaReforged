@@ -14,7 +14,7 @@ public sealed record GlyphModuleRevision(string Name, Guid RevisionId, string So
     IReadOnlyList<GlyphModuleReference> Imports, int LanguageVersion = 2)
 {
     public static string Hash(string source) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)));
-    public static GlyphModuleRevision Create(string name, string source) => new(name, Guid.NewGuid(), source, Hash(source), []);
+    public static GlyphModuleRevision Create(string name, string source) => new(name, Guid.NewGuid(), source, Hash(source), [], GlyphLanguageVersion.Current);
 }
 
 public interface IGlyphModuleResolver
@@ -115,12 +115,14 @@ public sealed class GlyphModuleBinding
     private readonly Dictionary<string, GlyphCompilationUnitSyntax> _units = new(StringComparer.Ordinal);
     private readonly Dictionary<string, GlyphModuleScope> _scopes = new(StringComparer.Ordinal);
 
-    public static GlyphCompilationUnitSyntax? Parse(string source, string sourceId, List<GlyphDiagnostic> diagnostics, int version = 2)
+    public static GlyphCompilationUnitSyntax? Parse(string source, string sourceId, List<GlyphDiagnostic> diagnostics, int version = GlyphLanguageVersion.Current)
     {
+        if (version is not (1 or 2 or 3))
+        { diagnostics.Add(new("GLYPH1007", "Unsupported language version.", new(sourceId, 0, 0, 1, 1))); return null; }
         if (source.Length > 128 * 1024)
         { diagnostics.Add(new("GLYPH1007", "Source exceeds 128 KiB.", new(sourceId, 0, 0, 1, 1))); return null; }
-        GlyphLexer lexer = new(source, sourceId, version >= 2);
-        GlyphParser parser = new(lexer.Lex());
+        GlyphLexer lexer = new(source, sourceId, version >= 2, version >= 3);
+        GlyphParser parser = new(lexer.Lex(), version);
         var unit = parser.Parse();
         diagnostics.AddRange(lexer.Diagnostics); diagnostics.AddRange(parser.Diagnostics);
         return unit;
@@ -152,11 +154,11 @@ public sealed class GlyphModuleBinding
             }
             if (depth > 32 || selected.Count >= 64 || sourceSize + revision.SourceText.Length > 1024 * 1024)
             { result.Diagnostics.Add(new("GLYPH1007", "Module dependency budget exceeded (64 modules, depth 32, 1 MiB).", at)); return; }
-            if (revision.LanguageVersion != 2)
+            if (revision.LanguageVersion is not (2 or 3) || revision.LanguageVersion > root.LanguageVersion)
             { result.Diagnostics.Add(new("GLYPH1007", $"Unsupported module language version {revision.LanguageVersion}.", at)); return; }
             if (namespaces.Contains(revision.Name) || revision.SourceHash != GlyphModuleRevision.Hash(revision.SourceText))
             { result.Diagnostics.Add(new("GLYPH2024", $"Reserved module name or invalid source hash: '{revision.Name}'.", at)); return; }
-            var unit = Parse(revision.SourceText, $"{revision.Name}@{revision.RevisionId}.glyph", result.Diagnostics);
+            var unit = Parse(revision.SourceText, $"{revision.Name}@{revision.RevisionId}.glyph", result.Diagnostics, revision.LanguageVersion);
             if (unit?.ModuleName != revision.Name)
             { result.Diagnostics.Add(new("GLYPH2024", $"Expected mod {revision.Name} in module source.", at)); return; }
             selected[revision.Name] = revision; sourceSize += revision.SourceText.Length;
@@ -167,6 +169,8 @@ public sealed class GlyphModuleBinding
                 var dependency = pinned == null ? resolver.Find(import.Name) : resolver.Find(pinned.RevisionId);
                 if (dependency == null || dependency.Name != import.Name || pinned != null && dependency.SourceHash != pinned.SourceHash)
                     result.Diagnostics.Add(new("GLYPH2025", $"Missing published module revision for '{import.Name}' imported by '{revision.Name}'.", import.Span));
+                else if (dependency.LanguageVersion > revision.LanguageVersion)
+                    result.Diagnostics.Add(new("GLYPH1007", $"Module '{revision.Name}' must use language version {dependency.LanguageVersion} to import '{dependency.Name}'.", import.Span));
                 else Visit(dependency, import.Span, depth + 1);
             }
             visiting.Remove(revision.Name);

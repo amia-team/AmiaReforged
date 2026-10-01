@@ -29,7 +29,7 @@ public class GlyphReferencePanelTests
     [SetUp] public void Setup()
     {
         _context = new();
-        _module = _context.JSInterop.SetupModule("./js/glyph-editor.js?v=9");
+        _module = _context.JSInterop.SetupModule("./js/glyph-editor.js?v=10");
         _module.Mode = JSRuntimeMode.Loose;
     }
     [TearDown] public void Cleanup() => _context.Dispose();

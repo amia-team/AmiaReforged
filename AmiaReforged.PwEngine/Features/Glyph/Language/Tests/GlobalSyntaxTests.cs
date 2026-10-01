@@ -83,7 +83,8 @@ public class GlobalSyntaxTests
         Assert.That(function.ReturnType, Is.EqualTo("Object"));
         // Body is stored as an expression, never as a raw string.
         Assert.That(function.Body, Is.Not.Null);
-        Assert.That(function.Body, Is.InstanceOf<InvocationExpressionSyntax>());
+        Assert.That(function.Body, Is.TypeOf<ExpressionFunctionBodySyntax>());
+        Assert.That(((ExpressionFunctionBodySyntax)function.Body).Expression, Is.InstanceOf<InvocationExpressionSyntax>());
     }
 
     [Test]

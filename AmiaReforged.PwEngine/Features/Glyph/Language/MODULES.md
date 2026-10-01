@@ -1,6 +1,6 @@
 # Reusable Glyph modules
 
-Modules require language version 2. Existing version 1 scripts and published histories
+Modules require language version 2 or 3. Existing version 1 scripts and published histories
 remain supported; the editor retains a legacy script's version until a module import is added. Generated standard functions, constants, context, and documentation
 are automatically available; an authored `global.glyph` is not required.
 
@@ -26,9 +26,11 @@ Every declaration is private unless marked `pub`. An exported function can call 
 helpers and read private constants in its own module. Its body sees its parameters and
 its declaring module's symbols, rather than the caller's local variables.
 
-Functions retain Glyph's existing expression-body syntax: `fn name(args): Type = expression`.
-They are expanded by the compiler into existing executable IR. Block-bodied functions,
-recursion, and runtime initialization are not supported.
+Functions support expression bodies (`fn name(args): Type = expression`) and, in version 3,
+statement bodies (`fn name(args): Type { return value }`). They are expanded by the compiler
+into executable IR with function boundaries for early returns. `Void` helpers may fall through
+or use `return;`. Recursion and runtime initialization remain unsupported. See
+[statement functions and returns](README.md#statement-functions-and-returns) for the full rules.
 
 ## Import a module
 
