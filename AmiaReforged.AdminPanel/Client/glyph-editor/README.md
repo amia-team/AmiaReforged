@@ -56,7 +56,7 @@ The editor never derives methods from a function's first Object parameter.
 ## Persistent language reference
 
 The source editor includes a collapsible reference beside CodeMirror on desktop,
-with a stacked layout below 1100px. Each pane scrolls independently. Functions use
+with a stacked layout in windows below 1100px or editor containers below 1000px. Each pane scrolls independently. Functions use
 compiler categories and canonical names; compatibility aliases are grouped in the
 details rather than repeated in the list. Details show Glyph signatures, required
 and optional parameters, descriptions, provenance (including `NWScript.GetTag`),

@@ -960,7 +960,7 @@
 }
 
 /* Persistent Glyph reference and independently scrolling source workspace. */
-.glyph-source-editor { padding: 12px; min-width: 0; overflow: auto; }
+.glyph-source-editor { padding: 12px; min-width: 0; overflow: auto; container-type: inline-size; container-name: glyph-source; }
 .glyph-source-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .glyph-source-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 26%); height: clamp(32rem, 68vh, 58rem); min-width: 0; }
 .glyph-source-workspace--solo { grid-template-columns: minmax(0, 1fr); }
@@ -1004,3 +1004,9 @@
 .glyph-reference--searching > .glyph-reference-server-list { display: none; }
 .glyph-reference-actions { flex-shrink: 0; padding: 8px 12px; border-top: 1px solid var(--border-subtle, #8a8477); }
 .glyph-reference-actions small { display: block; margin-top: 5px; }
+
+@container glyph-source (max-width: 1000px) {
+    .glyph-source-workspace { grid-template-columns: minmax(0, 1fr); height: auto; gap: 10px; }
+    .glyph-source-code { height: 28rem; }
+    .glyph-reference { height: 34rem; }
+}

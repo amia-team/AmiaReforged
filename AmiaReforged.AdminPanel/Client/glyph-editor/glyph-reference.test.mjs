@@ -94,6 +94,9 @@ test('production reference search is local, bounded, accessible, endpoint-safe a
         await page.getByRole('button', { name: 'Show more results' }).click(); assert.equal(await rows.count(), 160);
         await page.evaluate(entries => editor.setReferenceSearch(panel, callback, 1, entries, ['interaction']), entries);
         assert.equal(await rows.count(), 160); // stale metadata generation is ignored.
+        await page.evaluate(() => document.querySelector('main').style.width = '700px');
+        assert.ok(await page.evaluate(() => panel.getBoundingClientRect().top >= host.getBoundingClientRect().bottom));
+        await page.evaluate(() => document.querySelector('main').style.width = '');
         await page.setViewportSize({ width: 390, height: 844 });
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
         assert.ok(await page.evaluate(() => panel.getBoundingClientRect().top >= host.getBoundingClientRect().bottom));

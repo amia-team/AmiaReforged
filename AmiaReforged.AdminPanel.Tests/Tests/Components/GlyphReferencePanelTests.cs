@@ -156,6 +156,18 @@ public class GlyphReferencePanelTests
         Assert.That(cut.Find(".glyph-reference-detail").TextContent, Does.Contain("New server documentation"));
     }
 
+    [Test] public void Unrestricted_domain_functions_share_the_metadata_derived_World_Engine_family()
+    {
+        var cut = _context.RenderComponent<GlyphReferencePanel>(p => p.Add(c => c.Metadata, Metadata with
+        {
+            Functions = [Function("has_trait", "Traits", "Checks a character trait."),
+                Function("get_creature_traits", "Traits", "Lists character traits.") with { ScriptCategory = "Trait" },
+                Function("scalar_equal", "Math / Logic", "Scalar equality.")]
+        }));
+        Assert.That(cut.Markup, Does.Contain("World Engine / Traits").And.Contain("Glyph standard library / Math / Logic"));
+        Assert.That(cut.Markup, Does.Not.Contain("Glyph standard library / Traits"));
+    }
+
     [Test] public void Typed_members_and_types_have_separate_sections()
     {
         var cut = Render(); cut.FindAll(".glyph-reference-tabs button").Single(b => b.TextContent == "Members").Click();

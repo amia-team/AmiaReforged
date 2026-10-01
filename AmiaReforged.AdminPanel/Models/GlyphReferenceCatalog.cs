@@ -10,8 +10,10 @@ public sealed class GlyphReferenceCatalog
         var functions = metadata.Functions.GroupBy(f => f.CanonicalName, StringComparer.Ordinal)
             .Select(g => new { Function = g.FirstOrDefault(f => f.Name == g.Key) ?? g.First(),
                 Aliases = g.Where(f => f.Name != g.Key).Select(f => f.Name).Order(StringComparer.Ordinal).ToArray() }).ToArray();
+        var worldCategories = functions.Where(f => f.Function.ScriptCategory != null)
+            .Select(f => f.Function.Category).Where(c => !string.IsNullOrWhiteSpace(c)).ToHashSet(StringComparer.Ordinal);
         Entries = functions.Select(f => new GlyphReferenceEntry("Functions", f.Function.Name,
-                Family(f.Function) + " / " + Category(f.Function), f.Function, null, null, f.Aliases))
+                Family(f.Function, worldCategories) + " / " + Category(f.Function), f.Function, null, null, f.Aliases))
             .Concat(metadata.Constants.Select(c => new GlyphReferenceEntry("Constants", c.Name, c.Namespace, null, c, null, [])))
             .Concat(metadata.ReceiverMethods.Select(m => new GlyphReferenceEntry("Members", m.ReceiverType + "." + m.Name,
                 "Typed members / " + m.ReceiverType, functions.FirstOrDefault(f => f.Function.Name == m.CanonicalName)?.Function, null, m, [])))
@@ -19,10 +21,10 @@ public sealed class GlyphReferenceCatalog
             .OrderBy(e => e.Name, StringComparer.Ordinal).ToArray();
     }
 
-    private static string Family(GlyphFunctionMetadataDto f) => f.Name.StartsWith("nwn.", StringComparison.Ordinal) ? "NWN"
+    private static string Family(GlyphFunctionMetadataDto f, IReadOnlySet<string> worldCategories) => f.Name.StartsWith("nwn.", StringComparison.Ordinal) ? "NWN"
         : f.ScriptCategory != null ? "World Engine"
         : f.Source?.StartsWith("NWScript.", StringComparison.Ordinal) == true || f.Backend?.Contains("Anvil", StringComparison.Ordinal) == true ? "NWN"
-        : "Glyph standard library";
+        : worldCategories.Contains(f.Category) ? "World Engine" : "Glyph standard library";
     private static string Category(GlyphFunctionMetadataDto f)
     {
         var category = f.Category.Trim();
