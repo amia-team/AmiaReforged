@@ -6,7 +6,10 @@ using AmiaReforged.PwEngine.Features.Glyph.Language.Syntax;
 namespace AmiaReforged.PwEngine.Features.Glyph.Language.Modules;
 
 public sealed record GlyphModuleConstantMetadata(string Name, string Namespace, string Type, object Value, string Source, string Description);
-public sealed record GlyphAggregateMetadata(string Name, IReadOnlyList<GlyphFieldDeclarationSyntax> Fields, IReadOnlyList<GlyphVariantDeclarationSyntax> Variants);
+public sealed record GlyphAggregateMetadata(string Name, IReadOnlyList<GlyphFieldDeclarationSyntax> Fields, IReadOnlyList<GlyphVariantDeclarationSyntax> Variants)
+{
+    public IReadOnlyList<string> TypeParameters { get; init; } = [];
+}
 public sealed record GlyphModuleMetadataDto(IReadOnlyList<GlyphFunctionMetadataDto> Functions,
     IReadOnlyList<GlyphModuleConstantMetadata> Constants, IReadOnlyList<string> Types,
     IReadOnlyList<GlyphAggregateMetadata> Aggregates, IReadOnlyList<string> Modules,
@@ -49,12 +52,13 @@ public static class GlyphModuleMetadata
             switch (declaration)
             {
                 case FunctionDeclarationSyntax f:
-                    functions.Add(Function(alias.Key, alias.Value, f.ReturnType, f.Parameters.Select(p => Parameter(p.Name, p.TypeName ?? "")).ToArray(), availability.GetValueOrDefault(alias.Value) ?? []));
+                    functions.Add(Function(alias.Key, alias.Value, f.ReturnType, f.Parameters.Select(p => Parameter(p.Name, p.TypeName ?? "")).ToArray(), availability.GetValueOrDefault(alias.Value) ?? []) with
+                        { TypeParameters = f.TypeParameters, DeclaringType = f.DeclaringType });
                     if (f.IsInstance)
                     {
                         int dot = alias.Key.LastIndexOf('.');
-                        methods.Add(new(alias.Key[(dot + 1)..], alias.Key[..dot], alias.Value, description, f.ReturnType, f.ReturnType == "Void" ? "Action" : "Value",
-                            f.Parameters.Skip(1).Select(p => Parameter(p.Name, p.TypeName ?? "")).ToArray(), availability.GetValueOrDefault(alias.Value) ?? []));
+                        methods.Add(new(alias.Key[(dot + 1)..], GlyphTypeNames.Apply(alias.Key[..dot], GlyphTypeNames.Parse(f.DeclaringType!).Arguments), alias.Value, description, f.ReturnType, f.ReturnType == "Void" ? "Action" : "Value",
+                            f.Parameters.Skip(1).Select(p => Parameter(p.Name, p.TypeName ?? "")).ToArray(), availability.GetValueOrDefault(alias.Value) ?? []) { TypeParameters = f.TypeParameters });
                     }
                     break;
                 case ConstantDeclarationSyntax:
@@ -62,13 +66,14 @@ public static class GlyphModuleMetadata
                         constants.Add(new(alias.Key, alias.Key.Contains('.') ? alias.Key[..alias.Key.LastIndexOf('.')] : "Modules", value.Kind.ToString(), value.Value, origin, description));
                     break;
                 case StructDeclarationSyntax s:
-                    types.Add(alias.Key); aggregates.Add(new(alias.Key, s.Fields, []));
-                    functions.Add(Function(alias.Key, alias.Value, s.Name, s.Fields.Select(f => Parameter(f.Name, f.TypeName)).ToArray()));
+                    types.Add(GlyphTypeNames.Apply(alias.Key, s.TypeParameters)); aggregates.Add(new(alias.Key, s.Fields, []) { TypeParameters = s.TypeParameters });
+                    functions.Add(Function(alias.Key, alias.Value, GlyphTypeNames.Apply(s.Name, s.TypeParameters), s.Fields.Select(f => Parameter(f.Name, f.TypeName)).ToArray()) with { TypeParameters = s.TypeParameters });
                     break;
                 case AdtDeclarationSyntax a:
-                    types.Add(alias.Key); aggregates.Add(new(alias.Key, [], a.Variants));
+                    types.Add(GlyphTypeNames.Apply(alias.Key, a.TypeParameters)); aggregates.Add(new(alias.Key, [], a.Variants) { TypeParameters = a.TypeParameters });
                     foreach (var variant in a.Variants)
-                        functions.Add(Function(alias.Key + "." + variant.Name, alias.Value + "." + variant.Name, a.Name, variant.Fields.Select(f => Parameter(f.Name, f.TypeName)).ToArray()));
+                        functions.Add(Function(alias.Key + "." + variant.Name, alias.Value + "." + variant.Name, GlyphTypeNames.Apply(a.Name, a.TypeParameters), variant.Fields.Select(f => Parameter(f.Name, f.TypeName)).ToArray()) with
+                            { TypeParameters = a.TypeParameters, DeclaringType = GlyphTypeNames.Apply(alias.Key, a.TypeParameters) });
                     break;
             }
         }

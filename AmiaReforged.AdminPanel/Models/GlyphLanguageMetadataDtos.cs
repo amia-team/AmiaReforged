@@ -28,6 +28,8 @@ public sealed record GlyphFunctionMetadataDto(string Name, string CanonicalName,
     string? RestrictToEventType, string? ScriptCategory, IReadOnlyList<string>? AllowedStages,
     IReadOnlyList<GlyphAvailabilityDto> AvailableIn)
 {
+    public IReadOnlyList<string> TypeParameters { get; init; } = [];
+    public string? DeclaringType { get; init; }
     public string? Source { get; init; }
     public string? DocumentationSource { get; init; }
     public string? Backend { get; init; }
@@ -42,6 +44,7 @@ public sealed record GlyphReceiverMethodMetadataDto(string Name, string Receiver
     string Description, string ReturnType, string Kind, IReadOnlyList<GlyphParameterMetadataDto> Parameters,
     IReadOnlyList<GlyphAvailabilityDto> AvailableIn)
 {
+    public IReadOnlyList<string> TypeParameters { get; init; } = [];
     public string Policy { get; init; } = "None";
     public string? Deprecated { get; init; }
 }

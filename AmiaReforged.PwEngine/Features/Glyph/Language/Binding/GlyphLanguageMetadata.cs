@@ -11,6 +11,7 @@ public sealed record GlyphLanguageMetadataDto(int LanguageVersion, IReadOnlyList
     public IReadOnlyList<Nwn.GlyphNwnConstant> Constants { get; init; } = [];
     public IReadOnlyList<GlyphConstantDomainMetadataDto> ConstantDomains { get; init; } = [];
     public IReadOnlyList<string> Types { get; init; } = [];
+    public IReadOnlyList<Modules.GlyphAggregateMetadata> Aggregates { get; init; } = [];
     public string? NwnApiVersion { get; init; }
     public GlyphDocumentationPackDto? Documentation { get; init; }
     public IReadOnlyList<GlyphWritableStateMetadataDto> WritableState { get; init; } = [];
@@ -28,6 +29,8 @@ public sealed record GlyphFunctionMetadataDto(string Name, string CanonicalName,
     string? RestrictToEventType, string? ScriptCategory, IReadOnlyList<string>? AllowedStages,
     IReadOnlyList<GlyphAvailabilityDto> AvailableIn)
 {
+    public IReadOnlyList<string> TypeParameters { get; init; } = [];
+    public string? DeclaringType { get; init; }
     public string? Source { get; init; }
     public string? DocumentationSource { get; init; }
     public string? Backend { get; init; }
@@ -42,6 +45,7 @@ public sealed record GlyphReceiverMethodMetadataDto(string Name, string Receiver
     string Description, string ReturnType, string Kind, IReadOnlyList<GlyphParameterMetadataDto> Parameters,
     IReadOnlyList<GlyphAvailabilityDto> AvailableIn)
 {
+    public IReadOnlyList<string> TypeParameters { get; init; } = [];
     public string Policy { get; init; } = "None";
     public string? Deprecated { get; init; }
 }
@@ -75,6 +79,12 @@ public static class GlyphLanguageMetadata
         var functions = catalog.Symbols.Select(s => Function(s, s.Name, null))
             .Concat(catalog.CallAliases.Select(a => Function(catalog.Find(a.Target)!, a.Name, a.ImplicitArgument)))
             .OrderBy(f => f.Name, StringComparer.Ordinal).ToArray();
+        var option = GlyphBuiltins.Option;
+        var optionScopes = scopes.Select(s => new GlyphAvailabilityDto(s.Name, s.Stage)).ToArray();
+        functions = functions.Concat(option.Variants.Select(v => new GlyphFunctionMetadataDto("Option." + v.Name, "Option." + v.Name,
+            "Optional value. Some carries a value; None carries no value. Object validity may change after construction.", "Option<T>", "Value",
+            v.Fields.Select(f => new GlyphParameterMetadataDto(f.Name, f.Name, f.TypeName, true, null)).ToArray(), null, null, null, null, optionScopes)
+            { TypeParameters = option.TypeParameters, DeclaringType = "Option<T>", Source = option.Span.SourceId, Category = "Language" })).OrderBy(f => f.Name, StringComparer.Ordinal).ToArray();
         var contexts = scopes.Select(scope =>
         {
             var fields = catalog.Registry.Get(scope.Entry)!.OutputPins.Where(p => p.DataType != GlyphDataType.Exec)
@@ -121,7 +131,8 @@ public static class GlyphLanguageMetadata
             Constants = Nwn.GlyphNwnSurface.Constants,
             ConstantDomains = Nwn.GlyphNwnSurface.Constants.GroupBy(c => c.Namespace).OrderBy(g => g.Key, StringComparer.Ordinal)
                 .Select(g => new GlyphConstantDomainMetadataDto(g.Key, g.Select(c => c.Type).Distinct().OrderBy(t => t, StringComparer.Ordinal).ToArray(), g.Count())).ToArray(),
-            Types = new[] { "Void", "Bool", "Int", "Float", "String", "Object", "Location", "Effect", "List<Effect>" }
+            Aggregates = [new("Option", [], option.Variants) { TypeParameters = option.TypeParameters }],
+            Types = new[] { "Option<T>", "Void", "Bool", "Int", "Float", "String", "Object", "Location", "Effect", "List<Effect>" }
                 .Concat(Runtime.GlyphCollections.BasicTypes.Select(t => GlyphTypeSymbol.List(GlyphTypeSymbol.From(t)).Name))
                 .Concat(Runtime.GlyphCollections.BasicTypes.SelectMany(k => Runtime.GlyphCollections.BasicTypes.Select(v => GlyphTypeSymbol.Dictionary(GlyphTypeSymbol.From(k), GlyphTypeSymbol.From(v)).Name))).ToArray(),
             NwnApiVersion = Nwn.GlyphNwnSurface.ApiVersion,

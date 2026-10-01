@@ -9,7 +9,7 @@ export const glyphLanguage = LRLanguage.define({
         'if else while for foreach in step match break continue return': tags.controlKeyword,
         'StageName/...': tags.keyword,
         'ProgramName/... ModuleName/...': tags.definition(tags.variableName),
-        'EventName/... TypeName/... CollectionKind/... VariantName/...': tags.typeName,
+        'EventName/... TypeName/... TypeParameters/... CollectionKind/... VariantName/...': tags.typeName,
         'BindingName/... VariableName/...': tags.variableName,
         'VariantPattern/Identifier': tags.typeName,
         'PropertyName/... ArgumentName/... FieldName/...': tags.propertyName,

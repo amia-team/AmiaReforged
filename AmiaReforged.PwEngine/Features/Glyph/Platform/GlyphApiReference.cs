@@ -54,7 +54,16 @@ public static class GlyphApiReference
         {
             if (category != function.Category) { category = function.Category; text.AppendLine("## " + category + "\n"); }
             text.AppendLine("### `" + function.Name + "`\n");
-            text.AppendLine("`" + function.Name + "(" + Signature(function.Parameters) + ") → " + function.ReturnType + "`\n");
+            string name = function.Name;
+            if (function.TypeParameters.Count > 0)
+            {
+                var ownerParameters = function.DeclaringType == null ? [] : Language.Syntax.GlyphTypeNames.Parse(function.DeclaringType).Arguments;
+                var ownParameters = function.TypeParameters.Where(p => !ownerParameters.Contains(p));
+                int dot = name.LastIndexOf('.');
+                if (ownerParameters.Count > 0 && dot >= 0) name = Language.Syntax.GlyphTypeNames.Apply(name[..dot], ownerParameters) + name[dot..];
+                name = Language.Syntax.GlyphTypeNames.Apply(name, ownParameters);
+            }
+            text.AppendLine("`" + name + "(" + Signature(function.Parameters) + ") → " + function.ReturnType + "`\n");
             text.AppendLine(function.Description + "\n");
             if (function.Source != null) text.AppendLine("Source: `" + function.Source + "`. Backend: " + function.Backend + ".\n");
             if (function.Backend == "NWScript.AssignCommand") text.AppendLine("The explicit `actor` parameter is the action subject. This procedure uses NWScript `AssignCommand` internally.\n");

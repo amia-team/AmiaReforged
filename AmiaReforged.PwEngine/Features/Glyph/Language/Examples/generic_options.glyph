@@ -1,0 +1,26 @@
+// Glyph 5: generic types, inferred function arguments, and optional NWN objects.
+struct Box<T> { value: T }
+fn identity<T>(value: T): T = value
+impl<T> Box<T> { fn get(self): T = self.value }
+
+fn checked_object(object: Object): Option<Object> {
+    if nwn.get_is_object_valid(object) { return Option<Object>.Some(value: object) }
+    return Option<Object>.None()
+}
+fn find_object(tag: String): Option<Object> {
+    return checked_object(nwn.get_object_by_tag(tag))
+}
+
+glyph optional_lookup : interaction {
+    completed {
+        let target = Box<Option<Object>>(value: find_object("quest_target"))
+        match identity(target.get()) {
+            Some { value } {
+                // Some preserves a handle; the object may have disappeared since the lookup.
+                if nwn.get_is_object_valid(value) { message(value, "Found you") }
+                else { message(player, "Target disappeared") }
+            }
+            None {} { message(player, "Target not found") }
+        }
+    }
+}

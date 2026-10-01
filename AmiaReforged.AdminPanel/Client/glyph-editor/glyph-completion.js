@@ -13,6 +13,7 @@ function text(state, node) {
 
 // Node names that may stand as the receiver of a member access (`receiver.`).
 const EXPR_NODES = new Set([
+  "GenericExpression",
   "ListExpression",
   "CollectionConstructor",
   "VariableName",
@@ -76,6 +77,18 @@ export function completionScope(state, pos, from = pos, suppress = true) {
     if (name) locals.set(name, { label: name, type: text(state, parameter.getChild("TypeName")) || (name === "self" ? implType : null), detail: "Function parameter", boost: 20 });
   }
   for (const block of blocks) {
+    if (block.parent?.name === "MatchArm") {
+      const pattern = block.parent.getChild("MatchPattern")?.getChild("VariantPattern");
+      if (pattern) {
+        const spelling = text(state, pattern).split("{")[0].trim();
+        for (const binding of pattern.getChildren("BindingName")) {
+          const name = text(state, binding);
+          locals.set(name, { label: name, type: null, detail: "Variant field", boost: 20,
+            variant: spelling.slice(spelling.lastIndexOf(".") + 1), field: name,
+            matchValue: firstExprChild(block.parent.parent) });
+        }
+      }
+    }
     if (["ForeachStatement", "ForStatement"].includes(block.parent?.name)) {
       const name = text(state, block.parent.getChild("BindingName"));
       // Derive the element from the compiler-owned list return type.
@@ -180,15 +193,88 @@ function contextField(metadata, scope, name) {
   );
   return ctx?.fields.find((f) => f.name === name) ?? null;
 }
+function parseType(value) {
+  const source = (value || "").replace(/\s+/g, "");
+  const open = source.indexOf("<");
+  if (open < 0 || !source.endsWith(">")) return { name: source, args: [] };
+  const args = [];
+  let depth = 0, start = open + 1;
+  for (let i = start; i < source.length - 1; i++) {
+    if (source[i] === "<") depth++;
+    else if (source[i] === ">") depth--;
+    else if (source[i] === "," && depth === 0) { args.push(source.slice(start, i)); start = i + 1; }
+  }
+  args.push(source.slice(start, -1));
+  return { name: source.slice(0, open), args };
+}
+function substituteType(value, bindings) {
+  const type = parseType(value);
+  if (!type.args.length) return bindings.get(type.name) || value;
+  return `${type.name}<${type.args.map(a => substituteType(a, bindings)).join(", ")}>`;
+}
+function inferType(pattern, actual, parameters, bindings) {
+  const expected = parseType(pattern), provided = parseType(actual);
+  if (parameters.includes(expected.name) && !expected.args.length) {
+    if (bindings.has(expected.name) && parseType(bindings.get(expected.name)).name !== provided.name) return false;
+    bindings.set(expected.name, actual);
+    return true;
+  }
+  return expected.name === provided.name && expected.args.length === provided.args.length &&
+    expected.args.every((a, i) => inferType(a, provided.args[i], parameters, bindings));
+}
+function specialize(fn, bindings) {
+  return { ...fn, typeParameters: (fn.typeParameters || []).filter(p => !bindings.has(p)),
+    declaringType: fn.declaringType ? substituteType(fn.declaringType, bindings) : undefined,
+    returnType: substituteType(fn.returnType, bindings),
+    receiverType: fn.receiverType ? substituteType(fn.receiverType, bindings) : undefined,
+    parameters: fn.parameters.map(p => ({ ...p, type: substituteType(p.type, bindings) })) };
+}
 function receiverMethod(metadata, name, type) {
-  return (metadata?.receiverMethods || []).find((r) => r.name === name && r.receiverType === type) ?? null;
+  for (const method of metadata?.receiverMethods || []) {
+    if (method.name !== name) continue;
+    const bindings = new Map();
+    if (inferType(method.receiverType, type, method.typeParameters || [], bindings)) return specialize(method, bindings);
+  }
+  return null;
+}
+function callableName(source) {
+  let name = "", depth = 0, start = 0;
+  const arguments_ = [];
+  for (let i = 0; i < source.length; i++) {
+    if (source[i] === "<") { if (depth++ === 0) start = i + 1; }
+    else if (source[i] === ">") { if (--depth === 0) arguments_.push(...parseType(`T<${source.slice(start, i)}>`).args); }
+    else if (depth === 0) name += source[i];
+  }
+  return { name: name.replace(/\s+/g, ""), args: arguments_ };
 }
 function functionByName(metadata, name) {
-  return (
-    (metadata?.functions || []).find(
-      (fn) => fn.name === name || fn.canonicalName === name,
-    ) ?? null
-  );
+  const call = callableName(name);
+  const fn = (metadata?.functions || []).find(fn => fn.name === call.name || fn.canonicalName === call.name);
+  if (!fn) return null;
+  const bindings = new Map((fn.typeParameters || []).slice(0, call.args.length).map((p, i) => [p, call.args[i]]));
+  return specialize(fn, bindings);
+}
+function callFunction(state, call, scope, metadata) {
+  const fn = functionByName(metadata, text(state, call.firstChild));
+  if (!fn) return null;
+  const bindings = new Map();
+  const parameters = fn.typeParameters || [];
+  let position = 0;
+  for (const argument of call.getChild("ArgumentList")?.getChildren("Argument") || []) {
+    const label = text(state, argument.getChild("ArgumentName"));
+    const parameter = label ? fn.parameters.find(p => p.name === label) : fn.parameters[position++];
+    const actual = expressionType(state, firstExprChild(argument), scope, metadata);
+    if (parameter && actual) inferType(parameter.type, actual, parameters, bindings);
+  }
+  return specialize(fn, bindings);
+}
+function aggregateFor(metadata, type) {
+  const reference = parseType(type);
+  const aggregate = (metadata?.aggregates || []).find(a => a.name === reference.name);
+  if (!aggregate) return null;
+  const bindings = new Map((aggregate.typeParameters || []).map((p, i) => [p, reference.args[i] || p]));
+  return { ...aggregate, fields: aggregate.fields.map(f => ({ ...f, typeName: substituteType(f.typeName, bindings) })),
+    variants: aggregate.variants.map(v => ({ ...v, fields: v.fields.map(f => ({ ...f, typeName: substituteType(f.typeName, bindings) })) })) };
 }
 function memberReceiver(memberNode) {
   return memberNode.firstChild;
@@ -231,7 +317,7 @@ function expressionType(state, node, scope, metadata) {
       const local = localType(scope, name);
       if (local != null) return local;
       const receiverType = expressionType(state, memberReceiver(node), scope, metadata);
-      const field = (metadata?.aggregates || []).find(a => a.name === receiverType)?.fields?.find(f => f.name === memberName(state, node));
+      const field = aggregateFor(metadata, receiverType)?.fields?.find(f => f.name === memberName(state, node));
       return field?.typeName ?? contextField(metadata, scope, name)?.type ?? (metadata?.constants || []).find(c => c.name === name)?.type ?? null;
     }
     case "IndexExpression": {
@@ -243,7 +329,7 @@ function expressionType(state, node, scope, metadata) {
     case "CallExpression": {
       const callee = node.firstChild;
       if (!callee) return null;
-      const direct = functionByName(metadata, text(state, callee));
+      const direct = callFunction(state, node, scope, metadata);
       if (direct) return direct.returnType;
       if (callee.name === "MemberExpression") {
         const type = expressionType(state, memberReceiver(callee), scope, metadata);
@@ -289,6 +375,15 @@ function fieldCompletion(field) {
   };
 }
 export function functionSnippet(fn, name = fn.name) {
+  const parameters = fn.typeParameters || [];
+  if (parameters.length && !name.includes("<")) {
+    const ownerParameters = fn.declaringType ? parseType(fn.declaringType).args.filter(p => parameters.includes(p)) : [];
+    const ownParameters = parameters.filter(p => !ownerParameters.includes(p));
+    const arguments_ = values => values.length ? `<${values.map(p => "${" + p + "}").join(", ")}>` : "";
+    const dot = name.lastIndexOf(".");
+    name = ownerParameters.length && dot >= 0 ? name.slice(0, dot) + arguments_(ownerParameters) + name.slice(dot) : name;
+    name += arguments_(ownParameters);
+  }
   return `${name}(${fn.parameters.filter(p => p.required).map(p => "${" + p.name + "}").join(", ")})`;
 }
 
@@ -344,16 +439,17 @@ function memberCompletions(context, word, scope, functions, fields, metadata) {
   if (receiverType) {
     for (const rm of metadata?.receiverMethods || []) {
       if (
-        rm.receiverType === receiverType &&
+        inferType(rm.receiverType, receiverType, rm.typeParameters || [], new Map()) &&
         (!metadata?.events?.some(e => e.name === scope.event) || available(rm, scope)) &&
         rm.name.startsWith(memberPrefix)
       ) {
-        completions.push(receiverCompletion(rm, context));
+        completions.push(receiverCompletion(receiverMethod(metadata, rm.name, receiverType), context));
       }
     }
   }
 
-  const namespacePrefix = receiverText + ".";
+  const appliedOwner = receiverNode?.name === "GenericExpression" ? callableName(text(state, receiverNode)) : null;
+  const namespacePrefix = (appliedOwner?.name || receiverText) + ".";
 
   for (const fn of functions) {
     if (fn.name.startsWith(namespacePrefix)) {
@@ -364,6 +460,8 @@ function memberCompletions(context, word, scope, functions, fields, metadata) {
           functionCompletion(
             {
               ...fn,
+              ...(appliedOwner ? specialize(fn, new Map((fn.typeParameters || []).slice(0, appliedOwner.args.length).map((p, i) => [p, appliedOwner.args[i]]))) : {}),
+              typeParameters: appliedOwner ? (fn.typeParameters || []).slice(appliedOwner.args.length) : fn.typeParameters,
               name: memberName,
             },
             context,
@@ -396,7 +494,7 @@ function memberCompletions(context, word, scope, functions, fields, metadata) {
     }
   }
 
-  const aggregate = (metadata?.aggregates || []).find(a => a.name === receiverType);
+  const aggregate = aggregateFor(metadata, receiverType);
   for (const field of aggregate?.fields || []) completions.push({ label: field.name, type: "property", detail: field.typeName });
   return {
     from: dotPos + 1,
@@ -410,7 +508,7 @@ function callBinding(call, state, scope, metadata) {
   if (!call) return null;
   const callee = call.firstChild;
   if (!callee) return null;
-  const direct = functionByName(metadata, text(state, callee));
+  const direct = callFunction(state, call, scope, metadata);
   if (direct) return { name: direct.name, signature: signature(direct), parameters: direct.parameters, description: direct.description };
   if (callee.name === "MemberExpression") {
     const type = expressionType(state, memberReceiver(callee), scope, metadata);
@@ -696,6 +794,10 @@ export function glyphCompletions(metadata) {
 // Shared syntax/type lookup for completion and documentation. Unknown receivers remain unknown.
 function resolveLocalTypes(state, scope, metadata) {
   for (const local of scope.locals) {
+    if (local.matchValue) {
+      const type = expressionType(state, local.matchValue, scope, metadata);
+      local.type = aggregateFor(metadata, type)?.variants.find(v => v.name === local.variant)?.fields.find(f => f.name === local.field)?.typeName ?? null;
+    }
     if (local.init) {
       const type = expressionType(state, local.init, scope, metadata);
       local.type = local.range ? "Int" : local.elementOf ? /^List<(.+)>$/.exec(type || "")?.[1] ?? null : type;
@@ -713,7 +815,9 @@ export function resolveFunctionAt(state, pos, metadata) {
   resolveLocalTypes(state, scope, metadata);
   for (let node = leaf; node; node = node.parent) {
     if (!["VariableName", "MemberExpression"].includes(node.name) || pos < node.from || pos > node.to) continue;
-    const direct = functionByName(metadata, text(state, node));
+    const application = node.parent?.name === "GenericExpression" ? node.parent : node;
+    const call = application.parent?.name === "CallExpression" ? application.parent : null;
+    const direct = call ? callFunction(state, call, scope, metadata) : functionByName(metadata, text(state, application));
     if (direct) return { from: node.from, to: node.to, fn: direct, canonical: direct.canonicalName };
     if (node.name === "MemberExpression") {
       const property = node.getChild("PropertyName");

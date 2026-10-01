@@ -106,11 +106,11 @@ lazy pure `let` bindings retain their behavior. Returning does not replace `fail
 interaction retains its existing behavior. Recursion remains unsupported, and calls share the
 script's execution budget and cancellation token.
 
-New scripts and module publications use version 4. Retained version 1/2/3 scripts and module
+New scripts and module publications use version 5. Retained version 1/2/3/4 scripts and module
 histories keep their versions. Consumers can import modules of the same or an older language
 version; older consumers cannot import modules of a newer version. The editor selects version 3 when a statement function body is
 added to an older script. Use `--language-version 3` with Glyph.Cli to validate the new syntax.
-For an older script importing a version 3 module, choose **Upgrade to Glyph 4** in the
+For an older script importing a version 3 module, choose **Upgrade to Glyph 5** in the
 editor, then compile and activate it. Upgrading invalidates earlier validation.
 
 ### Syntax and capabilities
@@ -570,9 +570,9 @@ legacy histories without dependencies restore with an empty lock.
 ## Immutable collections and impl
 
 Glyph 4 adds immutable lists and dictionaries, and inherent methods for structs and ADTs.
-New scripts and module publications use version 4. Retained Glyph 1–3 sources and executables
-keep their versions. A version 4 consumer can import older modules; older consumers cannot
-import version 4 modules. Use the editor's **Upgrade to Glyph 4** action when migrating a script.
+New scripts and module publications use version 5. Retained Glyph 1–4 sources and executables
+keep their versions. Consumers can import modules using their language version or an older version;
+older consumers cannot import newer modules. Use the editor's **Upgrade to Glyph 5** action when migrating a script.
 
 ### Lists
 
@@ -704,7 +704,69 @@ mod items {
 Private methods remain callable by the module's own functions. Importing a public type does not
 expose its private methods. Duplicate members, field/variant name collisions, foreign type
 implementations, and recursion are compile-time errors. There are no trait implementations,
-inheritance, mutable receivers, or general user-defined generics in this version.
+inheritance, mutable receivers, or generic constraints in this version. Glyph 5 supports
+user-defined generics as described below.
+
+## Generic types and optional values
+
+Glyph 5 supports type parameters on structs, ADTs, functions, and inherent implementations.
+Constructors require explicit type arguments. Function calls infer them from arguments, or accept
+explicit arguments when inference is ambiguous (including functions without value parameters).
+Nested applications retain nominal type identity: `Box<Int>` and `Box<String>` are distinct types.
+
+```glyph
+struct Box<T> { value: T }
+type Result<T, E> { Ok { value: T } Err { error: E } }
+fn identity<T>(value: T): T = value
+impl<T> Box<T> {
+    fn get(self): T = self.value
+    fn create(value: T): Self = Box<T>(value: value)
+}
+// Inside a stage:
+// let box = Box<Int>.create(identity(4))
+// let empty = Option<Box<Int>>.None()
+```
+
+`Option<T>` is built in. It has two variants: `Some { value: T }` and `None {}`.
+Use `Option<Object>.Some(value: object)` or `Option<Object>.None()` to construct a value,
+and `match` to access the payload. Matches must handle both variants or end with a wildcard.
+An option cannot be passed to an API expecting its payload type without extracting that payload.
+
+```glyph
+fn checked_object(object: Object): Option<Object> {
+    if nwn.get_is_object_valid(object) {
+        return Option<Object>.Some(value: object)
+    }
+    return Option<Object>.None()
+}
+fn find_object(tag: String): Option<Object> {
+    return checked_object(nwn.get_object_by_tag(tag))
+}
+// Inside a stage:
+// match find_object("quest_target") {
+//     Some { value } { message(value, "Found you") }
+//     None {} { message(player, "Target not found") }
+// }
+```
+
+`Option<T>` records presence, not the lifetime of the payload. Constructing `Some` does not
+implicitly validate an NWN handle: `Some(OBJECT.INVALID)` is representable through the normal
+constructor. Use a checked wrapper such as the one above when converting native query results.
+A stored `Some` remains `Some` if its object is later destroyed. Check `nwn.get_is_object_valid(value)` again
+before later behavior that depends on the object still existing. Native `nwn.*` procedures
+retain their existing `Object` return types and sentinel behavior.
+
+Type parameters are unconstrained. Generic bodies are checked using opaque parameter types,
+and calls are specialized before lowering to the existing runtime. Passing, storing, returning,
+and matching generic values are supported; operations that require a particular concrete type
+cannot be applied to an unconstrained parameter. Collections retain their basic element/key/value
+restrictions, including when specialized through generic functions. There are no constraints,
+variance, default type arguments, specialized implementations, or recursive functions. Type expansion is bounded to depth 64
+and 1024 specializations per compilation.
+
+Public generic declarations can be exported from modules. All named types in their signatures,
+including nested type arguments, must be public. Older sources keep their versions; upgrade to
+Glyph 5 to use these declarations. See [the complete example](Examples/generic_options.glyph).
 
 ## NWN standard library
 
@@ -1637,6 +1699,32 @@ Stores an NwObject (object ID) in the interaction session under a string key. Th
 Kind: Action. Canonical: `store_session_object`.
 
 Available in: interaction/started, interaction/tick, interaction/completed.
+
+### Language
+
+#### `Option.None`
+
+`Option<T>.None() → Option<T>`
+
+Optional value. Some carries a value; None carries no value. Object validity may change after construction.
+
+Source: `Standard/option.glyph`. Backend: .
+
+Kind: Value. Canonical: `Option.None`.
+
+Available in: all Glyph events/stages.
+
+#### `Option.Some`
+
+`Option<T>.Some(value: T) → Option<T>`
+
+Optional value. Some carries a value; None carries no value. Object validity may change after construction.
+
+Source: `Standard/option.glyph`. Backend: .
+
+Kind: Value. Canonical: `Option.Some`.
+
+Available in: all Glyph events/stages.
 
 ### NWN / Actions
 

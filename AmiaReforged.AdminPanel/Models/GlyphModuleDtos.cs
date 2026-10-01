@@ -10,7 +10,10 @@ public sealed record GlyphModulePublicationRequest(string? SourceText, string? E
 public sealed record GlyphAggregateFieldDto(string Name, string TypeName);
 public sealed record GlyphAggregateVariantDto(string Name, IReadOnlyList<GlyphAggregateFieldDto> Fields);
 public sealed record GlyphAggregateMetadataDto(string Name, IReadOnlyList<GlyphAggregateFieldDto> Fields,
-    IReadOnlyList<GlyphAggregateVariantDto> Variants);
+    IReadOnlyList<GlyphAggregateVariantDto> Variants)
+{
+    public IReadOnlyList<string> TypeParameters { get; init; } = [];
+}
 public sealed record GlyphModuleMetadataDto(IReadOnlyList<GlyphFunctionMetadataDto> Functions,
     IReadOnlyList<GlyphConstantMetadataDto> Constants, IReadOnlyList<string> Types,
     IReadOnlyList<GlyphAggregateMetadataDto> Aggregates, IReadOnlyList<string> Modules,
@@ -24,7 +27,7 @@ public sealed record GlyphModuleMetadataDto(IReadOnlyList<GlyphFunctionMetadataD
         ReceiverMethods = standard.ReceiverMethods.Concat(ReceiverMethods ?? []).ToArray(),
         Constants = standard.Constants.Concat(Constants ?? []).ToArray(),
         Types = standard.Types.Concat(Types ?? []).Distinct().ToArray(),
-        Aggregates = Aggregates ?? [], Modules = Modules ?? [], SourceLocations = SourceLocations ?? new Dictionary<string, GlyphSourceSpanDto>(),
+        Aggregates = standard.Aggregates.Concat(Aggregates ?? []).ToArray(), Modules = Modules ?? [], SourceLocations = SourceLocations ?? new Dictionary<string, GlyphSourceSpanDto>(),
         ConstantDomains = standard.ConstantDomains.Concat((Constants ?? []).GroupBy(c => c.Namespace)
             .Select(g => new GlyphConstantDomainMetadataDto(g.Key, g.Select(c => c.Type).Distinct().ToArray(), g.Count()))).ToArray()
     };

@@ -31,6 +31,7 @@ public static class GlyphStandardLibrary
                 text.Append("const ").Append(constant.Name).Append(": ").Append(constant.Type).Append(" = ").Append(value).Append('\n');
             }
         }
+        text.Append("\n// Glyph 5 optional values\n").Append(GlyphBuiltins.OptionSource).Append('\n');
         return text.ToString();
     }
 }

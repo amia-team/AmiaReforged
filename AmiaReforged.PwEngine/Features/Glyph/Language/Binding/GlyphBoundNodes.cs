@@ -10,6 +10,8 @@ public sealed record GlyphTypeSymbol(
     GlyphTypeSymbol? KeyType = null,
     GlyphTypeSymbol? ValueType = null)
 {
+    public bool IsTypeParameter { get; init; }
+
     public static readonly GlyphTypeSymbol
         Error = new("Error"),
         Void = new("Void"),

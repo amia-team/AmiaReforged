@@ -17,11 +17,11 @@ GlobalDeclaration { ConstantDeclaration | FunctionDeclaration }
 TypeDeclaration { StructDeclaration | AdtDeclaration }
 
 ConstantDeclaration { kw<"const"> ConstantName (":" TypeName)? ("=" expression)? ";"? }
-FunctionDeclaration { kw<"fn"> FunctionName "(" Parameters ")" ":" TypeName ("=" expression | Block) ";"? }
+FunctionDeclaration { kw<"fn"> FunctionName TypeParameters? "(" Parameters ")" ":" TypeName ("=" expression | Block) ";"? }
 Parameters { Parameter* }
 Parameter { ParameterName (":" TypeName)? ("," | ";")? }
 
-ImplDeclaration { kw<"impl"> TypeName "{" (FunctionDeclaration | PublicMethod)* "}" }
+ImplDeclaration { kw<"impl"> TypeParameters? TypeName "{" (FunctionDeclaration | PublicMethod)* "}" }
 PublicMethod { kw<"pub"> FunctionDeclaration }
 
 StructDeclaration { kw<"struct"> TypeName FieldBlock }
@@ -32,7 +32,9 @@ FieldDeclaration { FieldName ":" TypeName ("," | ";")? }
 ConstantName { Identifier ("." Identifier)* }
 FunctionName { Identifier }
 ParameterName { Identifier }
-TypeName { Identifier ("." Identifier)* | CollectionType }
+TypeName { Identifier ("." Identifier)* TypeArguments? | CollectionType }
+TypeParameters { "<" Identifier ("," Identifier)* ">" }
+TypeArguments { "<" ~generic TypeName ("," TypeName)* ">" }
 CollectionType { CollectionKind "<" TypeName ("," TypeName)? ">" }
 CollectionKind { kw<"List"> | kw<"Dictionary"> }
 CollectionConstructor { CollectionType "(" ")" }
@@ -62,7 +64,7 @@ ForeachStatement { kw<"foreach"> BindingName kw<"in"> expression Block }
 MatchStatement { kw<"match"> expression "{" (MatchArm | ";" | ",")* "}" }
 MatchArm { MatchPattern Block }
 MatchPattern { VariantPattern | ValuePattern | WildcardPattern }
-VariantPattern { Identifier ("." PropertyName)* ~pattern "{" (BindingName ("," BindingName)* ","?)? "}" }
+VariantPattern { Identifier ("." PropertyName)* (TypeArguments "." PropertyName)? ~pattern "{" (BindingName ("," BindingName)* ","?)? "}" }
 ValuePattern { Identifier ("." PropertyName)* ~pattern | Number | String | Boolean | ("-" | "+") Number }
 WildcardPattern { kw<"_"> }
 BreakStatement { kw<"break"> }
@@ -77,7 +79,7 @@ AssignmentStatement { expression AssignmentOperator expression !statement }
 ExpressionStatement { expression !statement }
 
 expression {
-  CollectionConstructor | ListExpression | VariableName | Number | String | UnterminatedString | Boolean | ParenthesizedExpression |
+  GenericExpression | CollectionConstructor | ListExpression | VariableName | Number | String | UnterminatedString | Boolean | ParenthesizedExpression |
   UnaryExpression | BinaryExpression | MemberExpression | IndexExpression | CallExpression
 }
 
@@ -89,12 +91,13 @@ UnaryExpression { ("!" | "+" | "-") expression !unary }
 BinaryExpression {
   expression !multiply MultiplyOperator expression |
   expression !add ("+" | "-") expression |
-  expression !compare CompareOperator expression |
+  expression !compare ~generic CompareOperator expression |
   expression !equal EqualityOperator expression |
   expression !and "&&" expression |
   expression !or "||" expression
 }
 
+GenericExpression { expression !call ~generic TypeArguments }
 MemberExpression { expression !member "." PropertyName }
 PropertyName { Identifier }
 IndexExpression { expression !member "[" expression "]" }
@@ -112,7 +115,7 @@ kw<term> { @specialize[@name={term}]<Identifier, term> }
 
 @external tokens identifiers from "./glyph-tokens.js" { Identifier }
 
-CompareOperator { "<" | "<=" | ">" | ">=" }
+CompareOperator { "<" ~generic | "<=" | ">" | ">=" }
 
 @tokens {
   "(" ")" "{" "}" "[" "]" "<" ">" "<=" ">=" "." "," ":" ";"

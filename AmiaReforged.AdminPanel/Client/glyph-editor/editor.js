@@ -128,7 +128,7 @@ function configureMetadata(entry) {
         receiverMethods: [...(standard.receiverMethods || []), ...(modules.receiverMethods || [])],
         constants: [...(standard.constants || []), ...(modules.constants || [])],
         types: [...new Set([...(standard.types || []), ...(modules.types || [])])],
-        aggregates: modules.aggregates || [], modules: modules.modules || [], sourceLocations: modules.sourceLocations || {}
+        aggregates: [...(standard.aggregates || []), ...(modules.aggregates || [])], modules: modules.modules || [], sourceLocations: modules.sourceLocations || {}
     } : standard;
     closeCompletion(entry.view);
     entry.view.dispatch({ effects: [entry.completion.reconfigure(autocompletion({

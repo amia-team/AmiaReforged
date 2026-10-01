@@ -115,28 +115,31 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
                 {
                     RequireVersion4(declarationStart);
                     if (isPublic) Diagnostics.Add(new("GLYPH1010", "Use pub on individual impl functions.", declarationStart));
-                    string owner = Expect("identifier").Text;
+                    var typeParameters = TypeParameters();
+                    string owner = TypeName();
                     Expect("{");
                     while (!At("}") && !At("eof"))
                     {
                         SourceSpan methodStart = Current.Span;
                         bool methodPublic = Eat("pub");
                         Expect("fn");
-                        globalDeclarations.Add(Function(methodStart, owner) with { IsPublic = methodPublic });
+                        globalDeclarations.Add(Function(methodStart, owner, typeParameters) with { IsPublic = methodPublic });
                         Eat(";");
                     }
                     Expect("}");
-                    implementations.Add(new(owner, Through(declarationStart)));
+                    implementations.Add(new(owner, Through(declarationStart)) { TypeParameters = typeParameters });
                 }
                 else if (Eat("struct"))
                 {
                     string structName = Expect("identifier").Text;
+                    var typeParameters = TypeParameters();
                     IReadOnlyList<GlyphFieldDeclarationSyntax> fields = FieldBlock();
-                    declarations.Add(new StructDeclarationSyntax(structName, fields, Through(declarationStart)) { IsPublic = isPublic });
+                    declarations.Add(new StructDeclarationSyntax(structName, fields, Through(declarationStart)) { IsPublic = isPublic, TypeParameters = typeParameters });
                 }
                 else if (Eat("type"))
                 {
                     string adtName = Expect("identifier").Text;
+                    var typeParameters = TypeParameters();
                     Expect("{");
 
                     List<GlyphVariantDeclarationSyntax> variants = [];
@@ -151,7 +154,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
                     }
 
                     Expect("}");
-                    declarations.Add(new AdtDeclarationSyntax(adtName, variants, Through(declarationStart)) { IsPublic = isPublic });
+                    declarations.Add(new AdtDeclarationSyntax(adtName, variants, Through(declarationStart)) { IsPublic = isPublic, TypeParameters = typeParameters });
                 }
 
                 Eat(";");
@@ -205,22 +208,48 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
         if (languageVersion < 4) Diagnostics.Add(new("GLYPH1012", "Collections and impl require language version 4.", span));
     }
 
-    private string TypeName()
+    private void RequireVersion5(SourceSpan span)
     {
-        string name = QualifiedIdentifier();
-        if (!Eat("<")) return name;
-        RequireVersion4(Current.Span);
-        if (name is not ("List" or "Dictionary"))
-            Diagnostics.Add(new("GLYPH1012", "Only List and Dictionary accept type arguments.", Current.Span));
-        List<string> arguments = [];
-        do { arguments.Add(QualifiedIdentifier()); } while (Eat(","));
-        Expect(">");
-        return name + "<" + string.Join(", ", arguments) + ">";
+        if (languageVersion < 5) Diagnostics.Add(new("GLYPH1013", "User-defined generics require language version 5.", span));
     }
 
-    private FunctionDeclarationSyntax Function(SourceSpan start, string? owner = null)
+    private IReadOnlyList<string> TypeParameters()
+    {
+        if (!Eat("<")) return [];
+        RequireVersion5(Current.Span);
+        List<string> parameters = [];
+        do { parameters.Add(Expect("identifier").Text); } while (Eat(","));
+        Expect(">");
+        return parameters;
+    }
+
+    private string TypeName()
+    {
+        Enter();
+        try
+        {
+            string name = QualifiedIdentifier();
+            if (!At("<")) return name;
+            if (name is "List" or "Dictionary") RequireVersion4(Current.Span);
+            else RequireVersion5(Current.Span);
+            return GlyphTypeNames.Apply(name, TypeArguments());
+        }
+        finally { _depth--; }
+    }
+
+    private IReadOnlyList<string> TypeArguments()
+    {
+        Expect("<");
+        List<string> arguments = [];
+        do { arguments.Add(TypeName()); } while (Eat(","));
+        Expect(">");
+        return arguments;
+    }
+
+    private FunctionDeclarationSyntax Function(SourceSpan start, string? owner = null, IReadOnlyList<string>? ownerParameters = null)
     {
         string name = Expect("identifier").Text;
+        var typeParameters = TypeParameters();
         Expect("(");
         List<ParameterSyntax> parameters = [];
         while (!At(")") && !At("eof"))
@@ -243,8 +272,8 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
             body = new BlockFunctionBodySyntax(Block());
         }
         else { Expect("="); body = new ExpressionFunctionBodySyntax(Expression()); }
-        return new(owner == null ? name : owner + "." + name, parameters, result, body, Through(start))
-        { DeclaringType = owner, LanguageVersion = languageVersion };
+        return new(owner == null ? name : GlyphTypeNames.Parse(owner).Name + "." + name, parameters, result, body, Through(start))
+        { DeclaringType = owner, LanguageVersion = languageVersion, TypeParameters = [..ownerParameters ?? [], ..typeParameters] };
     }
 
     private IReadOnlyList<GlyphFieldDeclarationSyntax> FieldBlock()
@@ -369,7 +398,8 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
                 }
                 else if (At("identifier") && LooksLikeVariantPattern())
                 {
-                    string variant = QualifiedIdentifier();
+                    string variant = TypeName();
+                    while (Eat(".")) variant += "." + Expect("identifier").Text;
                     Expect("{");
                     List<string> bindings = [];
                     while (!At("}") && !At("eof"))
@@ -425,7 +455,17 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
     private bool LooksLikeVariantPattern()
     {
         int i = _position + 1;
-        while (i + 1 < tokens.Count && tokens[i].Kind == "." && tokens[i + 1].Kind == "identifier") i += 2;
+        int nesting = 0;
+        while (i < tokens.Count)
+        {
+            string kind = tokens[i].Kind;
+            if (kind == "<") nesting++;
+            else if (kind == ">") nesting--;
+            else if (kind is not ("identifier" or "." or ",")) break;
+            if (nesting < 0) return false;
+            i++;
+        }
+        if (nesting != 0) return false;
         if (tokens[Math.Min(i++, tokens.Count - 1)].Kind != "{") return false;
         while (i < tokens.Count && tokens[i].Kind == "identifier")
         {
@@ -434,6 +474,22 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
             i++;
         }
         return i + 1 < tokens.Count && tokens[i].Kind == "}" && tokens[i + 1].Kind == "{";
+    }
+
+    private bool LooksLikeTypeApplication()
+    {
+        int depth = 0;
+        for (int i = _position; i < tokens.Count; i++)
+        {
+            string kind = tokens[i].Kind;
+            if (kind == "<") depth++;
+            else if (kind == ">")
+            {
+                if (--depth == 0) return i + 1 < tokens.Count && tokens[i + 1].Kind is "(" or ".";
+            }
+            else if (kind is not ("identifier" or "." or ",")) return false;
+        }
+        return false;
     }
 
     private ExpressionSyntax Expression(int minimum = 0)
@@ -492,6 +548,13 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
         while (true)
         {
             if (++chainLength > 128) throw new SyntaxDepthException();
+
+            if (languageVersion >= 5 && At("<") && LooksLikeTypeApplication())
+            {
+                RequireVersion5(Current.Span);
+                left = new TypeApplicationExpressionSyntax(left, TypeArguments(), Through(start));
+                continue;
+            }
 
             if (Eat("."))
             {

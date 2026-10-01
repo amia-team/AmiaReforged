@@ -20,7 +20,10 @@ public sealed record GlyphCompilationUnitSyntax(
     public int LanguageVersion { get; init; } = Compilation.GlyphLanguageVersion.Current;
 }
 
-public sealed record ImplDeclarationSyntax(string TypeName, SourceSpan Span) : GlyphSyntax(Span);
+public sealed record ImplDeclarationSyntax(string TypeName, SourceSpan Span) : GlyphSyntax(Span)
+{
+    public IReadOnlyList<string> TypeParameters { get; init; } = [];
+}
 
 public sealed record GlyphImportSyntax(string Name, SourceSpan Span) : GlyphSyntax(Span);
 
@@ -30,6 +33,7 @@ public sealed record GlyphImportSyntax(string Name, SourceSpan Span) : GlyphSynt
 public abstract record GlyphDeclarationSyntax(string Name, SourceSpan Span) : GlyphSyntax(Span)
 {
     public bool IsPublic { get; init; }
+    public IReadOnlyList<string> TypeParameters { get; init; } = [];
 }
 
 public abstract record GlobalDeclarationSyntax(string Name, SourceSpan Span) : GlyphDeclarationSyntax(Name, Span);
@@ -108,6 +112,7 @@ public sealed record MatchArmSyntax(MatchPatternSyntax Pattern, BlockStatementSy
 
 public abstract record ExpressionSyntax(SourceSpan Span) : GlyphSyntax(Span);
 public sealed record ListExpressionSyntax(IReadOnlyList<ExpressionSyntax> Values, SourceSpan Span) : ExpressionSyntax(Span);
+public sealed record TypeApplicationExpressionSyntax(ExpressionSyntax Target, IReadOnlyList<string> Arguments, SourceSpan Span) : ExpressionSyntax(Span);
 public sealed record CollectionConstructorSyntax(string TypeName, SourceSpan Span) : ExpressionSyntax(Span);
 public sealed record LiteralExpressionSyntax(object Value, SourceSpan Span) : ExpressionSyntax(Span);
 public sealed record NameExpressionSyntax(string Name, SourceSpan Span) : ExpressionSyntax(Span);

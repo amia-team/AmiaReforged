@@ -69,10 +69,13 @@ public class GlyphPlatformTests
                 var fields = metadata.Contexts.Single(c => c.Event == scope.Event && c.Stage == scope.Stage).Fields;
                 string Arguments(IEnumerable<GlyphParameterMetadataDto> parameters) => string.Join(", ", parameters.Select(p =>
                     p.TestValue(fields)));
-                string call = function.Name + "(" + Arguments(function.Parameters) + ")";
-                string body = Consume(call, function.Kind, function.ReturnType, fields);
+                string name = function.TypeParameters.Count == 0 ? function.Name : function.Name.Replace("Option.", "Option<Object>.");
+                var parameters = function.Parameters.Select(p => p.Type == "T" ? p with { Type = "Object" } : p);
+                string call = name + "(" + Arguments(parameters) + ")";
+                string body = Consume(call, function.Kind, function.ReturnType.Replace("<T>", "<Object>"), fields);
                 var program = Compile(scope, body, function.Name);
-                Assert.That(program.CreateExecutionGraph().Nodes.Any(n => n.TypeId == _compiler.Catalog.Find(function.CanonicalName)!.Definition.TypeId), Is.True, function.Name + " was not lowered");
+                string expectedNode = _compiler.Catalog.Find(function.CanonicalName)?.Definition.TypeId ?? "aggregate.new";
+                Assert.That(program.CreateExecutionGraph().Nodes.Any(n => n.TypeId == expectedNode), Is.True, function.Name + " was not lowered");
             }
         }
         foreach (var receiver in metadata.ReceiverMethods)
@@ -98,6 +101,7 @@ public class GlyphPlatformTests
             "Object" => $"nwn.set_local_object({obj}, \"probe\", {call})",
             "Location" => $"nwn.set_local_location({obj}, \"probe\", {call})",
             "Effect" => $"nwn.apply_effect({obj}, {call})",
+            "Option<Object>" => $"match {call} {{ Some {{ value }} {{ nwn.set_local_object({obj}, \"probe\", value) }} None {{}} {{ nwn.set_local_int({obj}, \"probe\", 0) }} }}",
             "List<Object>" => $"foreach element in {call} {{ nwn.set_local_int(element, \"probe\", 1) }}",
             "List<Effect>" => $"foreach element in {call} {{ nwn.remove_effect({obj}, element) }}",
             string type when type.StartsWith("List<", StringComparison.Ordinal) || type.StartsWith("Dictionary<", StringComparison.Ordinal) => $"let value = {call}",

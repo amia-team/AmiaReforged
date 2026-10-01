@@ -81,17 +81,31 @@ public sealed class GlyphModuleEditorTests
         source.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
         source.WaitForAssertion(() => Assert.That(_handler.LastLanguageVersion, Is.EqualTo(3)));
     }
+    [Test] public void Generic_syntax_selects_glyph_5_and_comments_do_not_upgrade_legacy_scripts()
+    {
+        var source = _context.RenderComponent<GlyphSourceEditor>(p => p.Add(c => c.DefinitionId, _handler.Module.Id));
+        foreach (string code in new[] {
+            "// type Option<T> {}\nconst TEXT = \"fn identity<T>(value: T): T = value\" glyph t : interaction {}",
+            "struct Box<T> { value: T } glyph t : interaction {}",
+            "glyph t : interaction { completed { let target = Option<Object>.None() } }" })
+        {
+            source.Find("textarea").Input(code);
+            source.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
+            int expectedVersion = code.StartsWith("//") ? 1 : 5;
+            source.WaitForAssertion(() => Assert.That(_handler.LastLanguageVersion, Is.EqualTo(expectedVersion)));
+        }
+    }
     [Test] public void Explicit_language_upgrade_preserves_source_and_invalidates_validation()
     {
         var source = _context.RenderComponent<GlyphSourceEditor>(p => p.Add(c => c.DefinitionId, _handler.Module.Id));
         source.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
         source.WaitForAssertion(() => Assert.That(source.FindAll("button").Single(b => b.TextContent == "Activate").HasAttribute("disabled"), Is.False));
         string original = source.Find("textarea").GetAttribute("value")!;
-        source.FindAll("button").Single(b => b.TextContent == "Upgrade to Glyph 4").Click();
+        source.FindAll("button").Single(b => b.TextContent == "Upgrade to Glyph 5").Click();
         Assert.That(source.FindAll("button").Single(b => b.TextContent == "Activate").HasAttribute("disabled"), Is.True);
         Assert.That(source.Find("textarea").GetAttribute("value"), Is.EqualTo(original));
         source.FindAll("button").Single(b => b.TextContent == "Compile / validate").Click();
-        source.WaitForAssertion(() => Assert.That(_handler.LastLanguageVersion, Is.EqualTo(4)));
+        source.WaitForAssertion(() => Assert.That(_handler.LastLanguageVersion, Is.EqualTo(5)));
     }
     private sealed class Handler : HttpMessageHandler
     {

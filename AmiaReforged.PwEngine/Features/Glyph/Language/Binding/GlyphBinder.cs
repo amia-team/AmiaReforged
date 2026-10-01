@@ -19,6 +19,9 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
     private readonly HashSet<string> _expandingFunctions = new(StringComparer.Ordinal);
 
     private readonly Stack<Dictionary<string, BoundExpression>> _scopes = new();
+    private Dictionary<string, GlyphTypeSymbol> _typeBindings = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, TypeDeclarationSyntax> _typeDeclarations = new(StringComparer.Ordinal);
+    private int _typeDepth;
     private readonly Dictionary<string, GlyphTypeSymbol> _userTypes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, GlyphStructDefinition> _structs = new(StringComparer.Ordinal);
     private readonly Dictionary<string, GlyphAdtDefinition> _adts = new(StringComparer.Ordinal);
@@ -29,13 +32,10 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
     public BoundProgram? Bind(GlyphCompilationUnitSyntax syntax)
     {
         _languageVersion = syntax.LanguageVersion;
-        if (modules == null)
-            foreach (var implementation in syntax.Implementations)
-                if (!syntax.Declarations.Any(d => d.Name == implementation.TypeName))
-                    Error("GLYPH2031", "impl requires a struct or ADT declared in the same source module.", implementation.Span);
+        if (modules == null) GlyphModuleBinding.ValidateImplementations(syntax, Diagnostics);
         DeclareTypes([.. globals?.Structs.Values.Cast<TypeDeclarationSyntax>() ?? [], .. globals?.Adts.Values.Cast<TypeDeclarationSyntax>() ?? [], .. modules == null ? syntax.Declarations : []]);
 
-        ValidateFunctions(syntax.GlobalDeclarations.OfType<FunctionDeclarationSyntax>().Where(f => f.Body is BlockFunctionBodySyntax || f.DeclaringType != null));
+        ValidateFunctions(syntax.GlobalDeclarations.OfType<FunctionDeclarationSyntax>().Where(f => f.Body is BlockFunctionBodySyntax || f.DeclaringType != null || f.TypeParameters.Count > 0));
         _bindingSteps = 0; _stage = "";
 
         if (!GlyphLanguageCatalog.Events.TryGetValue(syntax.Event, out _event))
@@ -96,6 +96,9 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         Dictionary<string, IReadOnlyList<GlyphAvailabilityDto>> available = new(StringComparer.Ordinal);
         foreach (var function in functions)
         {
+            ValidateTypeParameters(function);
+            var savedBindings = _typeBindings;
+            _typeBindings = TemplateBindings(function);
             List<GlyphAvailabilityDto> scopes = [];
             List<GlyphDiagnostic>? firstErrors = null;
             foreach (var descriptor in Platform.GlyphEvents.All)
@@ -126,23 +129,37 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
             }
             available[function.Name] = scopes.AsReadOnly();
             if (scopes.Count == 0 && firstErrors != null) Diagnostics.AddRange(firstErrors);
+            _typeBindings = savedBindings;
         }
         _moduleScope = modules?.RootScope;
         return available;
     }
 
+    private void ValidateTypeParameters(GlyphDeclarationSyntax declaration)
+    {
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        foreach (string parameter in declaration.TypeParameters)
+            if (!seen.Add(parameter) || BuiltinType(parameter) != null || parameter is "List" or "Dictionary" or "Self" or "Option" || _typeDeclarations.ContainsKey(parameter))
+                Error("GLYPH2006", $"Duplicate or reserved type parameter '{parameter}'.", declaration.Span);
+    }
+
+    private Dictionary<string, GlyphTypeSymbol> TemplateBindings(GlyphDeclarationSyntax declaration) =>
+        declaration.TypeParameters.Distinct().ToDictionary(p => p, p => new GlyphTypeSymbol("!" + declaration.Name + "." + p) { IsTypeParameter = true }, StringComparer.Ordinal);
+
     private void DeclareTypes(IReadOnlyList<TypeDeclarationSyntax> declarations)
     {
+        if (_languageVersion >= 5) declarations = [GlyphBuiltins.Option, ..declarations];
         foreach (TypeDeclarationSyntax declaration in declarations)
         {
             if (_languageVersion >= 4 && declaration.Name is ("List" or "Dictionary" or "Self") || BuiltinType(declaration.Name) != null ||
-                !_userTypes.TryAdd(declaration.Name, new(declaration.Name, GlyphDataType.Aggregate)))
+                !_typeDeclarations.TryAdd(declaration.Name, declaration))
                 Error("GLYPH2006", $"Duplicate or reserved type '{declaration.Name}'.", declaration.Span);
         }
+        foreach (TypeDeclarationSyntax declaration in declarations) ValidateTypeParameters(declaration);
 
         foreach (var method in globals?.Functions.Values.Where(f => f.DeclaringType != null) ?? [])
         {
-            var owner = declarations.FirstOrDefault(d => d.Name == method.DeclaringType);
+            var owner = declarations.FirstOrDefault(d => d.Name == GlyphTypeNames.Parse(method.DeclaringType!).Name);
             if (owner == null || owner.Span.SourceId != method.Span.SourceId)
                 Error("GLYPH2031", "impl requires a struct or ADT declared in the same source module.", method.Span);
             string member = method.Name[(method.Name.LastIndexOf('.') + 1)..];
@@ -152,47 +169,48 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
             if (method.Parameters.Any(p => p.Name == "self") && (!method.IsInstance || method.Parameters[0].TypeName != method.DeclaringType))
                 Error("GLYPH2004", "self must be the first parameter and have the impl type.", method.Span);
         }
-        HashSet<string> materialized = new(StringComparer.Ordinal);
-
-        foreach (TypeDeclarationSyntax declaration in declarations)
+        foreach (var declaration in declarations)
         {
-            if (!_userTypes.TryGetValue(declaration.Name, out GlyphTypeSymbol? type) ||
-                !materialized.Add(declaration.Name))
-                continue;
-
-            switch (declaration)
-            {
-                case StructDeclarationSyntax structure:
-                    _structs[structure.Name] = new(
-                        structure.Name,
-                        type,
-                        BindFields(structure.Fields));
-                    break;
-
-                case AdtDeclarationSyntax adt:
-                {
-                    HashSet<string> variants = new(StringComparer.Ordinal);
-                    List<GlyphVariantDefinition> boundVariants = [];
-
-                    foreach (GlyphVariantDeclarationSyntax variant in adt.Variants)
-                    {
-                        if (!variants.Add(variant.Name))
-                        {
-                            Error("GLYPH2006", $"Duplicate variant '{adt.Name}.{variant.Name}'.", variant.Span);
-                            continue;
-                        }
-
-                        boundVariants.Add(new(variant.Name, BindFields(variant.Fields)));
-                    }
-
-                    if (boundVariants.Count == 0)
-                        Error("GLYPH2010", $"ADT '{adt.Name}' must declare at least one variant.", adt.Span);
-
-                    _adts[adt.Name] = new(adt.Name, type, boundVariants);
-                    break;
-                }
-            }
+            var bindings = TemplateBindings(declaration);
+            MaterializeType(declaration, declaration.TypeParameters.Select(p => bindings[p]).ToArray(), declaration.Span);
         }
+    }
+
+    private GlyphTypeSymbol MaterializeType(TypeDeclarationSyntax declaration, IReadOnlyList<GlyphTypeSymbol> arguments, SourceSpan span)
+    {
+        string name = GlyphTypeNames.Apply(declaration.Name, arguments.Select(t => t.Name));
+        if (_userTypes.TryGetValue(name, out var existing)) return existing;
+        if (_typeDepth >= 64 || _userTypes.Count >= 1024)
+        {
+            Error("GLYPH1007", "Generic type expansion exceeds depth 64 or 1024 specializations.", span);
+            return GlyphTypeSymbol.Error;
+        }
+        GlyphTypeSymbol type = new(name, GlyphDataType.Aggregate);
+        _userTypes[name] = type;
+        var savedBindings = _typeBindings;
+        _typeBindings = declaration.TypeParameters.Distinct().Zip(arguments).ToDictionary(p => p.First, p => p.Second, StringComparer.Ordinal);
+        _typeDepth++;
+        switch (declaration)
+        {
+            case StructDeclarationSyntax structure:
+                _structs[name] = new(name, type, BindFields(structure.Fields));
+                break;
+            case AdtDeclarationSyntax adt:
+                HashSet<string> seen = new(StringComparer.Ordinal);
+                List<GlyphVariantDefinition> variants = [];
+                foreach (var variant in adt.Variants)
+                {
+                    if (!seen.Add(variant.Name))
+                        Error("GLYPH2006", $"Duplicate variant '{adt.Name}.{variant.Name}'.", variant.Span);
+                    else variants.Add(new(variant.Name, BindFields(variant.Fields)));
+                }
+                if (variants.Count == 0) Error("GLYPH2010", $"ADT '{adt.Name}' must declare at least one variant.", adt.Span);
+                _adts[name] = new(name, type, variants);
+                break;
+        }
+        _typeDepth--;
+        _typeBindings = savedBindings;
+        return type;
     }
 
     private IReadOnlyList<GlyphFieldSymbol> BindFields(IReadOnlyList<GlyphFieldDeclarationSyntax> fields)
@@ -218,23 +236,36 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
 
     private GlyphTypeSymbol ResolveType(string name, SourceSpan span, bool canonical = false)
     {
-        if (!canonical) name = ResolveName(name, span);
-        if (name.StartsWith("List<", StringComparison.Ordinal) || name.StartsWith("Dictionary<", StringComparison.Ordinal))
+        if (_typeBindings.Values.FirstOrDefault(t => t.Name == name) is { } symbolic) return symbolic;
+        var reference = GlyphTypeNames.Parse(name);
+        if (reference.Arguments.Count == 0 && _typeBindings.TryGetValue(name, out var parameter)) return parameter;
+        string baseName = canonical ? reference.Name : ResolveName(reference.Name, span);
+        var arguments = reference.Arguments.Select(a => ResolveType(a, span, canonical)).ToArray();
+        if (arguments.Any(t => t == GlyphTypeSymbol.Error)) return GlyphTypeSymbol.Error;
+        if (baseName is "List" or "Dictionary" && arguments.Length > 0)
         {
-            string[] arguments = name[(name.IndexOf('<') + 1)..].TrimEnd('>').Split(',').Select(a => a.Trim()).ToArray();
-            bool list = name.StartsWith("List<", StringComparison.Ordinal);
-            var types = arguments.Select(BuiltinType).ToArray();
-            if (types.Length == (list ? 1 : 2) && types.All(t => t?.IsBasic == true))
-                return list ? GlyphTypeSymbol.List(types[0]!) : GlyphTypeSymbol.Dictionary(types[0]!, types[1]!);
+            bool list = baseName == "List";
+            if (arguments.Length == (list ? 1 : 2) && arguments.All(t => t.IsBasic || t.IsTypeParameter))
+                return list ? GlyphTypeSymbol.List(arguments[0]) : GlyphTypeSymbol.Dictionary(arguments[0], arguments[1]);
             Error("GLYPH2004", "Collections require basic Object, String, Int, Float, or Bool type arguments.", span);
             return GlyphTypeSymbol.Error;
         }
-        GlyphTypeSymbol? builtin = BuiltinType(name);
-        if (builtin != null) return builtin;
-
-        if (_userTypes.TryGetValue(name, out GlyphTypeSymbol? user))
-            return user;
-
+        GlyphTypeSymbol? builtin = BuiltinType(baseName);
+        if (builtin != null && arguments.Length == 0) return builtin;
+        if (_typeDeclarations.TryGetValue(baseName, out var declaration))
+        {
+            if (arguments.Length != declaration.TypeParameters.Count)
+            {
+                Error("GLYPH2004", $"Type '{baseName}' requires {declaration.TypeParameters.Count} type arguments, got {arguments.Length}.", span);
+                return GlyphTypeSymbol.Error;
+            }
+            if (arguments.Any(t => t == GlyphTypeSymbol.Void))
+            {
+                Error("GLYPH2004", "Generic arguments must have a value type.", span);
+                return GlyphTypeSymbol.Error;
+            }
+            return MaterializeType(declaration, arguments, span);
+        }
         Error("GLYPH3002", $"Unknown type '{name}'.", span);
         return GlyphTypeSymbol.Error;
     }
@@ -496,7 +527,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
                 {
                     string variantName = variantPattern.Variant;
                     int separator = variantName.LastIndexOf('.');
-                    bool matchingType = separator < 0 || ResolveName(variantName[..separator], variantPattern.Span) == value.Type.Name;
+                    bool matchingType = separator < 0 || ResolveType(variantName[..separator], variantPattern.Span) == value.Type;
                     if (separator >= 0) variantName = variantName[(separator + 1)..];
                     GlyphVariantDefinition? variant = matchingType ? adt?.Variants.FirstOrDefault(v => v.Name == variantName) : null;
                     if (variant == null)
@@ -599,7 +630,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
             case ListExpressionSyntax list:
             {
                 var values = list.Values.Select(v => Expression(v)).ToArray();
-                if (values.Length == 0 || !values[0].Type.IsBasic)
+                if (values.Length == 0 || !(values[0].Type.IsBasic || values[0].Type.IsTypeParameter))
                 { Error("GLYPH2004", "Use List<T>() for an empty list; list elements must have basic types.", list.Span); return new BoundError(list.Span); }
                 foreach (var value in values) Require(value, values[0].Type);
                 return new BoundListLiteral(values, GlyphTypeSymbol.List(values[0].Type), list.Span);
@@ -791,15 +822,40 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         bool allowPredicate = false)
     {
         string? name = Path(syntax.Function);
-        if (name != null) name = ResolveName(name, syntax.Span);
+        IReadOnlyList<string> typeArguments = [];
+        if (syntax.Function is TypeApplicationExpressionSyntax application)
+        {
+            typeArguments = application.Arguments;
+            name = Path(application.Target);
+        }
+        if (name != null)
+        {
+            int open = name.IndexOf('<');
+            if (open < 0) name = ResolveName(name, syntax.Span);
+            else name = ResolveName(name[..open], syntax.Span) + name[open..];
+        }
 
         if (name != null && globals?.GetFunction(name) is { } function)
         {
             if (function.DeclaringType != null && _moduleScope != null && !_moduleScope.CanAccessDeclaration(name))
             { Error("GLYPH2021", $"Method '{name}' is private or not imported.", syntax.Span); return new BoundError(syntax.Span); }
-            return BindGlobalFunction(function, syntax);
+            return BindGlobalFunction(function, syntax, typeArguments: typeArguments);
         }
 
+        if (name != null && name.Contains('<') && !name.EndsWith('>'))
+        {
+            int close = name.LastIndexOf('>');
+            string ownerName = name[..(close + 1)];
+            string methodName = GlyphTypeNames.Parse(ownerName).Name + name[(close + 1)..];
+            if (globals?.GetFunction(methodName) is { } method)
+            {
+                if (_moduleScope != null && !_moduleScope.CanAccessDeclaration(methodName))
+                { Error("GLYPH2021", $"Method '{methodName}' is private or not imported.", syntax.Span); return new BoundError(syntax.Span); }
+                var owner = ResolveType(ownerName, syntax.Span);
+                return BindGlobalFunction(method, syntax, typeArguments: typeArguments, ownerType: owner);
+            }
+        }
+        if (name != null && typeArguments.Count > 0) name = GlyphTypeNames.Apply(name, typeArguments);
         if (name != null && TryBindConstructor(name, syntax, out BoundExpression constructor))
             return constructor;
 
@@ -840,16 +896,50 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         return new BoundCall(symbol, bound, syntax.Span);
     }
 
-    private BoundExpression BindGlobalFunction(FunctionDeclarationSyntax function, InvocationExpressionSyntax invocation, BoundExpression? receiver = null)
+    private void InferTypeArguments(string pattern, GlyphTypeSymbol actual, FunctionDeclarationSyntax function,
+        Dictionary<string, GlyphTypeSymbol> bindings, SourceSpan span)
+    {
+        if (function.TypeParameters.Contains(pattern))
+        {
+            if (bindings.TryGetValue(pattern, out var existing) && existing != actual)
+                Error("GLYPH2004", $"Conflicting types for '{pattern}': {existing.Name} and {actual.Name}.", span);
+            else bindings[pattern] = actual;
+            return;
+        }
+        var expected = GlyphTypeNames.Parse(pattern);
+        var provided = GlyphTypeNames.Parse(actual.Name);
+        if (expected.Name != provided.Name || expected.Arguments.Count != provided.Arguments.Count) return;
+        for (int i = 0; i < expected.Arguments.Count; i++)
+        {
+            GlyphTypeSymbol argument = actual.ElementType ?? GlyphTypeSymbol.Error;
+            if (actual.RuntimeType == GlyphDataType.Dictionary) argument = i == 0 ? actual.KeyType! : actual.ValueType!;
+            else if (actual.RuntimeType != GlyphDataType.List)
+                argument = ResolveType(provided.Arguments[i], span, canonical: true);
+            InferTypeArguments(expected.Arguments[i], argument, function, bindings, span);
+        }
+    }
+
+    private BoundExpression BindGlobalFunction(FunctionDeclarationSyntax function, InvocationExpressionSyntax invocation,
+        BoundExpression? receiver = null, IReadOnlyList<string>? typeArguments = null, GlyphTypeSymbol? ownerType = null)
     {
         if (_expandingFunctions.Count >= 64 || _expandingFunctions.Contains(function.Name))
         {
             Error("GLYPH2012", $"Recursive global function '{function.Name}' is not supported.", invocation.Span);
             return new BoundError(invocation.Span);
         }
-        var arguments = new Dictionary<string, BoundExpression>(StringComparer.Ordinal);
-        List<BoundLet> prefix = [];
-        List<BoundVariableAssignment> parameterValues = [];
+        var bindings = new Dictionary<string, GlyphTypeSymbol>(StringComparer.Ordinal);
+        if (function.DeclaringType != null && (ownerType ?? receiver?.Type) is { } owner)
+            InferTypeArguments(function.DeclaringType, owner, function, bindings, invocation.Span);
+        var explicitParameters = function.TypeParameters.Where(p => !bindings.ContainsKey(p)).ToArray();
+        if (typeArguments is { Count: > 0 })
+        {
+            if (typeArguments.Count != explicitParameters.Length)
+                Error("GLYPH2004", $"Function '{function.Name}' requires {explicitParameters.Length} explicit type arguments, got {typeArguments.Count}.", invocation.Span);
+            for (int i = 0; i < Math.Min(typeArguments.Count, explicitParameters.Length); i++)
+                bindings[explicitParameters[i]] = ResolveType(typeArguments[i], invocation.Span);
+        }
+        List<(ParameterSyntax Parameter, BoundExpression Value, SourceSpan Span)> suppliedValues = [];
+        HashSet<string> seen = new(StringComparer.Ordinal);
         int position = 0;
         bool named = false;
         foreach (var supplied in invocation.Arguments)
@@ -861,21 +951,40 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
                 if (named) Error("GLYPH2003", "Positional arguments must precede named arguments.", supplied.Span);
                 parameter = function.Parameters.ElementAtOrDefault(position++);
             }
-            if (parameter == null || arguments.ContainsKey(parameter.Name))
+            if (parameter == null || !seen.Add(parameter.Name))
             { Error("GLYPH2003", "Unknown, excess, or duplicate argument.", supplied.Span); continue; }
             BoundExpression value = receiver != null && parameter.Name == "self" ? receiver : Expression(supplied.Value);
-            GlyphTypeSymbol parameterType = ResolveType(parameter.TypeName ?? "", parameter.Span, canonical: true);
+            if (typeArguments is not { Count: > 0 }) InferTypeArguments(parameter.TypeName ?? "", value.Type, function, bindings, supplied.Span);
+            suppliedValues.Add((parameter, value, supplied.Span));
+        }
+        foreach (string parameter in function.TypeParameters)
+            if (!bindings.ContainsKey(parameter))
+            {
+                Error("GLYPH2004", $"Cannot infer '{parameter}' for '{function.Name}'; supply explicit type arguments.", invocation.Span);
+                bindings[parameter] = GlyphTypeSymbol.Error;
+            }
+        if (bindings.Values.Any(t => t == GlyphTypeSymbol.Void))
+            Error("GLYPH2004", "Generic arguments must have a value type.", invocation.Span);
+        var savedBindings = _typeBindings;
+        _typeBindings = bindings;
+        var arguments = new Dictionary<string, BoundExpression>(StringComparer.Ordinal);
+        List<BoundLet> prefix = [];
+        List<BoundVariableAssignment> parameterValues = [];
+        foreach (var supplied in suppliedValues)
+        {
+            var parameterType = ResolveType(supplied.Parameter.TypeName ?? "", supplied.Parameter.Span, canonical: true);
             if (parameterType == GlyphTypeSymbol.Void)
-                Error("GLYPH2004", "Function parameters must have a value type.", parameter.Span);
-            Require(value, parameterType);
-            if (function.Body is BlockFunctionBodySyntax || function.DeclaringType != null)
+                Error("GLYPH2004", "Function parameters must have a value type.", supplied.Parameter.Span);
+            Require(supplied.Value, parameterType);
+            BoundExpression value = supplied.Value;
+            if (function.Body is BlockFunctionBodySyntax || function.DeclaringType != null || function.TypeParameters.Count > 0)
             {
                 int symbol = _nextSymbol++;
                 parameterValues.Add(new(symbol, parameterType, value, supplied.Span));
                 value = new BoundVariableRead(symbol, parameterType, supplied.Span, Mutable: false);
             }
             else value = CaptureImpure(value, prefix);
-            arguments.Add(parameter.Name, value);
+            arguments.Add(supplied.Parameter.Name, value);
         }
         foreach (var parameter in function.Parameters)
             if (!arguments.ContainsKey(parameter.Name))
@@ -883,7 +992,6 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
                 Error("GLYPH2003", $"Missing argument '{parameter.Name}'.", invocation.Span);
                 arguments[parameter.Name] = new BoundError(invocation.Span);
             }
-        // Global bodies see their parameters and globals, not caller-local variables.
         _expandingFunctions.Add(function.Name);
         var savedScopes = _scopes.ToArray();
         _scopes.Clear();
@@ -898,6 +1006,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         if (modules != null && Diagnostics.Count > diagnosticStart)
             Error("GLYPH2028", $"While expanding '{function.Name}', called here.", invocation.Span);
         _moduleScope = savedOwner;
+        _typeBindings = savedBindings;
         _scopes.Clear();
         foreach (var scope in savedScopes.Reverse()) _scopes.Push(scope);
         _expandingFunctions.Remove(function.Name);
@@ -941,6 +1050,24 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
 
     private bool TryBindConstructor(string name, InvocationExpressionSyntax syntax, out BoundExpression result)
     {
+        string candidate = name;
+        int open = name.IndexOf('<');
+        if (open >= 0 && !name.EndsWith('>')) candidate = name[..(name.LastIndexOf('>') + 1)];
+        if (_typeDeclarations.ContainsKey(GlyphTypeNames.Parse(candidate).Name))
+        {
+            var type = ResolveType(candidate, syntax.Span);
+            if (type == GlyphTypeSymbol.Error) { result = new BoundError(syntax.Span); return true; }
+            name = type.Name + name[candidate.Length..];
+        }
+        else if (open < 0 && name.Contains('.'))
+        {
+            candidate = name[..name.LastIndexOf('.')];
+            if (_typeDeclarations.TryGetValue(candidate, out var declaration) && declaration.TypeParameters.Count > 0)
+            {
+                Error("GLYPH2004", $"Type '{candidate}' requires explicit type arguments.", syntax.Span);
+                result = new BoundError(syntax.Span); return true;
+            }
+        }
         if (_structs.TryGetValue(name, out GlyphStructDefinition? structure))
         {
             result = new BoundStruct(
@@ -1104,7 +1231,8 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         bool allowAction,
         bool allowPredicate)
     {
-        if (syntax.Function is not MemberAccessExpressionSyntax member) return null;
+        var application = syntax.Function as TypeApplicationExpressionSyntax;
+        if ((application?.Target ?? syntax.Function) is not MemberAccessExpressionSyntax member) return null;
         bool authored = globals?.Functions.Values.Any(f => f.DeclaringType != null && f.Name.EndsWith("." + member.Name, StringComparison.Ordinal)) == true;
         bool collection = _languageVersion >= 4 && member.Name is "count" or "contains" or "append" or "with" or "remove_at" or "contains_key" or "without" or "get" or "keys" or "values";
         if (!catalog.HasReceiverMethod(member.Name) && !authored && !collection) return null;
@@ -1112,12 +1240,12 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         if (boundReceiver.Type.IsCollection && collection)
             return CollectionCall(member.Name, boundReceiver.Type,
                 [new(null, boundReceiver, member.Receiver.Span), ..suppliedArguments.Select(a => new LogicalArgument(a.Name, Expression(a.Value), a.Span))], syntax.Span);
-        string methodName = boundReceiver.Type.Name + "." + member.Name;
+        string methodName = GlyphTypeNames.Parse(boundReceiver.Type.Name).Name + "." + member.Name;
         if (globals?.GetFunction(methodName) is { IsInstance: true } method)
         {
             if (_moduleScope != null && !_moduleScope.CanAccessDeclaration(methodName))
             { Error("GLYPH2021", $"Method '{methodName}' is private or not imported.", member.Span); return new BoundError(member.Span); }
-            return BindGlobalFunction(method, syntax with { Arguments = [new(null, member.Receiver, member.Receiver.Span), ..suppliedArguments] }, boundReceiver);
+            return BindGlobalFunction(method, syntax with { Arguments = [new(null, member.Receiver, member.Receiver.Span), ..suppliedArguments] }, boundReceiver, application?.Arguments);
         }
         if (!catalog.TryResolveReceiverMethod(member.Name, boundReceiver.Type.RuntimeType ?? GlyphDataType.Exec, out GlyphReceiverMethod receiverMethod))
         {
@@ -1153,6 +1281,42 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
 
     private BoundExpression CollectionCall(string operation, GlyphTypeSymbol type, IReadOnlyList<LogicalArgument> arguments, SourceSpan span)
     {
+        if ((type.ElementType ?? type.ValueType)?.IsTypeParameter == true || type.KeyType?.IsTypeParameter == true)
+        {
+            bool list = type.RuntimeType == GlyphDataType.List;
+            var templateDefinition = catalog.Registry.Get(Runtime.Nodes.Flow.CollectionExecutor.Id(operation, type.RuntimeType!.Value, GlyphDataType.Int, list ? null : GlyphDataType.Int));
+            if (templateDefinition == null) return CollectionError($"{type.Name} has no operation '{operation}'.", span);
+            GlyphTypeSymbol PinType(string pin) => pin switch
+            {
+                "collection" => type,
+                "index" => GlyphTypeSymbol.Int,
+                "key" => type.KeyType!,
+                _ => (type.ElementType ?? type.ValueType)!
+            };
+            HashSet<string> seen = new(StringComparer.Ordinal);
+            int templatePosition = 0;
+            bool named = false;
+            foreach (var argument in arguments)
+            {
+                if (argument.Name != null) named = true;
+                else if (named) Error("GLYPH2003", "Positional arguments must precede named arguments.", argument.Span);
+                string? pin = argument.Name ?? templateDefinition.InputPins.ElementAtOrDefault(templatePosition++)?.Id;
+                if (pin == null || !templateDefinition.InputPins.Any(p => p.Id == pin) || !seen.Add(pin))
+                    Error("GLYPH2003", "Unknown, excess, or duplicate argument.", argument.Span);
+                else Require(argument.Value, PinType(pin));
+            }
+            foreach (var pin in templateDefinition.InputPins)
+                if (!seen.Contains(pin.Id)) Error("GLYPH2003", $"Missing argument '{pin.Id}'.", span);
+            var result = operation switch
+            {
+                "count" => GlyphTypeSymbol.Int,
+                "contains" or "contains_key" => GlyphTypeSymbol.Bool,
+                "index" or "get" => (type.ElementType ?? type.ValueType)!,
+                "keys" or "values" => GlyphTypeSymbol.List(operation == "keys" ? type.KeyType! : type.ValueType!),
+                _ => type
+            };
+            return new BoundPlaceholder(result, span);
+        }
         if (type.RuntimeType == GlyphDataType.List && type.ElementType?.IsBasic != true)
             return CollectionError("Collection operations support only basic element types.", span);
         string id = Runtime.Nodes.Flow.CollectionExecutor.Id(operation, type.RuntimeType!.Value,
@@ -1233,6 +1397,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
         NameExpressionSyntax name => name.Name,
         MemberAccessExpressionSyntax member when Path(member.Receiver) is { } prefix =>
             prefix + "." + member.Name,
+        TypeApplicationExpressionSyntax application when Path(application.Target) is { } target => GlyphTypeNames.Apply(target, application.Arguments),
         _ => null
     };
 }
