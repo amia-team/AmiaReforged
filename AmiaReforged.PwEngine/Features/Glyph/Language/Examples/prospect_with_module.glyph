@@ -1,0 +1,11 @@
+using interaction_helpers
+
+glyph prospect : interaction {
+    attempted {
+        let target = prospecting_target(context.creature)
+        if target == OBJECT.INVALID {
+            fail EMPTY_MESSAGE
+        }
+        nwn.set_local_object(context.creature, "prospecting_target", target)
+    }
+}

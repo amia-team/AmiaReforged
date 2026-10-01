@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.Glyph.Language.Modules;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using AmiaReforged.PwEngine.Features.Glyph.Core;
@@ -14,12 +15,16 @@ public sealed class GlyphExecutable
     private readonly string _ir;
     public string SourceText { get; }
     public string SourceHash { get; }
+    public string CompilationHash { get; }
+    public IReadOnlyList<GlyphModuleRevision> DependencyLock { get; }
     public int LanguageVersion { get; }
     public GlyphEventType EventType { get; }
     public string Name { get; }
     public IReadOnlyDictionary<Guid, SourceSpan> SourceMap { get; }
-    internal GlyphExecutable(GlyphGraph ir, string source, string hash, IReadOnlyDictionary<Guid, SourceSpan> map, int languageVersion)
+    internal GlyphExecutable(GlyphGraph ir, string source, string hash, IReadOnlyDictionary<Guid, SourceSpan> map, int languageVersion, IReadOnlyList<GlyphModuleRevision>? dependencies = null)
     {
+        DependencyLock = Array.AsReadOnly((dependencies ?? []).Select(d => d with { Imports = Array.AsReadOnly(d.Imports.ToArray()) }).ToArray());
+        CompilationHash = GlyphModuleBinding.CompilationHash(hash, languageVersion, DependencyLock);
         _ir = JsonSerializer.Serialize(ir, GlyphJsonDefaults.Options);
         SourceText = source; SourceHash = hash; EventType = ir.EventType; Name = ir.Name; LanguageVersion = languageVersion;
         SourceMap = new ReadOnlyDictionary<Guid, SourceSpan>(new Dictionary<Guid, SourceSpan>(map));

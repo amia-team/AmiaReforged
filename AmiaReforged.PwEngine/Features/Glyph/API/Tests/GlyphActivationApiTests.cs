@@ -33,7 +33,7 @@ public class GlyphActivationApiTests
         var result = await routes.DispatchAsync("GET", "/api/worldengine/glyphs/language-metadata", null!, CancellationToken.None);
         Assert.That(result!.StatusCode, Is.EqualTo(200));
         var json = JsonSerializer.SerializeToElement(result.Data);
-        Assert.That(json.GetProperty("LanguageVersion").GetInt32(), Is.EqualTo(1));
+        Assert.That(json.GetProperty("LanguageVersion").GetInt32(), Is.EqualTo(Language.Compilation.GlyphLanguageVersion.Current));
         Assert.That(json.GetProperty("Functions").EnumerateArray().Any(f => f.GetProperty("Name").GetString() == "player.has_item"), Is.True);
         _repository.VerifyNoOtherCalls();
         GlyphController.Runtime = null;

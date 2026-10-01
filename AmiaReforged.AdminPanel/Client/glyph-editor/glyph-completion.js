@@ -41,6 +41,10 @@ export function completionScope(state, pos, from = pos, suppress = true) {
       return { suppressed: true };
   }
   const event = text(state, tree.topNode.getChild("EventName"));
+  let functionNode = null;
+  for (let node = leaf; node; node = node.parent) if (node.name === "FunctionDeclaration") { functionNode = node; break; }
+  const inFunction = !!functionNode;
+  const moduleBody = tree.topNode.getChild("ModuleDeclaration")?.getChild("ModuleBody");
   const blocks = [];
   let argumentsNode = null,
     inLoop = false,
@@ -60,6 +64,10 @@ export function completionScope(state, pos, from = pos, suppress = true) {
     },
   });
   const locals = new Map();
+  for (const parameter of functionNode?.getChild("Parameters")?.getChildren("Parameter") || []) {
+    const name = text(state, parameter.getChild("ParameterName"));
+    if (name) locals.set(name, { label: name, type: text(state, parameter.getChild("TypeName")), detail: "Function parameter", boost: 20 });
+  }
   for (const block of blocks) {
     if (["ForeachStatement", "ForStatement"].includes(block.parent?.name)) {
       const name = text(state, block.parent.getChild("BindingName"));
@@ -100,6 +108,8 @@ export function completionScope(state, pos, from = pos, suppress = true) {
     event,
     stage,
     inLoop,
+    inFunction,
+    moduleBody,
     blocks,
     argumentsNode,
     locals: [...locals.values()],
@@ -204,7 +214,9 @@ function expressionType(state, node, scope, metadata) {
       const name = text(state, node);
       const local = localType(scope, name);
       if (local != null) return local;
-      return contextField(metadata, scope, name)?.type ?? (metadata?.constants || []).find(c => c.name === name)?.type ?? null;
+      const receiverType = expressionType(state, memberReceiver(node), scope, metadata);
+      const field = (metadata?.aggregates || []).find(a => a.name === receiverType)?.fields?.find(f => f.name === memberName(state, node));
+      return field?.typeName ?? contextField(metadata, scope, name)?.type ?? (metadata?.constants || []).find(c => c.name === name)?.type ?? null;
     }
     case "IndexExpression":
       return null;
@@ -364,6 +376,8 @@ function memberCompletions(context, word, scope, functions, fields, metadata) {
     }
   }
 
+  const aggregate = (metadata?.aggregates || []).find(a => a.name === receiverType);
+  for (const field of aggregate?.fields || []) completions.push({ label: field.name, type: "property", detail: field.typeName });
   return {
     from: dotPos + 1,
     options: completions,
@@ -415,11 +429,13 @@ export function glyphCompletions(metadata) {
     if (!word?.text && !context.explicit && !argumentStart) return null;
 
     let options = [];
-    const body = scope.tree.topNode.getChild("Block");
+    const body = scope.tree.topNode.getChild("Block") || scope.moduleBody;
 
-    if (
+    if (/\busing\s+[\p{L}\p{Nd}_]*$/u.test(context.state.sliceDoc(0, context.pos))) {
+      options = (metadata?.modules || []).map(name => ({ label: name, type: "namespace", detail: "Published module" }));
+    } else if (
       (!body || context.pos <= body.from) &&
-      /:\s*[\p{L}\p{Nd}_.]*$/u.test(
+      /\bglyph\s+[\p{L}\p{Nd}_]+\s*:\s*[\p{L}\p{Nd}_.]*$/u.test(
         context.state.sliceDoc(0, context.pos),
       )
     ) {
@@ -428,9 +444,13 @@ export function glyphCompletions(metadata) {
         type: "type",
         detail: e.category,
       }));
-    } else if (!body || context.pos <= body.from) {
+    } else if (/\b(?:[\p{L}_][\p{L}\p{Nd}_]*)\s*:\s*[\p{L}\p{Nd}_.]*$/u.test(context.state.sliceDoc(0, context.pos)) && !scope.argumentsNode) {
+      options = (metadata?.types || []).map(name => ({ label: name, type: "type" }));
+    } else if ((!body || context.pos <= body.from) && !scope.inFunction) {
       if (!prefix.trim()) {
         options = [
+          snippetCompletion("mod ${name} {\n\t${}\n}", { label: "mod", type: "keyword" }),
+          snippetCompletion("using ${module}", { label: "using", type: "keyword" }),
           snippetCompletion(
             "glyph ${name} : ${interaction} {\n\t${}\n}",
             {
@@ -440,6 +460,8 @@ export function glyphCompletions(metadata) {
           ),
         ];
       }
+    } else if (scope.moduleBody && !scope.inFunction) {
+      options = ["pub", "const", "fn", "struct", "type", "using"].map(label => ({ label, type: "keyword" }));
     } else if (
       (scope.event === "interaction" || metadata?.events.find(e => e.name === scope.event)?.stages?.length > 0) &&
       !scope.stage &&
@@ -546,6 +568,8 @@ export function glyphCompletions(metadata) {
         options.push({ label: "nwn", type: "namespace", detail: "NWN procedures", apply: "nwn.", boost: 10 });
       }
 
+      for (const constant of metadata?.constants || []) if (!constant.name.includes(".")) options.push({ label: constant.name, type: "constant", detail: constant.type, info: constant.description });
+      for (const aggregate of metadata?.aggregates || []) if (!aggregate.name.includes(".")) options.push({ label: aggregate.name, type: "type" });
       for (const domain of metadata?.constantDomains || []) options.push({ label: domain.name, type: "namespace", detail: `${domain.count} constants`, apply: domain.name + "." });
       options.push(
         ...scope.locals,
@@ -553,7 +577,7 @@ export function glyphCompletions(metadata) {
         { label: "false", type: "keyword" },
       );
 
-      if (!scope.argumentsNode) {
+      if (!scope.argumentsNode && !scope.inFunction) {
         options.push(...statementSnippets);
         for (const state of metadata?.writableState || []) {
           if (!knownEvent || available(state, scope)) {
@@ -565,7 +589,7 @@ export function glyphCompletions(metadata) {
         if (scope.inLoop) {
           options.push({ label: "break", type: "keyword" }, { label: "continue", type: "keyword" });
         }
-      } else {
+      } else if (scope.argumentsNode) {
         const call = scope.argumentsNode.parent;
         const binding = callBinding(
           call,

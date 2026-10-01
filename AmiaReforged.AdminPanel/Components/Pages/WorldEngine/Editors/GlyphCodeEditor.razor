@@ -19,6 +19,7 @@
     [Parameter] public EventCallback<string> SourceChanged { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public GlyphLanguageMetadataDto? Metadata { get; set; }
+    [Parameter] public GlyphModuleMetadataDto? ModuleMetadata { get; set; }
     [Parameter] public IReadOnlyList<GlyphDiagnosticDto> Diagnostics { get; set; } = [];
     [Parameter] public string DiagnosticSource { get; set; } = "";
     [Parameter] public EventCallback<GlyphCursorContextDto> CursorContextChanged { get; set; }
@@ -27,6 +28,7 @@
     public bool CanInsert => _ready && !_disposed && !ReadOnly;
     private long _contextRevision;
     private GlyphLanguageMetadataDto? _sentMetadata;
+    private GlyphModuleMetadataDto? _sentModuleMetadata;
     private IReadOnlyList<GlyphDiagnosticDto>? _sentDiagnostics;
     private string? _sentDiagnosticSource;
     private ElementReference _host;
@@ -46,7 +48,7 @@
             _attempted = true;
             try
             {
-                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=7");
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=8");
                 if (_disposed) { await ReleaseAsync(); return; }
                 _callback = DotNetObjectReference.Create(this);
                 await _module.InvokeVoidAsync("create", _host, _callback, _source, ReadOnly);
@@ -73,6 +75,12 @@
             {
                 _sentMetadata = Metadata;
                 await module.InvokeVoidAsync("setMetadata", _host, Metadata);
+            }
+            if (_disposed) return;
+            if (!ReferenceEquals(ModuleMetadata, _sentModuleMetadata))
+            {
+                _sentModuleMetadata = ModuleMetadata;
+                await module.InvokeVoidAsync("setModuleMetadata", _host, ModuleMetadata);
             }
             if (_disposed) return;
             if (!ReferenceEquals(Diagnostics, _sentDiagnostics) || DiagnosticSource != _sentDiagnosticSource)
@@ -103,7 +111,7 @@
     [JSInvokable]
     public async Task OnDocumentationRequested(string canonicalName)
     {
-        if (!_disposed && Metadata?.Functions.Any(f => f.CanonicalName == canonicalName) == true)
+        if (!_disposed && (Metadata?.Functions.Any(f => f.CanonicalName == canonicalName) == true || ModuleMetadata?.Functions.Any(f => f.CanonicalName == canonicalName) == true))
             await DocumentationRequested.InvokeAsync(canonicalName);
     }
 

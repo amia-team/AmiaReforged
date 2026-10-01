@@ -18,12 +18,14 @@ public class GlyphApiBootstrap
 
     public GlyphApiBootstrap(
         IGlyphRepository repository,
+        IGlyphModuleRepository moduleRepository,
         GlyphBootstrap runtime,
         GlyphEncounterHookService encounterHooks,
         GlyphTraitHookService traitHooks,
         GlyphInteractionHookService interactionHooks)
     {
         GlyphController.Repository = repository;
+        GlyphModuleController.Repository = moduleRepository;
         GlyphController.Runtime = runtime;
         GlyphController.EncounterHooks = encounterHooks;
         GlyphController.TraitHooks = traitHooks;

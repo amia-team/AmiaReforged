@@ -5,10 +5,10 @@ import { parser } from './glyph-parser.js';
 export const glyphLanguage = LRLanguage.define({
     name: 'glyph',
     parser: parser.configure({ props: [styleTags({
-        'glyph struct type let var': tags.definitionKeyword,
+        'glyph struct type let var fn const mod using pub': tags.definitionKeyword,
         'if else while for foreach in step match break continue': tags.controlKeyword,
         'StageName/...': tags.keyword,
-        'ProgramName/...': tags.definition(tags.variableName),
+        'ProgramName/... ModuleName/...': tags.definition(tags.variableName),
         'EventName/... TypeName/... VariantName/...': tags.typeName,
         'BindingName/... VariableName/...': tags.variableName,
         'VariantPattern/Identifier': tags.typeName,

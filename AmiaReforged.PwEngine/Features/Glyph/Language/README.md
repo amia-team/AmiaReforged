@@ -1,4 +1,4 @@
-# Glyph language v1
+# Glyph language
 
 Glyph source is the only authored program representation. The compiler emits the existing
 Glyph IR and uses the existing interpreter and executors. There is no second runtime.
@@ -38,6 +38,19 @@ Compiler tests are part of PwEngine and need no running NWN instance:
 dotnet test AmiaReforged.PwEngine -m:1 --filter FullyQualifiedName~Features.Glyph
 ```
 
+## Reusable modules
+
+Language version 2 adds `mod`, explicit `using` imports, and private-by-default
+module declarations exported individually with `pub`. Version 1 sources and retained
+executables remain supported. The generated standard library remains automatically available.
+
+Manage libraries from **Glyph scripts → Manage modules** in the AdminPanel. Save and
+validate a draft, publish it, then add `using interaction_helpers` to a script. Activation
+pins the exact module revisions; publishing a new library revision does not change active scripts.
+
+See [modules and publication](MODULES.md) for syntax, visibility, dependency behavior,
+CLI validation, and a complete prospecting example.
+
 ## Syntax and capabilities
 
 ```glyph
@@ -61,11 +74,11 @@ Supported declarations:
 Statements are calls, `let`, `var`, `if/else`, `while`, `for name in expression`,
 `foreach name in expression`, integer range loops, `match`, `break`, `continue`, and assignments. Semicolons are optional. Line comments begin with `//`.
 
-### Global prelude constants
+### Prelude constants
 
-A `global.glyph` prelude may declare `const` values alongside `fn`, `struct` and `type`.
+A program prelude may declare `const` values alongside `fn`, `struct` and `type`.
 Each constant is resolved at compile time into an immutable, statically typed value of kind
-Bool, Int, Float or String. Only a literal of one of those kinds, or a reference to another
+Bool, Int, Float, String or Object. Only a supported literal, a typed Object handle, or a reference to another
 constant, is permitted as an initializer. References resolve on demand, so acyclic references
 resolve in any order; a reference that loops back onto a constant still being resolved (a
 self- or mutual cycle) is rejected, as is any runtime- or context-dependent

@@ -76,16 +76,32 @@ public class GlyphApiService : ApiServiceBase
         await DeleteRequestAsync($"{DefinitionsBase}/{id}");
     }
 
-    public async Task<GlyphCompilationDto?> CompileAsync(string source) =>
-        await PostAsync<GlyphCompilationDto>($"{DefinitionsBase}/compile", new CompileGlyphRequest(source));
-    public async Task<GlyphCompilationDto?> ActivateAsync(Guid id, string source) =>
-        await PostAsync<GlyphCompilationDto>($"{DefinitionsBase}/{id}/activate", new CompileGlyphRequest(source));
+    public async Task<GlyphCompilationDto?> CompileAsync(string source, int languageVersion = 2) =>
+        await PostAsync<GlyphCompilationDto>($"{DefinitionsBase}/compile", new CompileGlyphRequest(source, LanguageVersion: languageVersion));
+    public async Task<GlyphCompilationDto?> ActivateAsync(Guid id, string source, string? compilationHash = null, int languageVersion = 2) =>
+        await PostAsync<GlyphCompilationDto>($"{DefinitionsBase}/{id}/activate", new CompileGlyphRequest(source, LanguageVersion: languageVersion, ExpectedCompilationHash: compilationHash));
     public async Task<GlyphCompilationDto?> RollbackAsync(Guid id) =>
         await PostAsync<GlyphCompilationDto>($"{DefinitionsBase}/{id}/rollback", new { });
     public async Task<List<GlyphVersionDto>> GetVersionsAsync(Guid id) =>
         await GetAsync<List<GlyphVersionDto>>($"{DefinitionsBase}/{id}/versions") ?? [];
     public async Task<List<GlyphTraceDto>> GetTracesAsync(Guid id) =>
         await GetAsync<List<GlyphTraceDto>>($"{DefinitionsBase}/{id}/traces") ?? [];
+
+    public async Task<List<GlyphModuleDto>> GetModulesAsync() => await GetAsync<List<GlyphModuleDto>>("/api/worldengine/glyph-modules") ?? [];
+    public async Task<GlyphModuleDto?> GetModuleAsync(Guid id) => await GetAsync<GlyphModuleDto>($"/api/worldengine/glyph-modules/{id}");
+    public async Task<GlyphModuleDto?> CreateModuleAsync(string name) => await PostAsync<GlyphModuleDto>("/api/worldengine/glyph-modules", new GlyphModuleRequest(name));
+    public async Task<GlyphModuleDto?> SaveModuleAsync(Guid id, GlyphModuleRequest request) => await PutAsync<GlyphModuleDto>($"/api/worldengine/glyph-modules/{id}", request);
+    public async Task<GlyphCompilationDto?> CompileModuleAsync(string name, string source) => await PostAsync<GlyphCompilationDto>("/api/worldengine/glyph-modules/compile", new GlyphModuleRequest(name, source));
+    public async Task<GlyphCompilationDto?> PublishModuleAsync(Guid id, string source, string? hash) => await PostAsync<GlyphCompilationDto>($"/api/worldengine/glyph-modules/{id}/publish", new GlyphModulePublicationRequest(source, hash));
+    public async Task<GlyphModuleDto?> RollbackModuleAsync(Guid id) => await PostAsync<GlyphModuleDto>($"/api/worldengine/glyph-modules/{id}/rollback", new { });
+    public async Task ArchiveModuleAsync(Guid id) => await DeleteRequestAsync($"/api/worldengine/glyph-modules/{id}");
+    public async Task<GlyphModuleMetadataDto?> GetModuleMetadataAsync(string source, int languageVersion = 2)
+    {
+        int generation = _endpointGeneration;
+        var result = await PostAsync<GlyphModuleMetadataDto>($"{DefinitionsBase}/module-metadata", new CompileGlyphRequest(source, LanguageVersion: languageVersion));
+        if (generation != _endpointGeneration) throw new OperationCanceledException("The selected endpoint changed while loading module metadata.");
+        return result;
+    }
 
     // ==================== Bindings ====================
 

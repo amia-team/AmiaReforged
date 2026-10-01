@@ -12,12 +12,21 @@ public sealed record GlyphCompilationUnitSyntax(
     string Name,
     string Event,
     BlockStatementSyntax Body,
-    SourceSpan Span) : GlyphSyntax(Span);
+    SourceSpan Span) : GlyphSyntax(Span)
+{
+    public IReadOnlyList<GlyphImportSyntax> Imports { get; init; } = [];
+    public string? ModuleName { get; init; }
+}
+
+public sealed record GlyphImportSyntax(string Name, SourceSpan Span) : GlyphSyntax(Span);
 
 // Common abstraction for every top-level declaration. Both prelude-style declarations
 // (constant / function) and type declarations (struct / ADT) derive from this so a single
 // lookup and collision policy can treat all four kinds without impossible sibling casts.
-public abstract record GlyphDeclarationSyntax(string Name, SourceSpan Span) : GlyphSyntax(Span);
+public abstract record GlyphDeclarationSyntax(string Name, SourceSpan Span) : GlyphSyntax(Span)
+{
+    public bool IsPublic { get; init; }
+}
 
 public abstract record GlobalDeclarationSyntax(string Name, SourceSpan Span) : GlyphDeclarationSyntax(Name, Span);
 

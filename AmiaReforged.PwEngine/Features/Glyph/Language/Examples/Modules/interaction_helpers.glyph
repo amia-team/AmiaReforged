@@ -1,0 +1,9 @@
+mod interaction_helpers {
+    const TARGET_TAG = "todo"
+
+    fn find_target(actor: Object): Object =
+        nwn.get_nearest_object_by_tag(TARGET_TAG, actor)
+
+    pub fn prospecting_target(actor: Object): Object = find_target(actor)
+    pub const EMPTY_MESSAGE = "There is nothing to prospect."
+}

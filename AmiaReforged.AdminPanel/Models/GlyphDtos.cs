@@ -12,7 +12,8 @@ public record GlyphDefinitionDto(
     string SourceText,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    int LanguageVersion = 2);
 
 /// <summary>
 /// A binding that links a Glyph definition to a spawn profile.
@@ -105,8 +106,8 @@ public record CreateInteractionGlyphBindingRequest(
 
 public record GlyphSourceSpanDto(string SourceId, int Start, int Length, int Line, int Column);
 public record GlyphDiagnosticDto(string Code, string Message, GlyphSourceSpanDto Span);
-public record CompileGlyphRequest(string SourceText, string? SourceId = null, int LanguageVersion = 1);
-public record GlyphCompilationDto(bool Success, List<GlyphDiagnosticDto> Diagnostics, string? SourceHash = null);
+public record CompileGlyphRequest(string SourceText, string? SourceId = null, int LanguageVersion = 2, string? ExpectedCompilationHash = null);
+public record GlyphCompilationDto(bool Success, List<GlyphDiagnosticDto> Diagnostics, string? SourceHash = null, string? CompilationHash = null, IReadOnlyList<GlyphModuleReferenceDto>? Dependencies = null);
 public record GlyphVersionDto(Guid VersionId, Guid DefinitionId, DateTime ActivatedAt, Guid? PreviousVersionId,
     string SourceHash, int LanguageVersion, bool IsActive);
 public record GlyphTraceDto(Guid DefinitionId, Guid VersionId, DateTime RecordedAt, string? Stage, int Steps, List<string> Entries);

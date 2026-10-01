@@ -163,6 +163,12 @@ public sealed class GlyphGlobalEnvironment
         if (failed.Contains(name)) return null;
 
         ConstantDeclarationSyntax declaration = constants[name];
+        if (visiting.Count >= 128)
+        {
+            diagnostics.Add(new("GLYPH1007", "Constant dependency depth exceeds 128.", declaration.Span));
+            failed.Add(name);
+            return null;
+        }
 
         if (!visiting.Add(name))
         {

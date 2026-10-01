@@ -12,7 +12,7 @@ Commit `package-lock.json`, the source, and the generated
 .NET builds and the existing Docker deployment do not require Node or a CDN.
 Dependencies use exact versions; the lockfile also pins transitive dependencies.
 Rebuild after changing dependencies or source and bump the import query version
-in `GlyphCodeEditor.razor` when publishing a new bundle.
+in both `GlyphCodeEditor.razor` and `GlyphReferencePanel.razor` when publishing a new bundle.
 
 The component lazily imports the bundle. It owns one editor per DOM host and
 recreates the editor when the parent changes its document key (load/rollback).
@@ -135,3 +135,19 @@ selection/source preservation, F1, Escape, metadata replacement, both reference
 row renderers, viewport bounds and cleanup. bUnit tests verify real imported text,
 parameter mapping, command/adapter distinctions, escaping, missing-doc fallback,
 canonical navigation and opening a collapsed reference without recreating the editor.
+
+
+## Authored modules
+
+The grammar supports `mod`, `using`, `pub`, and qualified type/ADT names. The source
+editor loads a small document-scoped overlay from `/glyphs/module-metadata`, separately
+from the cached standard catalog and Lexicon pack. `setModuleMetadata` combines that
+small overlay with the standard metadata already in the browser. Source/endpoint
+versions discard stale responses; declaration edits are debounced. Script body edits
+reuse the existing overlay when the prelude has not changed. Explicit validation also
+refreshes module metadata so published dependency updates become visible.
+
+Consumers receive public imported declarations; a module editor also receives its own
+private declarations. Completion and function hovers use the same compiler-projected
+signatures and availability. The module source editor shares the script editor's
+capture, draft, and validation behavior, with publication and module revision history.

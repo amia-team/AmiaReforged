@@ -106,6 +106,27 @@ export function destroy(host) {
 export function setMetadata(host, metadata) {
     const entry = editors.get(host);
     if (!entry) return;
+    entry.standardMetadata = metadata;
+    configureMetadata(entry);
+}
+
+export function setModuleMetadata(host, metadata) {
+    const entry = editors.get(host);
+    if (!entry) return;
+    entry.moduleMetadata = metadata;
+    configureMetadata(entry);
+}
+
+function configureMetadata(entry) {
+    const standard = entry.standardMetadata;
+    const modules = entry.moduleMetadata;
+    // The cached documentation pack stays in the browser; only the small module overlay changes.
+    const metadata = standard && modules ? { ...standard,
+        functions: [...new Map([...(standard.functions || []), ...(modules.functions || [])].map(f => [f.name, f])).values()],
+        constants: [...(standard.constants || []), ...(modules.constants || [])],
+        types: [...new Set([...(standard.types || []), ...(modules.types || [])])],
+        aggregates: modules.aggregates || [], modules: modules.modules || [], sourceLocations: modules.sourceLocations || {}
+    } : standard;
     closeCompletion(entry.view);
     entry.view.dispatch({ effects: [entry.completion.reconfigure(autocompletion({
         override: [glyphCompletions(metadata)]

@@ -6,13 +6,19 @@
 @inject ILogger<GlyphScriptEditor> Logger
 
 <div class="section">
-@if (_selectedEndpointId == null)
+@if (_showModules && _selectedEndpointId != null)
+{
+    <button class="btn btn-secondary" @onclick="() => _showModules = false">Back to scripts</button>
+    <GlyphModuleEditor EndpointId="_selectedEndpointId" />
+}
+else if (_selectedEndpointId == null)
 {
     <p>Select a server from the World Engine toolbar to manage Glyph scripts.</p>
 }
 else
 {
     <h3>Glyph scripts</h3>
+    <button class="btn btn-secondary my-2" @onclick="() => _showModules = true">Manage modules</button>
     @if (_error != null) { <p role="alert">@_error</p> }
     @if (_success != null) { <p role="status">@_success</p> }
     @if (_showEditor)
@@ -77,6 +83,7 @@ else
 }
 </div>
 @code {
+    private bool _showModules;
     private Guid? _selectedEndpointId;
     private List<GlyphDefinitionDto> _definitions = [];
     private GlyphDefinitionDto? _editingDefinition, _deleteTarget;
@@ -89,7 +96,7 @@ else
     private int _newSpawnBindingPriority, _newTraitBindingPriority, _newInteractionBindingPriority;
     public void SelectEndpoint(Guid? id)
     {
-        _selectedEndpointId = id; _showEditor = false; _editingDefinition = null; _definitions = [];
+        _selectedEndpointId = id; _showModules = false; _showEditor = false; _editingDefinition = null; _definitions = [];
         if (id is { } endpoint) { Api.SelectEndpoint(endpoint); EncounterApi.SelectEndpoint(endpoint); TraitApi.SelectEndpoint(endpoint); }
     }
     public async Task LoadListAsync()

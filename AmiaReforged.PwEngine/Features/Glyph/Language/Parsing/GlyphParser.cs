@@ -32,8 +32,10 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
     private GlyphToken Expect(string kind)
     {
         if (At(kind)) return Take();
-        Diagnostics.Add(new("GLYPH1001", $"Expected '{kind}', found '{Current.Text}'.", Current.Span));
-        return new(kind, "", Current.Span);
+        SourceSpan unexpected = Current.Span;
+        Diagnostics.Add(new("GLYPH1001", $"Expected '{kind}', found '{Current.Text}'.", unexpected));
+        Take(); // Invalid declarations must make progress, including inside module field blocks.
+        return new(kind, "", unexpected);
     }
 
     private bool Eat(string kind)
@@ -64,22 +66,45 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
             List<TypeDeclarationSyntax> declarations = [];
             List<GlobalDeclarationSyntax> globalDeclarations = [];
             SourceSpan unitStart = Current.Span;
+            List<GlyphImportSyntax> imports = [];
+            string? moduleName = null;
+            if (Eat("mod"))
+            {
+                moduleName = Expect("identifier").Text;
+                Expect("{");
+            }
 
             // Prelude declarations (const / fn) and type declarations (struct / ADT) may appear in
             // any order before the optional event script. This is what lets a global.glyph file
             // parse as a standalone unit without a `glyph name : event { ... }` body.
-            while (At("const") || At("fn") || At("struct") || At("type"))
+            while (At("using") || At("pub") || At("const") || At("fn") || At("struct") || At("type"))
             {
+                if (Eat("using"))
+                {
+                    SourceSpan importStart = tokens[_position - 1].Span;
+                    imports.Add(new(Expect("identifier").Text, Through(importStart)));
+                    Eat(";");
+                    continue;
+                }
+                SourceSpan declarationStart = Current.Span;
+                bool isPublic = Eat("pub");
+                if (isPublic && moduleName == null)
+                    Diagnostics.Add(new("GLYPH1010", "pub is only allowed on module declarations.", declarationStart));
+                if (isPublic && !(At("const") || At("fn") || At("struct") || At("type")))
+                {
+                    Diagnostics.Add(new("GLYPH1010", "pub requires const, fn, struct, or type.", declarationStart));
+                    break;
+                }
                 if (Eat("const"))
                 {
                     string constName = Expect("identifier").Text;
                     while (Eat(".")) constName += "." + Expect("identifier").Text;
-                    string? constType = Eat(":") ? Expect("identifier").Text : null;
+                    string? constType = Eat(":") ? QualifiedIdentifier() : null;
                     ExpressionSyntax? initializer = null;
                     if (Eat("="))
                         initializer = Expression();
 
-                    globalDeclarations.Add(new ConstantDeclarationSyntax(constName, initializer, Through(unitStart), constType));
+                    globalDeclarations.Add(new ConstantDeclarationSyntax(constName, initializer, Through(declarationStart), constType) { IsPublic = isPublic });
                 }
                 else if (Eat("fn"))
                 {
@@ -93,7 +118,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
                         string paramName = Expect("identifier").Text;
                         string? paramTypeName = null;
                         if (Eat(":"))
-                            paramTypeName = Expect("identifier").Text;
+                            paramTypeName = QualifiedIdentifier();
 
                         parameters.Add(new(paramName, paramTypeName, Through(paramStart)));
 
@@ -102,17 +127,17 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
                     Expect(")");
 
                     Expect(":");
-                    string returnType = Expect("identifier").Text;
+                    string returnType = QualifiedIdentifier();
                     Expect("=");
                     ExpressionSyntax bodyExpression = Expression();
 
-                    globalDeclarations.Add(new FunctionDeclarationSyntax(fnName, parameters, returnType, bodyExpression, Through(unitStart)));
+                    globalDeclarations.Add(new FunctionDeclarationSyntax(fnName, parameters, returnType, bodyExpression, Through(declarationStart)) { IsPublic = isPublic });
                 }
                 else if (Eat("struct"))
                 {
                     string structName = Expect("identifier").Text;
                     IReadOnlyList<GlyphFieldDeclarationSyntax> fields = FieldBlock();
-                    declarations.Add(new StructDeclarationSyntax(structName, fields, Through(unitStart)));
+                    declarations.Add(new StructDeclarationSyntax(structName, fields, Through(declarationStart)) { IsPublic = isPublic });
                 }
                 else if (Eat("type"))
                 {
@@ -131,18 +156,20 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
                     }
 
                     Expect("}");
-                    declarations.Add(new AdtDeclarationSyntax(adtName, variants, Through(unitStart)));
+                    declarations.Add(new AdtDeclarationSyntax(adtName, variants, Through(declarationStart)) { IsPublic = isPublic });
                 }
 
                 Eat(";");
             }
+
+            if (moduleName != null) Expect("}");
 
             // A normal event script follows the prelude/type declarations. When the `glyph`
             // keyword is absent the source is a standalone prelude and no event body is parsed.
             string name = "";
             string evt = "";
             BlockStatementSyntax body = new([], unitStart);
-            if (At("glyph"))
+            if (moduleName == null && At("glyph"))
             {
                 SourceSpan glyphStart = Expect("glyph").Span;
                 if (globalDeclarations.Count == 0 && declarations.Count == 0) unitStart = glyphStart;
@@ -157,13 +184,25 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
 
             Expect("eof");
 
-            return new(globalDeclarations, declarations, name, evt, body, Through(unitStart));
+            return new(globalDeclarations, declarations, name, evt, body, Through(unitStart)) { Imports = imports, ModuleName = moduleName };
         }
         catch (SyntaxDepthException)
         {
             Diagnostics.Add(new("GLYPH1006", "Syntax nesting exceeds 128 levels.", Current.Span));
             return null;
         }
+    }
+
+    private string QualifiedIdentifier()
+    {
+        string name = Expect("identifier").Text;
+        int count = 0;
+        while (Eat("."))
+        {
+            if (++count > 128) throw new SyntaxDepthException();
+            name += "." + Expect("identifier").Text;
+        }
+        return name;
     }
 
     private IReadOnlyList<GlyphFieldDeclarationSyntax> FieldBlock()
@@ -176,7 +215,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
             SourceSpan fieldStart = Current.Span;
             string fieldName = Expect("identifier").Text;
             Expect(":");
-            string typeName = Expect("identifier").Text;
+            string typeName = QualifiedIdentifier();
             fields.Add(new(fieldName, typeName, Through(fieldStart)));
 
             Eat(",");
@@ -286,7 +325,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
                 }
                 else if (At("identifier") && LooksLikeVariantPattern())
                 {
-                    string variant = Take().Text;
+                    string variant = QualifiedIdentifier();
                     Expect("{");
                     List<string> bindings = [];
                     while (!At("}") && !At("eof"))
@@ -342,6 +381,7 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens)
     private bool LooksLikeVariantPattern()
     {
         int i = _position + 1;
+        while (i + 1 < tokens.Count && tokens[i].Kind == "." && tokens[i + 1].Kind == "identifier") i += 2;
         if (tokens[Math.Min(i++, tokens.Count - 1)].Kind != "{") return false;
         while (i < tokens.Count && tokens[i].Kind == "identifier")
         {

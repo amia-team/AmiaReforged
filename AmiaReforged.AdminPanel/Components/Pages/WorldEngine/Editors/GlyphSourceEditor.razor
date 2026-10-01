@@ -5,7 +5,7 @@
 
 <div class="glyph-source-editor">
     <div class="glyph-source-toolbar">
-        <span>Glyph source</span>
+        <span>@(LibraryMode ? $"Module: {ModuleName}" : "Glyph source")</span>
         <button type="button" class="btn btn-sm btn-secondary" aria-expanded="@_referenceOpen.ToString().ToLowerInvariant()" aria-controls="glyph-reference"
                 @onclick="() => _referenceOpen = !_referenceOpen">@(_referenceOpen ? "Hide reference" : "Show reference")</button>
     </div>
@@ -18,7 +18,7 @@
         <div class="glyph-source-workspace @(_referenceOpen ? "" : "glyph-source-workspace--solo")">
             <div class="glyph-source-code">
                 <GlyphCodeEditor @key="_documentVersion" @ref="_editor" InitialSource="@_source"
-                                 SourceChanged="OnSourceChanged" ReadOnly="@_busy" Metadata="_metadata"
+                                 SourceChanged="OnSourceChanged" ReadOnly="@_busy" Metadata="_standardMetadata" ModuleMetadata="_moduleMetadata"
                                  Diagnostics="_diagnostics" DiagnosticSource="@_diagnosticSource" CursorContextChanged="OnCursorContextChanged" ReadyChanged="ready => _editorReady = ready" DocumentationRequested="OpenDocumentation" />
             </div>
             @if (_referenceOpen)
@@ -38,8 +38,8 @@
     <div class="d-flex flex-wrap gap-2 my-2">
         <button class="btn btn-secondary" disabled="@_busy" @onclick="Validate">Compile / validate</button>
         <button class="btn btn-secondary" disabled="@_busy" @onclick="SaveDraft">Save draft</button>
-        <button class="btn btn-primary" disabled="@(_busy || !_valid || _validatedSource != _source)" @onclick="Activate">Activate</button>
-        <button class="btn btn-warning" disabled="@(_busy || _id == null || _versions.Count < 2)" @onclick="Rollback">Rollback</button>
+        <button class="btn btn-primary" disabled="@(_busy || !_valid || _validatedSource != _source)" @onclick="Activate">@(LibraryMode ? "Publish module" : "Activate")</button>
+        <button class="btn btn-warning" disabled="@(_busy || _id == null || (LibraryMode ? _moduleVersions.FindIndex(v => v.IsActive) < 1 : _versions.Count < 2))" @onclick="Rollback">Rollback</button>
     </div>
     @if (_notice != null) { <p role="status">@_notice</p> }
     @if (_error != null) { <p role="alert" class="text-danger">@_error</p> }
@@ -49,10 +49,21 @@
             @foreach (var diagnostic in _diagnostics)
             {
                 <li><button class="btn btn-link text-start p-0" @onclick="() => FocusDiagnostic(diagnostic)">
-                    <strong>@diagnostic.Code</strong> — line @diagnostic.Span.Line, column @diagnostic.Span.Column: @diagnostic.Message
+                    <strong>@diagnostic.Code</strong> — @diagnostic.Span.SourceId — line @diagnostic.Span.Line, column @diagnostic.Span.Column: @diagnostic.Message
                 </button></li>
             }
         </ul>
+    }
+    @if (LibraryMode && _moduleVersions.Count > 0)
+    {
+        <details><summary>Published module revisions</summary>
+            @foreach (var version in _moduleVersions.AsEnumerable().Reverse())
+            {
+                <p>@version.PublishedAt.ToString("u") — @version.RevisionId — @(version.IsActive ? "Current" : "Retained")</p>
+                @foreach (var dependency in version.Imports) { <p>Uses @dependency.Name revision @dependency.RevisionId</p> }
+            }
+        </details>
+        <p>Publishing changes future compilations. Active scripts keep their existing module revisions.</p>
     }
     @if (_versions.Count > 0)
     {
@@ -65,7 +76,7 @@
             </tbody></table>
         </details>
     }
-    @if (_id != null)
+    @if (_id != null && !LibraryMode)
     {
         <details><summary>Runtime traces</summary>
             <button class="btn btn-sm btn-secondary" @onclick="LoadTraces" disabled="@_busy">Refresh traces</button>
@@ -80,6 +91,8 @@
 
 @code {
     [Parameter] public Guid? DefinitionId { get; set; }
+    [Parameter] public bool LibraryMode { get; set; }
+    [Parameter] public string ModuleName { get; set; } = "interaction_helpers";
     [Parameter] public string Name { get; set; } = "New Glyph";
     [Parameter] public string InitialSource { get; set; } = "glyph new_program : interaction {\n    attempted { }\n    started { }\n    tick { }\n    completed { }\n}";
     [Parameter] public EventCallback<GlyphDefinitionDto> Created { get; set; }
@@ -88,12 +101,17 @@
     private GlyphCodeEditor? _editor;
     private GlyphReferencePanel? _reference;
     private string? _pendingDocumentation;
-    private int _documentVersion, _generation, _editRevision;
+    private int _documentVersion, _generation, _editRevision, _languageVersion = 2;
     private Guid? _id, _loadedParameter, _loadedEndpoint;
     private bool _initialized, _busy, _valid, _loading, _disposed, _metadataUnavailable, _metadataLoading;
     private string _source = "", _validatedSource = "", _diagnosticSource = "";
     private string? _notice, _error;
-    private GlyphLanguageMetadataDto? _metadata;
+    private GlyphLanguageMetadataDto? _metadata, _standardMetadata;
+    private string? _compilationHash;
+    private GlyphModuleMetadataDto? _moduleMetadata;
+    private string _moduleMetadataKey = "";
+    private CancellationTokenSource? _moduleMetadataCancellation;
+    private List<GlyphModuleVersionDto> _moduleVersions = [];
     private List<GlyphDiagnosticDto> _diagnostics = [];
     private List<GlyphVersionDto> _versions = [];
     private List<GlyphTraceDto> _traces = [];
@@ -106,9 +124,9 @@
         int generation = ++_generation;
         _initialized = true; _loadedParameter = DefinitionId; _id = DefinitionId;
         _loadedEndpoint = Api.SelectedEndpointId;
-        _documentVersion++; _editRevision = 0; _editor = null; _cursorContext = null; _editorReady = false; _pendingDocumentation = null;
+        _documentVersion++; _editRevision = 0; _languageVersion = 2; _editor = null; _cursorContext = null; _editorReady = false; _pendingDocumentation = null;
         _loading = true; _busy = true; _valid = false;
-        _diagnostics = []; _versions = []; _traces = []; _metadata = null;
+        _diagnostics = []; _versions = []; _moduleVersions = []; _traces = []; _metadata = null; _standardMetadata = null; _moduleMetadata = null; _moduleMetadataKey = ""; _compilationHash = null;
         _notice = null; _error = null; _metadataUnavailable = false;
         _source = InitialSource;
         _ = LoadMetadata(generation);
@@ -116,13 +134,24 @@
         {
             if (_id is { } id)
             {
+                if (LibraryMode)
+                {
+                    var library = await Api.GetModuleAsync(id);
+                    CheckCurrent(generation);
+                    _source = library?.SourceText ?? $"mod {ModuleName} {{\n\n}}";
+                    _moduleVersions = library?.Versions ?? [];
+                }
+                else
+                {
                 var definition = await Api.GetDefinitionAsync(id);
                 CheckCurrent(generation);
                 var versions = await Api.GetVersionsAsync(id);
                 CheckCurrent(generation);
-                _source = definition?.SourceText ?? InitialSource;
+                _source = definition?.SourceText ?? InitialSource; _languageVersion = definition?.LanguageVersion ?? 2;
                 _versions = versions;
+                }
             }
+            _ = RefreshModuleMetadata(generation, _editRevision, _source);
         }
         catch (OperationCanceledException) when (!IsCurrent(generation)) { }
         catch (Exception ex) { if (IsCurrent(generation)) _error = ex.Message; }
@@ -142,8 +171,10 @@
             var metadata = await Api.GetLanguageMetadataAsync();
             if (IsCurrent(generation))
             {
-                _metadata = metadata is { LanguageVersion: 1, Functions: not null, Events: not null, Contexts: not null } ? metadata : null;
+                _metadata = metadata is { LanguageVersion: 1 or 2, Functions: not null, Events: not null, Contexts: not null } ? metadata : null;
+                _standardMetadata = _metadata;
                 _metadataUnavailable = _metadata == null;
+                _ = RefreshModuleMetadata(generation, _editRevision, _source);
             }
         }
         catch (Exception) { if (IsCurrent(generation)) _metadataUnavailable = true; }
@@ -166,7 +197,12 @@
     {
         if (_disposed || _loading || _source == source) return;
         _source = source; _editRevision++;
-        _valid = false; _notice = null; _diagnostics = [];
+        _valid = false; _compilationHash = null; _notice = null; _diagnostics = [];
+        if (ModuleMetadataKey(source) != _moduleMetadataKey)
+        {
+            _metadata = _standardMetadata; _moduleMetadata = null;
+            _ = RefreshModuleMetadata(_generation, _editRevision, source, debounce: true);
+        }
         _diagnosticSource = source;
     }
     private async Task<string> CaptureSource(int generation)
@@ -190,17 +226,19 @@
     {
         string source = await CaptureSource(generation);
         int revision = _editRevision;
-        var result = await Api.CompileAsync(source);
+        var result = LibraryMode ? await Api.CompileModuleAsync(ModuleName, source) : await Api.CompileAsync(source, SourceLanguageVersion(source));
         CheckCurrent(generation);
         if (revision != _editRevision) return;
         _diagnostics = result?.Diagnostics ?? []; _diagnosticSource = source;
-        _valid = result?.Success == true; _validatedSource = source;
-        _notice = _valid ? "Compilation succeeded. Ready to activate." : "Compilation failed. Active behavior is unchanged.";
+        _valid = result?.Success == true; _validatedSource = source; _compilationHash = result?.CompilationHash;
+        await RefreshModuleMetadata(generation, revision, source);
+        _notice = _valid ? LibraryMode ? "Compilation succeeded. Ready to publish." : "Compilation succeeded. Ready to activate." : "Compilation failed. Active behavior is unchanged.";
     });
     private async Task<Guid> EnsureDraft(string source, int generation)
     {
         if (_id is { } id) return id;
-        var check = await Api.CompileAsync(source);
+        if (LibraryMode) throw new InvalidOperationException("Create a module draft in the module list first.");
+        var check = await Api.CompileAsync(source, SourceLanguageVersion(source));
         CheckCurrent(generation);
         if (check?.Success != true)
         {
@@ -220,7 +258,8 @@
         string source = await CaptureSource(generation);
         Guid id = await EnsureDraft(source, generation);
         CheckCurrent(generation);
-        await Api.UpdateDefinitionAsync(id, new(SourceText: source));
+        if (LibraryMode) await Api.SaveModuleAsync(id, new(ModuleName, source));
+        else await Api.UpdateDefinitionAsync(id, new(SourceText: source));
         CheckCurrent(generation);
         _notice = "Draft saved. Active behavior is unchanged.";
     });
@@ -234,27 +273,42 @@
         CheckCurrent(generation);
         if (revision != _editRevision || !_valid || _validatedSource != source)
             throw new InvalidOperationException("Compile / validate the current source before activating it.");
-        var result = await Api.ActivateAsync(id, source);
+        var result = LibraryMode ? await Api.PublishModuleAsync(id, source, _compilationHash) : await Api.ActivateAsync(id, source, _compilationHash, SourceLanguageVersion(source));
         CheckCurrent(generation);
         if (revision == _editRevision)
         {
             _diagnostics = result?.Diagnostics ?? []; _diagnosticSource = source;
-            _notice = result?.Success == true ? "Activated. New events use this version." : "Activation failed. Previous behavior remains active.";
+            _notice = result?.Success == true ? (LibraryMode ? "Module published. Recompile scripts to use this revision." : "Activated. New events use this version.") : "Publication failed. Previous behavior remains active.";
         }
-        var versions = await Api.GetVersionsAsync(id);
-        CheckCurrent(generation);
-        _versions = versions;
+        if (LibraryMode)
+        {
+            var library = await Api.GetModuleAsync(id); CheckCurrent(generation); _moduleVersions = library?.Versions ?? [];
+        }
+        else
+        {
+            var versions = await Api.GetVersionsAsync(id); CheckCurrent(generation); _versions = versions;
+        }
     });
     private Task Rollback() => Run(async generation =>
     {
         Guid id = _id!.Value;
+        if (LibraryMode)
+        {
+            var library = await Api.RollbackModuleAsync(id); CheckCurrent(generation);
+            if (library == null) throw new InvalidOperationException("Module rollback did not succeed.");
+            _source = library.SourceText; _moduleVersions = library.Versions; _editRevision++; _documentVersion++;
+            _valid = false; _compilationHash = null; _diagnostics = []; _cursorContext = null; _editorReady = false;
+            _notice = "Previous module revision selected for future compilations.";
+            await RefreshModuleMetadata(generation, _editRevision, _source);
+            return;
+        }
         var result = await Api.RollbackAsync(id);
         CheckCurrent(generation);
         if (result?.Success != true) throw new InvalidOperationException("Rollback did not succeed.");
         _valid = false; _diagnostics = [];
         var definition = await Api.GetDefinitionAsync(id);
         CheckCurrent(generation);
-        _source = definition!.SourceText; _editRevision++;
+        _source = definition!.SourceText; _languageVersion = definition.LanguageVersion; _editRevision++;
         _diagnosticSource = _source; _documentVersion++; _cursorContext = null; _editorReady = false;
         var versions = await Api.GetVersionsAsync(id);
         CheckCurrent(generation);
@@ -267,9 +321,46 @@
         CheckCurrent(generation);
         _traces = traces;
     });
-    private Task FocusDiagnostic(GlyphDiagnosticDto diagnostic) =>
-        _editor?.FocusDiagnosticAsync(_diagnosticSource, diagnostic.Span) ?? Task.CompletedTask;
-    public void Dispose() { _disposed = true; _generation++; }
+    private Task FocusDiagnostic(GlyphDiagnosticDto diagnostic)
+    {
+        bool ownSource = diagnostic.Span.SourceId == "source.glyph" || diagnostic.Span.SourceId == $"{_id}.glyph" ||
+            LibraryMode && diagnostic.Span.SourceId.StartsWith(ModuleName + "@", StringComparison.Ordinal);
+        return ownSource ? _editor?.FocusDiagnosticAsync(_diagnosticSource, diagnostic.Span) ?? Task.CompletedTask : Task.CompletedTask;
+    }
+    public void Dispose() { _disposed = true; _generation++; _moduleMetadataCancellation?.Cancel(); _moduleMetadataCancellation?.Dispose(); }
+    private static (string Code, int End) Prelude(string source)
+    {
+        // Keep offsets while ignoring comments and strings that mention glyph/import keywords.
+        string code = System.Text.RegularExpressions.Regex.Replace(source, @"""(?:\\.|[^""\\])*""|//[^\r\n]*",
+            match => new string(' ', match.Length));
+        var declaration = System.Text.RegularExpressions.Regex.Match(code, @"\bglyph\b");
+        return (code, declaration.Success ? declaration.Index : source.Length);
+    }
+    private int SourceLanguageVersion(string source)
+    {
+        if (LibraryMode) return 2;
+        var prelude = Prelude(source);
+        return System.Text.RegularExpressions.Regex.IsMatch(prelude.Code[..prelude.End], @"\busing\s+[\p{L}_]") ? 2 : _languageVersion;
+    }
+    private string ModuleMetadataKey(string source) => LibraryMode ? source : source[..Prelude(source).End];
+    private async Task RefreshModuleMetadata(int generation, int revision, string source, bool debounce = false)
+    {
+        _moduleMetadataCancellation?.Cancel(); _moduleMetadataCancellation?.Dispose();
+        var cancellation = _moduleMetadataCancellation = new();
+        try
+        {
+            if (debounce) await Task.Delay(350, cancellation.Token);
+            if (_standardMetadata == null || !IsCurrent(generation) || revision != _editRevision || source != _source) return;
+            var modules = await Api.GetModuleMetadataAsync(source, SourceLanguageVersion(source));
+            if (!cancellation.IsCancellationRequested && IsCurrent(generation) && revision == _editRevision && source == _source && modules?.Functions != null)
+            {
+                _moduleMetadata = modules; _moduleMetadataKey = ModuleMetadataKey(source);
+                _metadata = modules.Merge(_standardMetadata);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception) { /* Source editing and standard reference remain available if module metadata cannot load. */ }
+    }
     private async Task OpenDocumentation(string canonicalName)
     {
         _referenceOpen = true;

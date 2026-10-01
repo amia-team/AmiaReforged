@@ -8,6 +8,9 @@ public sealed record GlyphLanguageMetadataDto(int LanguageVersion, IReadOnlyList
     public IReadOnlyList<GlyphConstantMetadataDto> Constants { get; init; } = [];
     public IReadOnlyList<GlyphConstantDomainMetadataDto> ConstantDomains { get; init; } = [];
     public IReadOnlyList<string> Types { get; init; } = [];
+    public IReadOnlyList<GlyphAggregateMetadataDto> Aggregates { get; init; } = [];
+    public IReadOnlyList<string> Modules { get; init; } = [];
+    public IReadOnlyDictionary<string, GlyphSourceSpanDto> SourceLocations { get; init; } = new Dictionary<string, GlyphSourceSpanDto>();
     public string? NwnApiVersion { get; init; }
     public GlyphDocumentationPackDto? Documentation { get; init; }
     public IReadOnlyList<GlyphWritableStateMetadataDto> WritableState { get; init; } = [];

@@ -16,7 +16,7 @@ public class GlyphController
 {
     internal static IGlyphRepository? Repository;
     internal static GlyphBootstrap? Runtime;
-    private static readonly SemaphoreSlim Mutations = new(1, 1);
+    internal static readonly SemaphoreSlim Mutations = new(1, 1);
     internal static Integration.GlyphEncounterHookService? EncounterHooks;
     internal static Integration.GlyphTraitHookService? TraitHooks;
     internal static Integration.GlyphInteractionHookService? InteractionHooks;
@@ -63,6 +63,7 @@ public class GlyphController
         if (req == null || string.IsNullOrWhiteSpace(req.Name) || req.SourceText == null)
             return new(400, new ErrorResponse("Bad request", "Name and SourceText are required."));
         if (req.IsActive) return new(400, new ErrorResponse("Bad request", "Create a draft, then activate it."));
+        await GlyphModuleController.RefreshAsync();
         var compilation = Runtime.Compiler.Compile(req.SourceText);
         if (!compilation.Success) return new(400, CompileResponse(compilation).Data);
         var program = compilation.Executable!;
@@ -111,13 +112,15 @@ public class GlyphController
         if (Runtime == null) return ServiceUnavailable();
         CompileGlyphRequest? req = await ctx.ReadJsonBodyAsync<CompileGlyphRequest>();
         if (req?.SourceText == null) return new(400, new ErrorResponse("Bad request", "SourceText is required."));
+        await GlyphModuleController.RefreshAsync();
         return CompileResponse(Runtime.Compiler.Compile(req.SourceText, new(req.SourceId ?? "source.glyph", req.LanguageVersion)));
     }
 
     private static ApiResult CompileResponse(GlyphCompilationResult result) => new(200, new
     {
-        result.Success, result.Diagnostics, result.SourceHash,
-        EventType = result.Executable?.EventType.ToString(), LanguageVersion = GlyphLanguageVersion.Current
+        result.Success, result.Diagnostics, result.SourceHash, CompilationHash = result.Executable?.CompilationHash,
+        Dependencies = result.Executable?.DependencyLock.Select(d => new Language.Modules.GlyphModuleReference(d.Name, d.RevisionId, d.SourceHash)).ToArray() ?? [],
+        EventType = result.Executable?.EventType.ToString(), LanguageVersion = result.Executable?.LanguageVersion ?? GlyphLanguageVersion.Current
     });
 
     [HttpPost("/api/worldengine/glyphs/{id}/activate")]
@@ -126,16 +129,24 @@ public class GlyphController
         if (Repository == null || Runtime == null) return ServiceUnavailable();
         if (!Guid.TryParse(ctx.GetRouteValue("id"), out Guid id)) return new(400, new ErrorResponse("Bad request", "Invalid ID."));
         CompileGlyphRequest? req = await ctx.ReadJsonBodyAsync<CompileGlyphRequest>();
+        return await ActivateAsync(id, req);
+    }
+    internal static async Task<ApiResult> ActivateAsync(Guid id, CompileGlyphRequest? req)
+    {
+        if (Repository == null || Runtime == null) return ServiceUnavailable();
         await Mutations.WaitAsync();
         try
         {
             var definition = await Repository.GetDefinitionByIdAsync(id);
             if (definition == null) return new(404, new ErrorResponse("Not found", "Glyph definition not found."));
             Runtime.RestorePublished(definition);
+            await GlyphModuleController.RefreshAsync(mutationHeld: true);
             var compilation = Runtime.Compiler.Compile(req?.SourceText ?? definition.SourceText,
                 new($"{id}.glyph", req?.LanguageVersion ?? definition.LanguageVersion));
             if (!compilation.Success) return CompileResponse(compilation);
             var candidate = compilation.Executable!;
+            if ((req?.ExpectedCompilationHash != null || candidate.DependencyLock.Count > 0) && req?.ExpectedCompilationHash != candidate.CompilationHash)
+                return new(409, new ErrorResponse("Revalidation required", "Source or module dependencies changed. Compile / validate before activating."));
             if (candidate.EventType.ToString() != definition.EventType)
                 return new(409, new ErrorResponse("Event mismatch", "Create a new definition to change the event type."));
             var version = await Runtime.Programs.ActivateAsync(id, candidate, history => PersistVersion(definition, history));
@@ -185,7 +196,8 @@ public class GlyphController
     private static object VersionDto(GlyphProgramVersion version) => new
     {
         version.VersionId, version.DefinitionId, version.ActivatedAt, version.PreviousVersionId,
-        version.Executable.SourceHash, version.Executable.LanguageVersion,
+        version.Executable.SourceHash, version.Executable.LanguageVersion, version.Executable.CompilationHash,
+        Dependencies = version.Executable.DependencyLock.Select(d => new Language.Modules.GlyphModuleReference(d.Name, d.RevisionId, d.SourceHash)).ToArray(),
         IsActive = Runtime?.Programs.GetActive(version.DefinitionId)?.VersionId == version.VersionId
     };
 
@@ -465,7 +477,7 @@ public class GlyphController
 
     private static GlyphDefinitionDto ToDto(GlyphDefinition d) => new(
         d.Id, d.Name, d.Description, d.EventType, d.Category, d.SourceText, d.IsActive,
-        d.CreatedAt, d.UpdatedAt);
+        d.CreatedAt, d.UpdatedAt, d.LanguageVersion);
 
     private static GlyphBindingDto BindingToDto(SpawnProfileGlyphBinding b) => new(
         b.Id, b.SpawnProfileId, b.GlyphDefinitionId,
@@ -486,7 +498,7 @@ public class GlyphController
 
     public record GlyphDefinitionDto(
         Guid Id, string Name, string? Description, string EventType, string Category,
-        string SourceText, bool IsActive, DateTime CreatedAt, DateTime UpdatedAt);
+        string SourceText, bool IsActive, DateTime CreatedAt, DateTime UpdatedAt, int LanguageVersion = GlyphLanguageVersion.Current);
 
     public record GlyphBindingDto(
         Guid Id, Guid SpawnProfileId, Guid GlyphDefinitionId,
@@ -509,7 +521,7 @@ public class GlyphController
         string? Name = null, string? Description = null, string? EventType = null,
         string? Category = null, string? SourceText = null, bool? IsActive = null);
 
-    public record CompileGlyphRequest(string SourceText, string? SourceId = null, int LanguageVersion = 1);
+    public record CompileGlyphRequest(string SourceText, string? SourceId = null, int LanguageVersion = GlyphLanguageVersion.Current, string? ExpectedCompilationHash = null);
 
     public record CreateBindingRequest(
         Guid SpawnProfileId, Guid GlyphDefinitionId, int Priority = 0);

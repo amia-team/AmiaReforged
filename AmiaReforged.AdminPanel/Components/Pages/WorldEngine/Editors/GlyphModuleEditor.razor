@@ -1,0 +1,86 @@
+@using AmiaReforged.AdminPanel.Models
+@using AmiaReforged.AdminPanel.Services
+@inject GlyphApiService Api
+@implements IDisposable
+
+<div class="glyph-module-library">
+    <h3>Glyph modules</h3>
+    @if (_error != null) { <p role="alert" class="text-danger">@_error</p> }
+    @if (_editing != null)
+    {
+        <button class="btn btn-secondary" @onclick="Back">Back to modules</button>
+        <GlyphSourceEditor @key="_editing.Id" DefinitionId="_editing.Id" LibraryMode="true" ModuleName="@_editing.Name" />
+    }
+    else
+    {
+        <p>Publish reusable constants, functions, structs, and ADTs. Scripts import public declarations with <code>using module_name</code>.</p>
+        <div class="d-flex gap-2 my-2">
+            <input aria-label="Module name" class="form-control" placeholder="interaction_helpers" @bind="_name" disabled="@_busy" />
+            <button class="btn btn-primary" disabled="@(_busy || string.IsNullOrWhiteSpace(_name))" @onclick="Create">Create module</button>
+            <button class="btn btn-secondary" disabled="@_busy" @onclick="Refresh">Refresh modules</button>
+        </div>
+        <table class="table"><thead><tr><th>Module</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+        @foreach (var module in _modules)
+        {
+            <tr><td>@module.Name</td><td>@(module.IsArchived ? "Archived" : module.ActiveRevisionId == null ? "Draft" : "Published")</td><td>
+                @if (module.IsArchived)
+                { <button class="btn btn-sm btn-secondary" disabled="@_busy" @onclick="() => Restore(module)">Restore</button> }
+                else
+                {
+                    <button class="btn btn-sm btn-primary" disabled="@_busy" @onclick="() => _editing = module">Edit module</button>
+                    <button class="btn btn-sm btn-secondary" disabled="@_busy" @onclick="() => Archive(module)">Archive</button>
+                }
+            </td></tr>
+        }
+        </tbody></table>
+        <p>Archived modules retain published revisions used by existing scripts.</p>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid? EndpointId { get; set; }
+    private Guid? _loadedEndpoint;
+    private bool _initialized, _busy, _disposed;
+    private int _generation;
+    private string _name = "interaction_helpers";
+    private string? _error;
+    private GlyphModuleDto? _editing;
+    private List<GlyphModuleDto> _modules = [];
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_initialized && EndpointId == _loadedEndpoint) return;
+        _initialized = true; _loadedEndpoint = EndpointId; _generation++; _busy = false; _editing = null; _modules = [];
+        Api.SelectEndpoint(EndpointId);
+        if (EndpointId != null) await Refresh();
+    }
+    private bool Current(int generation) => !_disposed && generation == _generation && Api.SelectedEndpointId == _loadedEndpoint;
+    private async Task Run(Func<int, Task> action)
+    {
+        if (_busy || _disposed) return;
+        int generation = _generation; _busy = true; _error = null;
+        try { await action(generation); }
+        catch (Exception ex) { if (Current(generation)) _error = ex.Message; }
+        finally { if (Current(generation)) _busy = false; }
+    }
+    private Task Refresh() => Run(async generation =>
+    {
+        var modules = await Api.GetModulesAsync(); if (Current(generation)) _modules = modules;
+    });
+    private Task Create() => Run(async generation =>
+    {
+        var module = await Api.CreateModuleAsync(_name);
+        if (Current(generation)) _editing = module ?? throw new InvalidOperationException("Module draft was not created.");
+    });
+    private Task Archive(GlyphModuleDto module) => Run(async generation =>
+    {
+        await Api.ArchiveModuleAsync(module.Id);
+        var modules = await Api.GetModulesAsync(); if (Current(generation)) _modules = modules;
+    });
+    private Task Restore(GlyphModuleDto module) => Run(async generation =>
+    {
+        await Api.SaveModuleAsync(module.Id, new(module.Name, IsArchived: false));
+        var modules = await Api.GetModulesAsync(); if (Current(generation)) _modules = modules;
+    });
+    private async Task Back() { _editing = null; await Refresh(); }
+    public void Dispose() { _disposed = true; _generation++; }
+}

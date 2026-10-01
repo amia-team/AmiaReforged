@@ -1,4 +1,9 @@
-@top Program { (GlobalDeclaration | TypeDeclaration)* (kw<"glyph"> ProgramName ":" EventName Block)? }
+@top Program { ModuleDeclaration | (ImportDeclaration | GlobalDeclaration | TypeDeclaration)* (kw<"glyph"> ProgramName ":" EventName Block)? }
+ModuleDeclaration { kw<"mod"> ModuleName ModuleBody }
+ModuleName { Identifier }
+ModuleBody { "{" (ImportDeclaration | PublicDeclaration | GlobalDeclaration | TypeDeclaration)* "}" }
+ImportDeclaration { kw<"using"> ModuleName ";"? }
+PublicDeclaration { kw<"pub"> (GlobalDeclaration | TypeDeclaration) }
 
 @precedence {
   member @left, call @left, unary @right,
@@ -24,7 +29,7 @@ FieldDeclaration { FieldName ":" TypeName ("," | ";")? }
 ConstantName { Identifier ("." Identifier)* }
 FunctionName { Identifier }
 ParameterName { Identifier }
-TypeName { Identifier }
+TypeName { Identifier ("." Identifier)* }
 VariantName { Identifier }
 FieldName { Identifier }
 
@@ -50,8 +55,8 @@ ForeachStatement { kw<"foreach"> BindingName kw<"in"> expression Block }
 MatchStatement { kw<"match"> expression "{" (MatchArm | ";" | ",")* "}" }
 MatchArm { MatchPattern Block }
 MatchPattern { VariantPattern | ValuePattern | WildcardPattern }
-VariantPattern { Identifier ~pattern "{" (BindingName ("," BindingName)* ","?)? "}" }
-ValuePattern { Identifier ~pattern ("." PropertyName)* | Number | String | Boolean | ("-" | "+") Number }
+VariantPattern { Identifier ("." PropertyName)* ~pattern "{" (BindingName ("," BindingName)* ","?)? "}" }
+ValuePattern { Identifier ("." PropertyName)* ~pattern | Number | String | Boolean | ("-" | "+") Number }
 WildcardPattern { kw<"_"> }
 BreakStatement { kw<"break"> }
 ContinueStatement { kw<"continue"> }
@@ -89,7 +94,7 @@ CallExpression[@dynamicPrecedence=2] { expression !call ArgumentList }
 ArgumentList { "(" (Argument ("," Argument)* ","?)? ")" }
 Argument { (ArgumentName ":")? expression }
 ArgumentName {
-  Identifier | kw<"glyph"> | kw<"struct"> | kw<"type"> | kw<"match"> | kw<"let"> |
+  Identifier | kw<"mod"> | kw<"using"> | kw<"pub"> | kw<"glyph"> | kw<"struct"> | kw<"type"> | kw<"match"> | kw<"let"> |
   kw<"var"> | kw<"while"> | kw<"for"> | kw<"continue"> | kw<"step"> |
   kw<"if"> | kw<"else"> | kw<"foreach"> | kw<"in"> | kw<"break"> |
   kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | kw<"fn"> | kw<"const">
