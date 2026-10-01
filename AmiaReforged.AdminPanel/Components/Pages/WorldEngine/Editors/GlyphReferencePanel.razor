@@ -117,7 +117,7 @@
             if (!_attempted)
             {
                 _attempted = true;
-                var module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=8");
+                var module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/glyph-editor.js?v=9");
                 if (_disposed) { if (module != null) await module.DisposeAsync(); return; }
                 _module = module;
                 if (_module == null) return;

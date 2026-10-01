@@ -1,6 +1,7 @@
 import { Compartment, EditorState, EditorSelection } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLine, drawSelection } from '@codemirror/view';
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { defaultKeymap, history, historyKeymap, insertTab, indentLess } from '@codemirror/commands';
+import { indentUnit } from '@codemirror/language';
 
 import { autocompletion, closeCompletion, snippet } from '@codemirror/autocomplete';
 import { lintGutter, setDiagnostics, setDiagnosticsEffect } from '@codemirror/lint';
@@ -48,8 +49,9 @@ export function create(host, callback, source, readOnly) {
                 EditorState.transactionExtender.of(transaction => transaction.docChanged
                     ? { effects: setDiagnosticsEffect.of([]) } : null),
                 lineNumbers(), history(), drawSelection(), highlightActiveLine(),
-                keymap.of([...defaultKeymap, ...historyKeymap]), theme,
-                EditorState.tabSize.of(4),
+                keymap.of([{ key: 'Tab', run: view => !view.state.readOnly && insertTab(view), shift: indentLess },
+                    ...defaultKeymap, ...historyKeymap]), theme,
+                EditorState.tabSize.of(4), indentUnit.of('\t'),
                 EditorView.contentAttributes.of({ 'aria-label': 'Glyph source', 'spellcheck': 'false' }),
                 editable.of([EditorState.readOnly.of(readOnly), EditorView.editable.of(!readOnly)]),
                 EditorView.updateListener.of(update => {

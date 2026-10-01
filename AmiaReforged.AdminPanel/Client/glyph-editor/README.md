@@ -18,8 +18,11 @@ The component lazily imports the bundle. It owns one editor per DOM host and
 recreates the editor when the parent changes its document key (load/rollback).
 Browser revisions reject delayed callbacks. `capture` freezes input and returns
 current text before Save, Validate, or Activate; the parent then restores the
-read-only state through its busy flag. Tab retains normal focus navigation except
-while moving between active snippet placeholders (Escape exits the snippet).
+read-only state through its busy flag. While the editor is focused, Tab inserts a
+tab at the cursor or indents selected lines; Shift+Tab removes indentation. Tabs
+display as four columns. Active snippets use Tab to move between placeholders
+(Escape exits the snippet). To move focus out of the editor, dismiss any completion
+or snippet, then press Escape followed by Tab.
 
 `glyph.grammar` mirrors the server lexer and
 parser; the build regenerates `glyph-parser.js` and `glyph-parser.terms.js` before

@@ -10,7 +10,7 @@ test('editor supports editing, history, snapshots, read-only state and DOM clean
     const server = createServer((request, response) => {
         response.setHeader('Content-Type', request.url === '/editor.js' ? 'text/javascript' : 'text/html');
         response.end(request.url === '/editor.js' ? bundle : `<!doctype html>
-            <div id="host"></div><button id="after">After editor</button>
+            <div id="host"></div><button id="after">After editor</button><button id="next">Next button</button>
             <script type="module">
                 import * as editor from '/editor.js';
                 window.editor = editor;
@@ -42,16 +42,44 @@ test('editor supports editing, history, snapshots, read-only state and DOM clean
         await page.keyboard.press('Control+Shift+z');
         assert.match(await content.innerText(), /edited$/);
         await page.keyboard.press('Tab');
+        assert.equal(await content.evaluate(el => el === document.activeElement), true);
+        await page.keyboard.type('tabbed');
+        assert.equal(await content.innerText(), 'glyph example : interaction {} edited\ttabbed');
+        // Dismiss completion before using CodeMirror's Escape/Tab focus escape.
+        await page.keyboard.press('Escape');
+        await page.keyboard.press('Escape');
+        await page.keyboard.press('Tab');
         assert.equal(await page.locator('#after').evaluate(el => el === document.activeElement), true);
+        await page.keyboard.press('Tab');
+        assert.equal(await page.locator('#next').evaluate(el => el === document.activeElement), true);
 
         const snapshot = await page.evaluate(() => editor.capture(document.querySelector('#host')));
-        assert.equal(snapshot.source, 'glyph example : interaction {} edited');
-        assert.ok(snapshot.revision >= 3);
+        assert.equal(snapshot.source, 'glyph example : interaction {} edited\ttabbed');
+        assert.ok(snapshot.revision >= 4);
         assert.equal(await content.getAttribute('contenteditable'), 'false');
         await page.evaluate(() => editor.setReadOnly(document.querySelector('#host'), false));
         assert.equal(await content.getAttribute('contenteditable'), 'true');
         const revisions = await page.evaluate(() => changes.filter(change => change[0] === 'OnEditorChanged').map(change => change[2]));
         assert.deepEqual(revisions, revisions.map((_, i) => i + 1));
+
+        const indented = '\tfirst\n\tsecond';
+        await page.evaluate(source => {
+            const host = document.querySelector('#host');
+            editor.create(host, { invokeMethodAsync: async () => {} }, source, false);
+            editor.focusDiagnostic(host, source, { start: 0, length: source.length });
+        }, indented);
+        await page.keyboard.press('Tab');
+        assert.equal(await content.innerText(), '\t\tfirst\n\t\tsecond');
+        assert.equal(await content.evaluate(el => el === document.activeElement), true);
+        await page.keyboard.press('Shift+Tab');
+        assert.equal(await content.innerText(), indented);
+        await page.evaluate(source => {
+            const host = document.querySelector('#host');
+            editor.focusDiagnostic(host, source, { start: source.length, length: 0 });
+            editor.setReadOnly(host, true);
+        }, indented);
+        await page.keyboard.press('Tab');
+        assert.equal((await page.evaluate(() => editor.capture(document.querySelector('#host')))).source, indented);
 
         await page.evaluate(() => editor.create(document.querySelector('#host'), {
             invokeMethodAsync: async () => {}
