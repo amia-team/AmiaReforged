@@ -51,6 +51,8 @@ public sealed class DialogueTreeConfiguration : IEntityTypeConfiguration<Persist
 
         // Index on speaker_tag for NPC lookup
         builder.HasIndex(d => d.SpeakerTag)
+            .IsUnique()
+            .HasFilter("speaker_tag IS NOT NULL AND speaker_tag <> ''")
             .HasDatabaseName("ix_dialogue_trees_speaker_tag");
     }
 }

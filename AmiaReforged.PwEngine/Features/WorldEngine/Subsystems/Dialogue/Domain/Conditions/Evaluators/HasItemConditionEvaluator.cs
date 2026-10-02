@@ -14,7 +14,7 @@ public sealed class HasItemConditionEvaluator : IDialogueConditionEvaluator
 {
     public DialogueConditionType Type => DialogueConditionType.HasItem;
 
-    public Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId)
+    public Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId, NwCreature? npc = null)
     {
         string? itemTag = condition.GetParam("itemTag");
         if (string.IsNullOrEmpty(itemTag)) return Task.FromResult(false);

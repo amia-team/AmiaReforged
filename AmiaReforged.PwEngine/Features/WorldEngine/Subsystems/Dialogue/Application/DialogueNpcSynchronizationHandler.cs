@@ -24,6 +24,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Applica
 /// <see cref="ExecuteDialogueActionHandler"/> in this same subsystem. The dispatcher cannot
 /// publish a non-success event, so the guarded path is unreachable in practice.
 /// </summary>
+[ServiceBinding(typeof(IEventHandlerMarker))]
 [ServiceBinding(typeof(DialogueNpcSynchronizationHandler))]
 public sealed class DialogueNpcSynchronizationHandler
     : IEventHandler<CommandExecutedEvent<CreateDialogueTreeCommand>>,
@@ -36,10 +37,12 @@ public sealed class DialogueNpcSynchronizationHandler
     [Inject]
     internal IDialogueNpcSynchronizer? Synchronizer { get; init; }
 
+    [Inject] internal DialogueRuntimeStatus? RuntimeStatus { get; init; }
+
     /// <summary>
     /// A newly created dialogue tree registers NPCs for its speaker tag. A null/empty/whitespace
     /// tag means the tree has no NPC, so no registration call is made. The tag is carried by the
-    /// command; the database is not re-queried to recover it.
+    /// command; the synchronizer reads the latest persisted definition before wiring NPCs.
     /// </summary>
     public async Task HandleAsync(
         CommandExecutedEvent<CreateDialogueTreeCommand> @event,
@@ -54,11 +57,12 @@ public sealed class DialogueNpcSynchronizationHandler
             Log.Debug(
                 "DialogueNpcSynchronizationHandler: create tree '{TreeId}' has no speaker tag — skipping registration",
                 @event.Command.Tree.DialogueTreeId);
+            RuntimeStatus?.Applied(@event.Command.Tree.DialogueTreeId, Revision(@event.Command.Tree), 0);
             return;
         }
 
-        int registered = await Synchronizer!.RegisterAsync(speakerTag, @event.Command.Tree.DialogueTreeId, cancellationToken)
-            .ConfigureAwait(false);
+        int registered = await TrackAsync(@event.Command.Tree.DialogueTreeId, Revision(@event.Command.Tree),
+            () => Synchronizer!.RegisterAsync(speakerTag, @event.Command.Tree.DialogueTreeId, cancellationToken));
 
         Log.Info(
             "DialogueNpcSynchronizationHandler: created tree '{TreeId}' (tag '{Tag}') registered {Count} NPC(s)",
@@ -77,9 +81,13 @@ public sealed class DialogueNpcSynchronizationHandler
         if (!@event.Result.Success)
             return;
 
-        (int unregistered, int registered) = await Synchronizer!.UpdateAsync(
-            @event.Command.DialogueTreeId, @event.Command.Tree.SpeakerTag, cancellationToken)
-            .ConfigureAwait(false);
+        int unregistered = 0;
+        int registered = await TrackAsync(@event.Command.DialogueTreeId, Revision(@event.Command.Tree), async () =>
+        {
+            var counts = await Synchronizer!.UpdateAsync(@event.Command.DialogueTreeId, @event.Command.Tree.SpeakerTag, cancellationToken);
+            unregistered = counts.unregistered;
+            return counts.registered;
+        });
 
         Log.Info(
             "DialogueNpcSynchronizationHandler: updated tree '{TreeId}' " +
@@ -92,7 +100,7 @@ public sealed class DialogueNpcSynchronizationHandler
     /// <summary>
     /// A deleted dialogue tree unregisters its NPCs. Deletion happens before the event, so the
     /// synchronizer identifies the previously registered tag from the tree ID via its runtime
-    /// registry. The deleted database row is never re-queried.
+    /// registry. The synchronizer checks for recreation before removing the hooks.
     /// </summary>
     public async Task HandleAsync(
         CommandExecutedEvent<DeleteDialogueTreeCommand> @event,
@@ -104,8 +112,27 @@ public sealed class DialogueNpcSynchronizationHandler
         int unregistered = await Synchronizer!.UnregisterAsync(@event.Command.DialogueTreeId, cancellationToken)
             .ConfigureAwait(false);
 
+        RuntimeStatus?.Remove(@event.Command.DialogueTreeId, @event.Command.DeletedRevisionUtc);
+
         Log.Info(
             "DialogueNpcSynchronizationHandler: deleted tree '{TreeId}' unregistered {Count} NPC(s)",
             @event.Command.DialogueTreeId, unregistered);
+    }
+
+    private static DateTime Revision(AmiaReforged.PwEngine.Database.Entities.PersistedDialogueTree tree) => tree.UpdatedUtc ?? tree.CreatedUtc;
+
+    private async Task<int> TrackAsync(string id, DateTime revision, Func<Task<int>> synchronize)
+    {
+        try
+        {
+            int count = await synchronize();
+            RuntimeStatus?.Applied(id, revision, count);
+            return count;
+        }
+        catch (Exception ex)
+        {
+            RuntimeStatus?.Failed(id, revision, ex.Message);
+            throw;
+        }
     }
 }

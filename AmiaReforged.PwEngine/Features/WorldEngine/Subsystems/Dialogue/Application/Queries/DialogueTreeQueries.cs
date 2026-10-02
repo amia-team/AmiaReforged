@@ -96,3 +96,20 @@ public sealed class GetDialogueTreesBySpeakerHandler : IQueryHandler<GetDialogue
             .ToListAsync(cancellationToken);
     }
 }
+
+public record GetDialogueRuntimeStatusQuery : IQuery<AmiaReforged.Shared.Dialogue.DialogueRuntimeStatusDto?>
+{
+    public required string DialogueTreeId { get; init; }
+}
+
+[ServiceBinding(typeof(IQueryHandler<GetDialogueRuntimeStatusQuery, AmiaReforged.Shared.Dialogue.DialogueRuntimeStatusDto?>))]
+public sealed class GetDialogueRuntimeStatusHandler(PwContextFactory contextFactory, DialogueRuntimeStatus status)
+    : IQueryHandler<GetDialogueRuntimeStatusQuery, AmiaReforged.Shared.Dialogue.DialogueRuntimeStatusDto?>
+{
+    public async Task<AmiaReforged.Shared.Dialogue.DialogueRuntimeStatusDto?> HandleAsync(GetDialogueRuntimeStatusQuery query, CancellationToken cancellationToken = default)
+    {
+        using PwEngineContext context = contextFactory.CreateDbContext();
+        PersistedDialogueTree? tree = await context.DialogueTrees.FindAsync([query.DialogueTreeId], cancellationToken);
+        return tree is null ? null : status.Get(tree.DialogueTreeId, tree.UpdatedUtc ?? tree.CreatedUtc);
+    }
+}

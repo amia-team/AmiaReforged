@@ -16,7 +16,7 @@ public sealed class HasKnowledgeConditionEvaluator : IDialogueConditionEvaluator
 
     public DialogueConditionType Type => DialogueConditionType.HasKnowledge;
 
-    public async Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId)
+    public async Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId, NwCreature? npc = null)
     {
         string? loreId = condition.GetParam("loreId");
         if (string.IsNullOrEmpty(loreId)) return false;

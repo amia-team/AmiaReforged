@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application;
@@ -28,6 +29,10 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
     // Cached visible choices for the current node
     private List<DialogueChoice> _visibleChoices = [];
+    private DialogueNodeId? _displayedNodeId;
+    private bool _isAdvancing;
+    private bool _isClosed;
+    private int _refreshVersion;
     private int _choicePage; // For paginating choices when >5
 
     [Inject] private Lazy<DialogueConditionRegistry>? ConditionRegistry { get; init; }
@@ -56,10 +61,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
         View.SetScaleFactor(_scaleFactor);
 
-        DialogueSession? session = _amiaDialogueService.GetActiveSession(_player);
-        string title = session != null ? session.GetNpcName() : "Conversation";
-
-        _window = new NuiWindow(View.RootLayout(), title)
+        _window = new NuiWindow(View.RootLayout(), View.SpeakerName)
         {
             Geometry = new NuiRect(
                 ConversationView.BaseWindowX / _scaleFactor,
@@ -75,14 +77,12 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
     {
         if (_window == null)
         {
-            _player.SendServerMessage("Conversation window not configured.", ColorConstants.Orange);
-            return;
+            throw new InvalidOperationException("Conversation window not configured");
         }
 
         if (!_player.TryCreateNuiWindow(_window, out _token))
         {
-            _player.SendServerMessage("Unable to open conversation.", ColorConstants.Orange);
-            return;
+            throw new InvalidOperationException("Unable to open conversation window");
         }
 
         // Set initial static binds
@@ -112,6 +112,10 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
     public override void Close()
     {
+        if (_isClosed) return;
+        _isClosed = true;
+        _refreshVersion++;
+        _amiaDialogueService.EndDialogue(_player, "window_closed", closeWindow: false);
         try { _token.Close(); }
         catch { /* ignore if already closed */ }
     }
@@ -151,7 +155,8 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
             }
 
             case "btn_more":
-                _choicePage++;
+                int pageCount = Math.Max(1, (_visibleChoices.Count + ConversationView.MaxVisibleChoices - 1) / ConversationView.MaxVisibleChoices);
+                _choicePage = (_choicePage + 1) % pageCount;
                 await RefreshChoicesAsync();
                 return;
         }
@@ -167,7 +172,18 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
                 if (absoluteIndex >= 0 && absoluteIndex < _visibleChoices.Count)
                 {
-                    bool success = await _amiaDialogueService.AdvanceDialogueAsync(_player, absoluteIndex);
+                    if (_isAdvancing || _displayedNodeId is not { } nodeId) return;
+                    _isAdvancing = true;
+                    try
+                    {
+                        await _amiaDialogueService.AdvanceDialogueAsync(_player, nodeId, _visibleChoices[absoluteIndex].Id);
+                    }
+                    finally
+                    {
+                        await NwTask.SwitchToMainThread();
+                        _isAdvancing = false;
+                    }
+                    bool success = _amiaDialogueService.GetActiveSession(_player) is { IsEnded: false };
                     if (success)
                     {
                         _choicePage = 0;
@@ -205,6 +221,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
 
     private void RefreshPortrait(DialogueSession session)
     {
+        _token.SetBindValue(View.SpeakerName, session.GetNpcName());
         string portraitResRef = session.GetPortraitResRef();
         // NWN portraits: the resref is stored without size suffix; large portrait = resref + "l"
         // For NuiImage, use the portrait resref directly
@@ -249,16 +266,22 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
         }
 
         // Get all visible choices
-        _visibleChoices = await session.GetVisibleChoicesAsync(ConditionRegistry.Value);
+        int refreshVersion = ++_refreshVersion;
+        DialogueNodeId nodeId = session.CurrentNodeId;
+        List<DialogueChoice> choices = await session.GetVisibleChoicesAsync(ConditionRegistry.Value);
         await NwTask.SwitchToMainThread();
+        if (refreshVersion != _refreshVersion || !ReferenceEquals(_amiaDialogueService.GetActiveSession(_player), session) || session.CurrentNodeId != nodeId) return;
+        _visibleChoices = choices;
+        _displayedNodeId = nodeId;
 
         // Calculate pagination
-        int startIndex = _choicePage * ConversationView.MaxVisibleChoices;
         int totalPages = Math.Max(1,
             (int)Math.Ceiling(_visibleChoices.Count / (double)ConversationView.MaxVisibleChoices));
 
         // Clamp choice page
         if (_choicePage >= totalPages) _choicePage = Math.Max(0, totalPages - 1);
+
+        int startIndex = _choicePage * ConversationView.MaxVisibleChoices;
 
         // Update choice slots
         for (int i = 0; i < ConversationView.MaxVisibleChoices; i++)
@@ -266,7 +289,7 @@ public sealed class ConversationPresenter : ScryPresenter<ConversationView>, IAu
             int choiceIndex = startIndex + i;
             if (choiceIndex < _visibleChoices.Count)
             {
-                _token.SetBindValue(View.ChoiceTexts[i], _visibleChoices[choiceIndex].ResponseText);
+                _token.SetBindValue(View.ChoiceTexts[i], _visibleChoices[choiceIndex].IsContinue ? "Continue" : _visibleChoices[choiceIndex].ResponseText);
                 _token.SetBindValue(View.ChoiceVisible[i], true);
             }
             else

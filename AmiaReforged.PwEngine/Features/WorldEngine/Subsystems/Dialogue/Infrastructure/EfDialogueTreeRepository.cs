@@ -1,3 +1,4 @@
+using AmiaReforged.Shared.Dialogue;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Database;
@@ -57,6 +58,8 @@ public sealed class EfDialogueTreeRepository : IDialogueTreeRepository
 
     public async Task SaveAsync(DialogueTree tree, CancellationToken ct = default)
     {
+        List<string> errors = tree.Validate();
+        if (errors.Count > 0) throw new FormatException(string.Join("; ", errors));
         using PwEngineContext context = CreateContext();
         PersistedDialogueTree? existing = await context.DialogueTrees.FindAsync([tree.Id.Value], ct);
 
@@ -126,128 +129,32 @@ public sealed class EfDialogueTreeRepository : IDialogueTreeRepository
     //  Mapping
     // ══════════════════════════════════════════════════
 
-    private static DialogueTree ToDomain(PersistedDialogueTree entity)
+    internal static DialogueTree ToDomain(PersistedDialogueTree entity) => DialogueTreeMapper.FromDto(new DialogueTreeDto
     {
-        List<DialogueNode> nodes = DeserializeNodes(entity.NodesJson);
-        Guid rootGuid = Guid.TryParse(entity.RootNodeId, out Guid g) ? g : Guid.Empty;
+        DialogueTreeId = entity.DialogueTreeId,
+        Title = entity.Title,
+        Description = entity.Description ?? string.Empty,
+        RootNodeId = entity.RootNodeId,
+        SpeakerTag = entity.SpeakerTag,
+        Nodes = JsonSerializer.Deserialize<List<DialogueNodeDto>>(entity.NodesJson ?? "[]", JsonOpts) ?? [],
+        CreatedUtc = entity.CreatedUtc,
+        UpdatedUtc = entity.UpdatedUtc
+    });
 
-        return new DialogueTree
-        {
-            Id = new DialogueTreeId(entity.DialogueTreeId),
-            Title = entity.Title,
-            Description = entity.Description,
-            RootNodeId = rootGuid != Guid.Empty ? new DialogueNodeId(rootGuid) : default,
-            SpeakerTag = entity.SpeakerTag,
-            Nodes = nodes,
-            CreatedUtc = entity.CreatedUtc,
-            UpdatedUtc = entity.UpdatedUtc
-        };
-    }
-
-    private static PersistedDialogueTree FromDomain(DialogueTree tree)
+    private static PersistedDialogueTree FromDomain(DialogueTree tree) => new()
     {
-        return new PersistedDialogueTree
-        {
-            DialogueTreeId = tree.Id.Value,
-            Title = tree.Title,
-            Description = tree.Description,
-            RootNodeId = tree.RootNodeId.Value.ToString(),
-            SpeakerTag = tree.SpeakerTag,
-            NodesJson = SerializeNodes(tree.Nodes),
-            CreatedUtc = tree.CreatedUtc,
-            UpdatedUtc = tree.UpdatedUtc
-        };
-    }
+        DialogueTreeId = tree.Id.Value,
+        Title = tree.Title,
+        Description = tree.Description,
+        RootNodeId = tree.RootNodeId.Value.ToString(),
+        SpeakerTag = tree.SpeakerTag,
+        NodesJson = SerializeNodes(tree.Nodes),
+        CreatedUtc = tree.CreatedUtc,
+        UpdatedUtc = tree.UpdatedUtc
+    };
 
-    private static string SerializeNodes(List<DialogueNode> nodes)
-    {
-        List<NodeJsonModel> models = nodes.Select(n => new NodeJsonModel
-        {
-            Id = n.Id.Value,
-            Type = n.Type,
-            SpeakerTag = n.SpeakerTag,
-            Text = n.Text,
-            SortOrder = n.SortOrder,
-            ParentNodeId = n.ParentNodeId?.Value,
-            Conditions = n.Conditions.Select(cond => new ConditionJsonModel
-            {
-                Type = cond.Type,
-                Negate = cond.Negate,
-                Parameters = cond.Parameters
-            }).ToList(),
-            Choices = n.Choices.Select(c => new ChoiceJsonModel
-            {
-                TargetNodeId = c.TargetNodeId.Value,
-                ResponseText = c.ResponseText,
-                SortOrder = c.SortOrder,
-                Conditions = c.Conditions.Select(cond => new ConditionJsonModel
-                {
-                    Type = cond.Type,
-                    Negate = cond.Negate,
-                    Parameters = cond.Parameters
-                }).ToList()
-            }).ToList(),
-            Actions = n.Actions.Select(a => new ActionJsonModel
-            {
-                ActionType = a.ActionType,
-                Parameters = a.Parameters,
-                ExecutionOrder = a.ExecutionOrder
-            }).ToList()
-        }).ToList();
-
-        return JsonSerializer.Serialize(models, JsonOpts);
-    }
-
-    private static List<DialogueNode> DeserializeNodes(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json) || json is "[]" or "null")
-            return [];
-
-        try
-        {
-            List<NodeJsonModel>? models = JsonSerializer.Deserialize<List<NodeJsonModel>>(json, JsonOpts);
-            if (models == null) return [];
-
-            return models.Select(m => new DialogueNode
-            {
-                Id = new DialogueNodeId(m.Id),
-                Type = m.Type,
-                SpeakerTag = m.SpeakerTag,
-                Text = m.Text ?? string.Empty,
-                SortOrder = m.SortOrder,
-                ParentNodeId = m.ParentNodeId.HasValue ? new DialogueNodeId(m.ParentNodeId.Value) : null,
-                Conditions = m.Conditions.Select(cond => new DialogueCondition
-                {
-                    Type = cond.Type,
-                    Negate = cond.Negate,
-                    Parameters = cond.Parameters ?? new Dictionary<string, string>()
-                }).ToList(),
-                Choices = m.Choices.Select(c => new DialogueChoice
-                {
-                    TargetNodeId = new DialogueNodeId(c.TargetNodeId),
-                    ResponseText = c.ResponseText ?? string.Empty,
-                    SortOrder = c.SortOrder,
-                    Conditions = c.Conditions.Select(cond => new DialogueCondition
-                    {
-                        Type = cond.Type,
-                        Negate = cond.Negate,
-                        Parameters = cond.Parameters ?? new Dictionary<string, string>()
-                    }).ToList()
-                }).ToList(),
-                Actions = m.Actions.Select(a => new DialogueAction
-                {
-                    ActionType = a.ActionType,
-                    Parameters = a.Parameters ?? new Dictionary<string, string>(),
-                    ExecutionOrder = a.ExecutionOrder
-                }).ToList()
-            }).ToList();
-        }
-        catch (Exception ex)
-        {
-            Log.Warn(ex, "Failed to deserialize dialogue nodes JSON");
-            return [];
-        }
-    }
+    private static string SerializeNodes(List<DialogueNode> nodes) => JsonSerializer.Serialize(
+        nodes.Select(DialogueTreeMapper.ToDto).ToList(), JsonOpts);
 
     private static PwEngineContext CreateContext()
     {
@@ -256,42 +163,4 @@ public sealed class EfDialogueTreeRepository : IDialogueTreeRepository
         return factory.CreateDbContext();
     }
 
-    // ══════════════════════════════════════════════════
-    //  JSON Models
-    // ══════════════════════════════════════════════════
-
-    private sealed record NodeJsonModel
-    {
-        public Guid Id { get; init; }
-        public DialogueNodeType Type { get; init; }
-        public string? SpeakerTag { get; init; }
-        public string? Text { get; init; }
-        public int SortOrder { get; init; }
-        public Guid? ParentNodeId { get; init; }
-        public List<ConditionJsonModel> Conditions { get; init; } = [];
-        public List<ChoiceJsonModel> Choices { get; init; } = [];
-        public List<ActionJsonModel> Actions { get; init; } = [];
-    }
-
-    private sealed record ChoiceJsonModel
-    {
-        public Guid TargetNodeId { get; init; }
-        public string? ResponseText { get; init; }
-        public int SortOrder { get; init; }
-        public List<ConditionJsonModel> Conditions { get; init; } = [];
-    }
-
-    private sealed record ConditionJsonModel
-    {
-        public DialogueConditionType Type { get; init; }
-        public bool Negate { get; init; }
-        public Dictionary<string, string>? Parameters { get; init; }
-    }
-
-    private sealed record ActionJsonModel
-    {
-        public DialogueActionType ActionType { get; init; }
-        public Dictionary<string, string>? Parameters { get; init; }
-        public int ExecutionOrder { get; init; }
-    }
 }

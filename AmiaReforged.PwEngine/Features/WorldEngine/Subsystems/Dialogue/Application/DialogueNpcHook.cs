@@ -25,9 +25,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Applica
 /// <see cref="UnregisterNpcsForTreeAsync"/>, or <see cref="UpdateNpcRegistrationAsync"/>
 /// to hot-wire NPCs without a server restart.
 ///
-/// Implements <see cref="IDialogueNpcSynchronizer"/> as the narrow application-facing boundary
-/// that event subscribers depend on. The interface methods are thin adapters that delegate to
-/// the existing synchronization logic; the NWN main-thread transition stays inside the hook.
+    /// Event subscribers use <see cref="IDialogueNpcSynchronizer"/> to reconcile the latest
+    /// persisted definition. Database reads and the NWN main-thread transition stay here.
 /// </summary>
 [ServiceBinding(typeof(DialogueNpcHook))]
 [ServiceBinding(typeof(IDialogueNpcSynchronizer))]
@@ -49,17 +48,19 @@ public sealed class DialogueNpcHook : IDialogueNpcSynchronizer
     /// Ownership registry: maps each <c>dialogueTreeId</c> to the <c>speakerTag</c> it currently
     /// claims. Used to safely unregister without clobbering NPCs owned by a different tree.
     /// </summary>
-    private readonly Dictionary<string, string> _treeToTag = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _treeToTag = new(StringComparer.Ordinal);
     private readonly object _registryLock = new();
 
     [Inject] private Lazy<AmiaDialogueService>? DialogueService { get; init; }
+    [Inject] private PwContextFactory ContextFactory { get; init; } = null!;
+    [Inject] private DialogueRuntimeStatus RuntimeStatus { get; init; } = null!;
 
     public DialogueNpcHook()
     {
         // Hook any NPCs that already have the local variable set (e.g. from a previous
         // server session where the variable was stamped at runtime but persisted in save).
         List<NwCreature> dialogueNpcs = NwObject.FindObjectsOfType<NwCreature>()
-            .Where(c => !string.IsNullOrEmpty(
+            .Where(c => !c.IsPlayerControlled && !string.IsNullOrEmpty(
                 c.GetObjectVariable<LocalVariableString>(DialogueTreeVarName).Value))
             .ToList();
 
@@ -83,6 +84,7 @@ public sealed class DialogueNpcHook : IDialogueNpcSynchronizer
         // Subscribe to module load to register NPCs from the database.
         // At module load time, all areas/creatures are fully spawned and the DB is reachable.
         NwModule.Instance.OnModuleLoad += HandleModuleLoad;
+        NwModule.Instance.OnHeartbeat += ReconcileSpawnedNpcs;
     }
 
     /// <summary>
@@ -103,20 +105,36 @@ public sealed class DialogueNpcHook : IDialogueNpcSynchronizer
 
             using PwEngineContext context = factory.CreateDbContext();
             List<PersistedDialogueTree> trees = context.DialogueTrees
-                .Where(t => t.SpeakerTag != null && t.SpeakerTag != "")
                 .Select(t => new PersistedDialogueTree
                 {
                     DialogueTreeId = t.DialogueTreeId,
                     Title = t.Title,
-                    SpeakerTag = t.SpeakerTag
+                    SpeakerTag = t.SpeakerTag,
+                    CreatedUtc = t.CreatedUtc,
+                    UpdatedUtc = t.UpdatedUtc
                 })
                 .ToList();
 
+            // Rebuild ownership from persisted definitions, including deletion/tag changes
+            // since the previous module save.
+            foreach (string id in GetRegistrySnapshot().Keys) UnregisterNpcsForTree(id);
+            HashSet<string?> duplicateTags = trees.GroupBy(t => t.SpeakerTag).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet();
             int totalRegistered = 0;
             foreach (PersistedDialogueTree tree in trees)
             {
-                if (string.IsNullOrWhiteSpace(tree.SpeakerTag)) continue;
+                if (string.IsNullOrWhiteSpace(tree.SpeakerTag))
+                {
+                    RuntimeStatus.Applied(tree.DialogueTreeId, tree.UpdatedUtc ?? tree.CreatedUtc, 0);
+                    continue;
+                }
+                if (duplicateTags.Contains(tree.SpeakerTag))
+                {
+                    RuntimeStatus.Failed(tree.DialogueTreeId, tree.UpdatedUtc ?? tree.CreatedUtc,
+                        $"Speaker tag '{tree.SpeakerTag}' belongs to multiple dialogues. Assign a different tag before saving.");
+                    continue;
+                }
                 int count = RegisterNpcsForTree(tree.SpeakerTag, tree.DialogueTreeId);
+                RuntimeStatus.Applied(tree.DialogueTreeId, tree.UpdatedUtc ?? tree.CreatedUtc, count);
                 totalRegistered += count;
             }
 
@@ -127,6 +145,22 @@ public sealed class DialogueNpcHook : IDialogueNpcSynchronizer
         catch (Exception ex)
         {
             Log.Error(ex, "DialogueNpcHook: failed to register dialogue NPCs from database at module load");
+        }
+    }
+
+    // Module heartbeats also cover creatures spawned by legacy scripts and area reloads.
+    private void ReconcileSpawnedNpcs(ModuleEvents.OnHeartbeat _)
+    {
+        lock (_hookLock) _hookedCreatures.RemoveWhere(c => !c.IsValid);
+        foreach (var (treeId, tag) in GetRegistrySnapshot())
+        {
+            List<NwCreature> creatures = NwObject.FindObjectsWithTag<NwCreature>(tag).Where(c => !c.IsPlayerControlled).ToList();
+            foreach (NwCreature npc in creatures)
+            {
+                npc.GetObjectVariable<LocalVariableString>(DialogueTreeVarName).Value = treeId;
+                HookCreature(npc);
+            }
+            RuntimeStatus.UpdateNpcCount(treeId, creatures.Count);
         }
     }
 
@@ -151,10 +185,12 @@ public sealed class DialogueNpcHook : IDialogueNpcSynchronizer
         // Record ownership
         lock (_registryLock)
         {
+            if (_treeToTag.Any(pair => pair.Key != dialogueTreeId && pair.Value == speakerTag))
+                throw new InvalidOperationException($"Speaker tag '{speakerTag}' is already assigned to another dialogue");
             _treeToTag[dialogueTreeId] = speakerTag;
         }
 
-        List<NwCreature> matchingNpcs = NwObject.FindObjectsWithTag<NwCreature>(speakerTag).ToList();
+        List<NwCreature> matchingNpcs = NwObject.FindObjectsWithTag<NwCreature>(speakerTag).Where(c => !c.IsPlayerControlled).ToList();
         int registered = 0;
 
         foreach (NwCreature npc in matchingNpcs)
@@ -183,29 +219,35 @@ public sealed class DialogueNpcHook : IDialogueNpcSynchronizer
     /// <inheritdoc />
     public async Task<int> RegisterAsync(string speakerTag, string dialogueTreeId, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await NwTask.SwitchToMainThread();
-        cancellationToken.ThrowIfCancellationRequested();
-        return RegisterNpcsForTree(speakerTag, dialogueTreeId);
+        return (await SynchronizeLatestTreeAsync(dialogueTreeId, cancellationToken)).registered;
     }
 
     /// <inheritdoc />
-    public async Task<int> UnregisterAsync(string dialogueTreeId, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        await NwTask.SwitchToMainThread();
-        cancellationToken.ThrowIfCancellationRequested();
-        return UnregisterNpcsForTree(dialogueTreeId);
-    }
+    public async Task<int> UnregisterAsync(string dialogueTreeId, CancellationToken cancellationToken = default) =>
+        (await SynchronizeLatestTreeAsync(dialogueTreeId, cancellationToken)).unregistered;
 
     /// <inheritdoc />
-    public async Task<(int unregistered, int registered)> UpdateAsync(
-        string dialogueTreeId, string? newSpeakerTag, CancellationToken cancellationToken = default)
+    public Task<(int unregistered, int registered)> UpdateAsync(
+        string dialogueTreeId, string? newSpeakerTag, CancellationToken cancellationToken = default) =>
+        SynchronizeLatestTreeAsync(dialogueTreeId, cancellationToken);
+
+    // Events may arrive after another save/delete. Always wire the latest committed
+    // ownership, rather than allowing an older event payload to restore a stale tag.
+    private async Task<(int unregistered, int registered)> SynchronizeLatestTreeAsync(string id, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
+        using PwEngineContext context = ContextFactory.CreateDbContext();
+        PersistedDialogueTree? tree = await context.DialogueTrees.AsNoTracking().FirstOrDefaultAsync(t => t.DialogueTreeId == id, cancellationToken);
         await NwTask.SwitchToMainThread();
         cancellationToken.ThrowIfCancellationRequested();
-        return await UpdateNpcRegistrationAsync(dialogueTreeId, newSpeakerTag);
+        if (tree is null)
+        {
+            int count = UnregisterNpcsForTree(id);
+            RuntimeStatus.Remove(id);
+            return (count, 0);
+        }
+        var counts = await UpdateNpcRegistrationAsync(id, tree.SpeakerTag);
+        RuntimeStatus.Applied(id, tree.UpdatedUtc ?? tree.CreatedUtc, counts.registered);
+        return counts;
     }
 
     /// <summary>
@@ -245,7 +287,7 @@ public sealed class DialogueNpcHook : IDialogueNpcSynchronizer
             tagStillOwnedByOtherTree = _treeToTag.ContainsValue(speakerTag);
         }
 
-        List<NwCreature> matchingNpcs = NwObject.FindObjectsWithTag<NwCreature>(speakerTag).ToList();
+        List<NwCreature> matchingNpcs = NwObject.FindObjectsWithTag<NwCreature>(speakerTag).Where(c => !c.IsPlayerControlled).ToList();
         int unregistered = 0;
 
         foreach (NwCreature npc in matchingNpcs)
@@ -310,7 +352,7 @@ public sealed class DialogueNpcHook : IDialogueNpcSynchronizer
         int registered = 0;
 
         // Unregister old tag if it changed or the new tag is being cleared
-        bool tagChanged = !string.Equals(oldSpeakerTag, newSpeakerTag, StringComparison.OrdinalIgnoreCase);
+        bool tagChanged = !string.Equals(oldSpeakerTag, newSpeakerTag, StringComparison.Ordinal);
         if (tagChanged && !string.IsNullOrWhiteSpace(oldSpeakerTag))
         {
             unregistered = UnregisterNpcsForTree(dialogueTreeId);
@@ -352,7 +394,7 @@ public sealed class DialogueNpcHook : IDialogueNpcSynchronizer
     {
         lock (_registryLock)
         {
-            return new Dictionary<string, string>(_treeToTag, StringComparer.OrdinalIgnoreCase);
+            return new Dictionary<string, string>(_treeToTag, StringComparer.Ordinal);
         }
     }
 

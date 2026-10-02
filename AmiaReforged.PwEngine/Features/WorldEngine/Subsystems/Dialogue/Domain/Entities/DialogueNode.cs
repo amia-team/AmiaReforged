@@ -9,6 +9,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.
 /// </summary>
 public sealed class DialogueNode
 {
+    public string Name { get; init; } = string.Empty;
+
     /// <summary>
     /// Unique identifier for this node within its tree.
     /// </summary>

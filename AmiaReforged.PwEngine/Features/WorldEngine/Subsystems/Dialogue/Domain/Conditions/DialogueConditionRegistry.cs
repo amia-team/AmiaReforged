@@ -33,7 +33,7 @@ public sealed class DialogueConditionRegistry
     public async Task<bool> EvaluateAllAsync(
         IReadOnlyList<DialogueCondition> conditions,
         NwPlayer player,
-        Guid characterId)
+        Guid characterId, NwCreature? npc = null)
     {
         if (conditions.Count == 0) return true;
 
@@ -47,7 +47,8 @@ public sealed class DialogueConditionRegistry
 
             try
             {
-                bool result = await evaluator.EvaluateAsync(condition, player, characterId);
+                await NwTask.SwitchToMainThread();
+                bool result = await evaluator.EvaluateAsync(condition, player, characterId, npc);
                 if (condition.Negate) result = !result;
                 if (!result) return false;
             }

@@ -8,6 +8,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.
 /// </summary>
 public sealed class DialogueChoice
 {
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public bool IsContinue { get; init; }
+
     /// <summary>
     /// The node this choice leads to when selected.
     /// </summary>

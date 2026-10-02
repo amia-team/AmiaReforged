@@ -22,5 +22,5 @@ public interface IDialogueConditionEvaluator
     /// <param name="player">The NWN player in the dialogue.</param>
     /// <param name="characterId">The player's character ID.</param>
     /// <returns>True if the condition is met.</returns>
-    Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId);
+    Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId, NwCreature? npc = null);
 }

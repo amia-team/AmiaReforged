@@ -84,4 +84,7 @@
         <Content Include="Features/Glyph/Language/Tests/Corpus/*.glyph" Link="GlyphCorpus/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
         <Content Include="Features/Glyph/Language/Standard/NWN_API_SNAPSHOT.json" Link="GlyphStandard/NWN_API_SNAPSHOT.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/Dialogue/*.cs" Link="Shared/Dialogue/%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

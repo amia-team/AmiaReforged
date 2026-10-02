@@ -21,7 +21,7 @@ public sealed class QuestStateConditionEvaluator : IDialogueConditionEvaluator
 
     public DialogueConditionType Type => DialogueConditionType.QuestState;
 
-    public async Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId)
+    public async Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId, NwCreature? npc = null)
     {
         string? questId = condition.GetParam("questId");
         string? requiredStateName = condition.GetParam("requiredState");
@@ -29,7 +29,9 @@ public sealed class QuestStateConditionEvaluator : IDialogueConditionEvaluator
         if (string.IsNullOrEmpty(questId) || string.IsNullOrEmpty(requiredStateName))
             return false;
 
-        if (!Enum.TryParse<QuestState>(requiredStateName, true, out QuestState requiredState))
+        QuestState requiredState = default;
+        bool notStarted = requiredStateName == "NotStarted";
+        if (!notStarted && !Enum.TryParse<QuestState>(requiredStateName, true, out requiredState))
             return false;
 
         if (QueryService?.Value == null) return false;
@@ -38,6 +40,8 @@ public sealed class QuestStateConditionEvaluator : IDialogueConditionEvaluator
         IReadOnlyList<CodexQuestEntry> quests = await QueryService.Value.GetAllQuestsAsync(cid);
 
         CodexQuestEntry? quest = quests.FirstOrDefault(q => q.QuestId == new QuestId(questId));
-        return quest?.EffectiveState == requiredState;
+        if (notStarted) return quest is null;
+        if (quest?.EffectiveState != requiredState) return false;
+        return condition.GetParam("stageId") is not { } stageId || int.TryParse(stageId, out int stage) && quest.CurrentStageId == stage;
     }
 }

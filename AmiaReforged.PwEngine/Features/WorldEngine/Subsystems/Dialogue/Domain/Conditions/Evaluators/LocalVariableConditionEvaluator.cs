@@ -14,7 +14,7 @@ public sealed class LocalVariableConditionEvaluator : IDialogueConditionEvaluato
 {
     public DialogueConditionType Type => DialogueConditionType.LocalVariable;
 
-    public Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId)
+    public Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId, NwCreature? npc = null)
     {
         string? variableName = condition.GetParam("variableName");
         string? expectedValue = condition.GetParam("expectedValue");
@@ -22,7 +22,7 @@ public sealed class LocalVariableConditionEvaluator : IDialogueConditionEvaluato
         if (string.IsNullOrEmpty(variableName) || expectedValue == null)
             return Task.FromResult(false);
 
-        NwCreature? creature = player.LoginCreature;
+        NwCreature? creature = condition.GetParam("target") == "npc" ? npc : player.LoginCreature;
         if (creature == null) return Task.FromResult(false);
 
         // Check player creature's local variables

@@ -1,0 +1,43 @@
+@using AmiaReforged.Shared.Dialogue
+
+<div class="dialogue-flow-node mb-1">
+    <button class="btn btn-sm text-start text-light w-100 @(SelectedNodeId == Node.Id ? "bg-primary bg-opacity-25" : "")"
+            @onclick="() => OnSelect.InvokeAsync(Node)">
+        <i class="bi @(Node.Type == "Root" ? "bi-play-circle text-warning" : Node.Type == "End" ? "bi-stop-circle" : Node.Type == "Action" ? "bi-lightning" : "bi-chat-left-text") me-1"></i>
+        @Label(Node)
+        @if (Node.Id == DefaultNodeId) { <span class="badge bg-warning text-dark ms-1">Default</span> }
+        @if (Nodes.Sum(n => n.Choices.Count(c => c.TargetNodeId == Node.Id)) > 1) { <span class="badge bg-secondary ms-1">Shared</span> }
+    </button>
+    @if (!Path.Contains(Node.Id) && Path.Count < 16)
+    {
+        <div class="ms-3 border-start ps-2">
+            @foreach (DialogueChoiceDto choice in Node.Choices.OrderBy(c => c.SortOrder))
+            {
+                <div class="small text-info py-1">
+                    ↳ @(Node.Type == "Action" || choice.IsContinue ? "Continue" : string.IsNullOrWhiteSpace(choice.ResponseText) ? "(write reply)" : choice.ResponseText)
+                    @if (choice.Conditions.Count > 0) { <span class="text-muted"> · conditional</span> }
+                </div>
+                @if (Nodes.FirstOrDefault(n => n.Id == choice.TargetNodeId) is { } target)
+                {
+                    <DialogueFlowOutline Node="target" Nodes="Nodes" Path="NextPath" DefaultNodeId="@DefaultNodeId"
+                                         SelectedNodeId="@SelectedNodeId" OnSelect="OnSelect" />
+                }
+                else { <div class="small text-danger">Select a destination</div> }
+            }
+        </div>
+    }
+    else { <span class="small text-muted ms-3">Linked destination · select to edit</span> }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DialogueNodeDto Node { get; set; } = default!;
+    [Parameter, EditorRequired] public List<DialogueNodeDto> Nodes { get; set; } = [];
+    [Parameter] public HashSet<string> Path { get; set; } = [];
+    [Parameter] public string? DefaultNodeId { get; set; }
+    [Parameter] public string? SelectedNodeId { get; set; }
+    [Parameter] public EventCallback<DialogueNodeDto> OnSelect { get; set; }
+    private HashSet<string> NextPath => new(Path) { Node.Id };
+    public static string Label(DialogueNodeDto node) => !string.IsNullOrWhiteSpace(node.Name) ? node.Name : !string.IsNullOrWhiteSpace(node.Text)
+        ? node.Text.Length > 45 ? node.Text[..45] + "…" : node.Text
+        : $"{(node.Type == "Root" ? "Greeting" : node.Type == "NpcText" ? "NPC line" : node.Type)} {node.Id[..Math.Min(8, node.Id.Length)]}";
+}

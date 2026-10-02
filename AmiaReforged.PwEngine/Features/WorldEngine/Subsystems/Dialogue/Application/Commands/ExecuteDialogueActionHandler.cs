@@ -15,6 +15,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Applica
 /// World Engine subsystem based on the action type.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandlerMarker))]
+[ServiceBinding(typeof(IEventHandlerMarker))]
 [ServiceBinding(typeof(ExecuteDialogueActionHandler))]
 public sealed class ExecuteDialogueActionHandler
     : ICommandHandler<ExecuteDialogueActionCommand>,
@@ -47,6 +48,15 @@ public sealed class ExecuteDialogueActionHandler
     {
         DialogueAction action = command.Action;
         NwPlayer player = command.Player;
+        if (action.ActionType is DialogueActionType.StartQuest or DialogueActionType.CompleteQuest or DialogueActionType.ChangeReputation or DialogueActionType.SetQuestStage or DialogueActionType.GrantKnowledge)
+        {
+            if (WorldEngine?.Value is null) return CommandResult.Fail("World Engine is unavailable");
+            try { return await DialogueCodexActions.ExecuteAsync(WorldEngine.Value, action, SharedKernel.CharacterId.From(command.CharacterId)); }
+            catch (Exception ex) { Log.Error(ex, "Dialogue Codex action failed"); return CommandResult.Fail(ex.Message); }
+        }
+        if (action.ActionType == DialogueActionType.Custom) return CommandResult.Fail("Custom dialogue actions are not supported");
+
+        await NwTask.SwitchToMainThread();
         NwCreature? creature = player.LoginCreature;
 
         if (creature == null)
@@ -56,18 +66,12 @@ public sealed class ExecuteDialogueActionHandler
         {
             return action.ActionType switch
             {
-                DialogueActionType.StartQuest => await HandleStartQuest(action, command.CharacterId),
-                DialogueActionType.CompleteQuest => await HandleCompleteQuest(action, command.CharacterId),
                 DialogueActionType.GiveItem => HandleGiveItem(action, creature),
                 DialogueActionType.TakeItem => HandleTakeItem(action, creature),
                 DialogueActionType.GiveGold => HandleGiveGold(action, creature),
                 DialogueActionType.TakeGold => HandleTakeGold(action, creature),
-                DialogueActionType.GrantKnowledge => await HandleGrantKnowledge(action, command.CharacterId),
                 DialogueActionType.SetLocalVariable => HandleSetLocalVariable(action, creature, command.Npc),
-                DialogueActionType.ChangeReputation => HandleChangeReputation(action),
                 DialogueActionType.OpenShop => HandleOpenShop(action, creature, command.Npc),
-                DialogueActionType.Custom => HandleCustom(action),
-                DialogueActionType.SetQuestStage => await HandleSetQuestStage(action, command.CharacterId),
                 _ => CommandResult.Fail($"Unknown dialogue action type: {action.ActionType}")
             };
         }
@@ -78,39 +82,6 @@ public sealed class ExecuteDialogueActionHandler
         }
     }
 
-    private Task<CommandResult> HandleStartQuest(DialogueAction action, Guid characterId)
-    {
-        try
-        {
-            string questId = action.GetRequiredParam("questId");
-            Log.Info("Dialogue action: Starting quest '{QuestId}' for character {CharacterId}", questId, characterId);
-
-            // TODO: Dispatch to Codex subsystem when quest start command is implemented
-            // For now, log the intent
-            return Task.FromResult(CommandResult.OkWith("questId", questId));
-        }
-        catch (Exception exception)
-        {
-            return Task.FromException<CommandResult>(exception);
-        }
-    }
-
-    private Task<CommandResult> HandleCompleteQuest(DialogueAction action, Guid characterId)
-    {
-        try
-        {
-            string questId = action.GetRequiredParam("questId");
-            Log.Info("Dialogue action: Completing quest '{QuestId}' for character {CharacterId}", questId, characterId);
-
-            // TODO: Dispatch to Codex subsystem when quest completion command is implemented
-            return Task.FromResult(CommandResult.OkWith("questId", questId));
-        }
-        catch (Exception exception)
-        {
-            return Task.FromException<CommandResult>(exception);
-        }
-    }
-
     private CommandResult HandleGiveItem(DialogueAction action, NwCreature creature)
     {
         string itemTag = action.GetRequiredParam("itemTag");
@@ -118,7 +89,7 @@ public sealed class ExecuteDialogueActionHandler
 
         for (int i = 0; i < quantity; i++)
         {
-            if (creature.Location == null) continue;
+            if (creature.Location == null) return CommandResult.Fail("Player has no valid location to receive items");
             NwItem? item = NwItem.Create(itemTag, creature.Location);
             if (item != null)
             {
@@ -140,6 +111,8 @@ public sealed class ExecuteDialogueActionHandler
         string itemTag = action.GetRequiredParam("itemTag");
         int quantity = int.TryParse(action.GetParam("quantity") ?? "1", out int q) ? q : 1;
 
+        if (creature.Inventory.Items.Count(i => i.Tag == itemTag) < quantity)
+            return CommandResult.Fail($"Player needs {quantity} of '{itemTag}'");
         int removed = 0;
         foreach (NwItem item in creature.Inventory.Items.Where(i => i.Tag == itemTag).Take(quantity).ToList())
         {
@@ -178,20 +151,6 @@ public sealed class ExecuteDialogueActionHandler
         return CommandResult.Ok();
     }
 
-    private async Task<CommandResult> HandleGrantKnowledge(DialogueAction action, Guid characterId)
-    {
-        string loreId = action.GetRequiredParam("loreId");
-
-        if (WorldEngine?.Value?.Codex == null)
-            return CommandResult.Fail("Codex subsystem not available");
-
-        CommandResult result = await WorldEngine.Value.Codex.GrantKnowledgeAsync(
-            SharedKernel.CharacterId.From(characterId), loreId);
-
-        Log.Info("Dialogue action: Granted knowledge '{LoreId}' to character {CharacterId}", loreId, characterId);
-        return result;
-    }
-
     private CommandResult HandleSetLocalVariable(DialogueAction action, NwCreature creature, NwCreature npc)
     {
         string variableName = action.GetRequiredParam("variableName");
@@ -214,16 +173,6 @@ public sealed class ExecuteDialogueActionHandler
         return CommandResult.Ok();
     }
 
-    private CommandResult HandleChangeReputation(DialogueAction action)
-    {
-        string factionId = action.GetRequiredParam("factionId");
-        int amount = int.TryParse(action.GetRequiredParam("amount"), out int a) ? a : 0;
-
-        Log.Info("Dialogue action: Change reputation with '{FactionId}' by {Amount}", factionId, amount);
-        // TODO: Dispatch to reputation system when implemented
-        return CommandResult.OkWith("factionId", factionId);
-    }
-
     private CommandResult HandleOpenShop(DialogueAction action, NwCreature creature, NwCreature npc)
     {
         string storeResRef = action.GetRequiredParam("storeResRef");
@@ -244,7 +193,7 @@ public sealed class ExecuteDialogueActionHandler
 
         // Cache miss or stale — look for an already-spawned store near the NPC.
         NwStore? store = npc.GetNearestObjectsByType<NwStore>()
-            .FirstOrDefault(s => string.Equals(s.Tag, storeTag, StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(s => s.ResRef == storeResRef && string.Equals(s.Tag, storeTag, StringComparison.OrdinalIgnoreCase));
 
         if (store == null)
         {
@@ -317,34 +266,4 @@ public sealed class ExecuteDialogueActionHandler
         return Task.CompletedTask;
     }
 
-    private CommandResult HandleCustom(DialogueAction action)
-    {
-        string commandType = action.GetRequiredParam("commandType");
-        Log.Info("Dialogue action: Custom command '{CommandType}'", commandType);
-        // TODO: Route to named command handler via CommandDispatcher
-        return CommandResult.OkWith("commandType", commandType);
-    }
-
-    private async Task<CommandResult> HandleSetQuestStage(DialogueAction action, Guid characterId)
-    {
-        string questId = action.GetRequiredParam("questId");
-        string stageIdStr = action.GetRequiredParam("stageId");
-
-        if (!int.TryParse(stageIdStr, out int stageId) || stageId <= 0)
-            return CommandResult.Fail($"Invalid stageId '{stageIdStr}' — must be a positive integer");
-
-        if (WorldEngine?.Value?.Codex == null)
-            return CommandResult.Fail("Codex subsystem not available");
-
-        CommandResult result = await WorldEngine.Value.Codex.SetQuestStageAsync(
-            SharedKernel.CharacterId.From(characterId), questId, stageId);
-
-        if (result.Success)
-        {
-            Log.Info("Dialogue action: Set quest '{QuestId}' to stage {StageId} for character {CharacterId}",
-                questId, stageId, characterId);
-        }
-
-        return result;
-    }
 }

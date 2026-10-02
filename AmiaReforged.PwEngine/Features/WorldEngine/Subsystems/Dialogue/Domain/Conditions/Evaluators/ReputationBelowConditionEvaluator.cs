@@ -20,7 +20,7 @@ public sealed class ReputationBelowConditionEvaluator : IDialogueConditionEvalua
 
     public DialogueConditionType Type => DialogueConditionType.ReputationBelow;
 
-    public async Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId)
+    public async Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId, NwCreature? npc = null)
     {
         string? factionIdStr = condition.GetParam("factionId");
         string? maxScoreStr = condition.GetParam("maxScore");

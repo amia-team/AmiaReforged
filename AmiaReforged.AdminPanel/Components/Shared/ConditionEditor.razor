@@ -70,6 +70,9 @@
                         <option value="@state">@state</option>
                     }
                 </select>
+                <input type="number" min="1" class="form-control form-control-sm" style="width:120px"
+                       placeholder="Any stage" title="Optional quest stage ID"
+                       value="@(GetParam("stageId"))" @onchange="@((ChangeEventArgs e) => SetParam("stageId", e.Value?.ToString() ?? ""))" />
                 break;
 
             case "ReputationAbove":
@@ -134,6 +137,10 @@
                        placeholder="Expected value"
                        value="@(GetParam("expectedValue"))"
                        @onchange="@((ChangeEventArgs e) => SetParam("expectedValue", e.Value?.ToString() ?? ""))" />
+                <select class="form-select form-select-sm" style="width:100px" value="@(GetParam("target", "player"))"
+                        @onchange="@((ChangeEventArgs e) => SetParam("target", e.Value?.ToString() ?? "player"))">
+                    <option value="player">Player</option><option value="npc">NPC</option>
+                </select>
                 break;
 
             case "Custom":
@@ -176,7 +183,7 @@
 
     private static readonly string[] QuestStates =
     [
-        "Discovered", "InProgress", "Completed", "Failed", "Abandoned", "Expired"
+        "NotStarted", "Discovered", "InProgress", "Completed", "Failed", "Abandoned", "Expired"
     ];
 
     // ═══════════════════ Parameter Helpers ═══════════════════

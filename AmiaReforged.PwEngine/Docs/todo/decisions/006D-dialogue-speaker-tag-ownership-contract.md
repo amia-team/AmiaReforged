@@ -1,6 +1,11 @@
 # 006D — Decide shared dialogue SpeakerTag ownership semantics
 
-Status: **Deferred**
+Status: **Implemented — exclusive SpeakerTag ownership**
+
+The dialogue improvement implements Invariant A. Create/update commands reject an
+already-owned non-empty speaker tag. `UniqueDialogueSpeakerTag` adds a filtered unique
+index; its preflight aborts if existing duplicates need reassignment. NPC registration
+also rejects conflicting owners. The alternatives below are retained as decision context.
 Type: **Decision and contract**
 Audit area: **F-1**
 Depends on: None.

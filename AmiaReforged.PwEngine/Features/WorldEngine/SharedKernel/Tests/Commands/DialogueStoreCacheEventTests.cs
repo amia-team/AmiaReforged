@@ -115,15 +115,10 @@ public class DialogueStoreCacheEventTests
     {
         Type type = typeof(ExecuteDialogueActionHandler);
 
-        // The owner carries two [ServiceBinding] declarations: the command marker binding and the
-        // concrete-handler binding. The attribute exposes only its constructor, so we prove the
-        // declarations by count and by the implemented interfaces Anvil DI reflects.
-        var bindings = type.GetCustomAttributes(typeof(ServiceBindingAttribute), true)
-            .Cast<ServiceBindingAttribute>()
-            .ToList();
-
-        Assert.That(bindings, Has.Count.EqualTo(2),
-            "Both the command-marker and concrete service bindings are declared");
+        var bindings = type.GetCustomAttributes<ServiceBindingAttribute>().Select(b => b.BindFrom).ToList();
+        Assert.That(bindings, Contains.Item(typeof(ICommandHandlerMarker)));
+        Assert.That(bindings, Contains.Item(typeof(ExecuteDialogueActionHandler)));
+        Assert.That(bindings, Contains.Item(typeof(IEventHandlerMarker)));
 
         Assert.That(type.GetInterfaces(), Contains.Item(typeof(IEventHandlerMarker)));
         Assert.That(type.GetInterfaces(), Contains.Item(typeof(IEventHandler<CommandExecutedEvent<UpdateDialogueTreeCommand>>)));

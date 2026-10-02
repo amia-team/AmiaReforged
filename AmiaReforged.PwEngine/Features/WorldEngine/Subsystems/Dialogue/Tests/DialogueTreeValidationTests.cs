@@ -21,7 +21,7 @@ public class DialogueTreeValidationTests
     private static DialogueNode Node(Guid id, DialogueNodeType type = DialogueNodeType.End) =>
         new() { Id = new DialogueNodeId(id), Type = type };
 
-    private static DialogueChoice Choice(Guid target) => new() { TargetNodeId = new DialogueNodeId(target) };
+    private static DialogueChoice Choice(Guid target) => new() { TargetNodeId = new DialogueNodeId(target), ResponseText = "Continue" };
 
     private static DialogueNode RootNode(Guid id, Guid target)
     {
@@ -175,6 +175,7 @@ public class DialogueTreeValidationTests
     public void Cycle_BetweenNodes_IsValid()
     {
         var tree = ValidTree(Id("root"), Id("leaf"));
+        tree.Nodes[1] = Node(tree.Nodes[1].Id.Value, DialogueNodeType.NpcText);
         // Add a back-edge leaf -> root to form a cycle, keeping both nodes reachable.
         tree.Nodes[1].Choices.Add(Choice(tree.Nodes[0].Id.Value));
 
@@ -191,6 +192,12 @@ public class DialogueTreeValidationTests
         Guid rootId = Id("root");
         Guid leafId = Id("leaf");
         Guid altId = Id("alt");
+        DialogueNode alternative = RootNode(altId, leafId);
+        alternative.Conditions.Add(new DialogueCondition
+        {
+            Type = DialogueConditionType.HasItem,
+            Parameters = new() { ["itemTag"] = "key" }
+        });
         var tree = new DialogueTree
         {
             Id = DialogueTreeId.NewId(),
@@ -200,7 +207,7 @@ public class DialogueTreeValidationTests
             {
                 RootNode(rootId, leafId),
                 Node(leafId),
-                RootNode(altId, leafId),
+                alternative,
             },
         };
 

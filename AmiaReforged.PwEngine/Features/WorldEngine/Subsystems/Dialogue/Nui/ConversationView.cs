@@ -50,6 +50,7 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
     private float S(float baseVal) => baseVal / _sf;
 
     // ── NPC portrait and text binds ──
+    public readonly NuiBind<string> SpeakerName = new("conv_speaker_name");
     public readonly NuiBind<string> NpcPortrait = new("conv_portrait");
     public readonly NuiBind<string> NpcText = new("conv_npc_text");
 

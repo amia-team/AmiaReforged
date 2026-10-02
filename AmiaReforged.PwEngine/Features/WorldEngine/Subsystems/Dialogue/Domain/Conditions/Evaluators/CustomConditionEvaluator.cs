@@ -29,7 +29,7 @@ public sealed class CustomConditionEvaluator : IDialogueConditionEvaluator
 
     public DialogueConditionType Type => DialogueConditionType.Custom;
 
-    public async Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId)
+    public async Task<bool> EvaluateAsync(DialogueCondition condition, NwPlayer player, Guid characterId, NwCreature? npc = null)
     {
         string? handlerName = condition.GetParam("handlerName");
         if (string.IsNullOrEmpty(handlerName))

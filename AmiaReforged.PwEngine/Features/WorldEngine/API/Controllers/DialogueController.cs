@@ -1,3 +1,4 @@
+using AmiaReforged.Shared.Dialogue;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Database;
@@ -134,7 +135,7 @@ public class DialogueController
 
         if (!result.Success)
         {
-            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true;
+            bool conflict = result.ErrorMessage?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true || result.ErrorMessage?.StartsWith("Speaker tag", StringComparison.Ordinal) == true;
             return new ApiResult(conflict ? 409 : 400,
                 new ErrorResponse(conflict ? "Conflict" : "Command failed", result.ErrorMessage));
         }
@@ -180,8 +181,9 @@ public class DialogueController
         if (!result.Success)
         {
             bool notFound = result.ErrorMessage?.StartsWith("No dialogue tree with ID", StringComparison.OrdinalIgnoreCase) == true;
-            return new ApiResult(notFound ? 404 : 400, new ErrorResponse(
-                notFound ? "Not found" : "Command failed", result.ErrorMessage));
+            bool conflict = result.ErrorMessage?.StartsWith("Speaker tag", StringComparison.Ordinal) == true;
+            return new ApiResult(notFound ? 404 : conflict ? 409 : 400, new ErrorResponse(
+                notFound ? "Not found" : conflict ? "Conflict" : "Command failed", result.ErrorMessage));
         }
 
         PersistedDialogueTree? updated = await facade.QueryAsync<GetDialogueTreeQuery, PersistedDialogueTree?>(
@@ -216,29 +218,25 @@ public class DialogueController
         return new ApiResult(204, new { message = "Deleted" });
     }
 
+    [HttpGet(BasePath + "/{dialogueTreeId}/runtime")]
+    public static async Task<ApiResult> GetRuntimeStatus(RouteContext ctx)
+    {
+        IWorldEngineFacade? facade = ctx.ResolveFacade();
+        if (facade is null) return RouteContextExtensions.FacadeUnavailable();
+        DialogueRuntimeStatusDto? status = await facade.QueryAsync<GetDialogueRuntimeStatusQuery, DialogueRuntimeStatusDto?>(
+            new() { DialogueTreeId = ctx.GetRouteValue("dialogueTreeId") }, ctx.CancellationToken);
+        return status is null ? new ApiResult(404, new ErrorResponse("Not found", "Dialogue not found")) : new ApiResult(200, status);
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     //  Helpers
     // ═══════════════════════════════════════════════════════════════════
 
     private static string? ValidateDto(DialogueTreeDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.DialogueTreeId)) return "DialogueTreeId is required";
-        if (dto.DialogueTreeId.Length > 100) return "DialogueTreeId must not exceed 100 characters";
-        if (string.IsNullOrWhiteSpace(dto.Title)) return "Title is required";
-        if (dto.Title.Length > 200) return "Title must not exceed 200 characters";
-        if (dto.SpeakerTag is { Length: > 64 }) return "SpeakerTag must not exceed 64 characters";
-
-        // Validate nodes if present
-        if (dto.Nodes != null)
-        {
-            foreach (DialogueNodeDto node in dto.Nodes)
-            {
-                if (string.IsNullOrWhiteSpace(node.Id))
-                    return "Each node must have an Id";
-            }
-        }
-
-        return null;
+        DialogueDefinitionValidator.Normalize(dto);
+        List<string> errors = DialogueDefinitionValidator.Validate(dto);
+        return errors.Count == 0 ? null : string.Join("\n", errors);
     }
 
     private static object ToDto(PersistedDialogueTree entity)
@@ -279,52 +277,4 @@ public class DialogueController
         };
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  DTOs (controller-local)
-    // ═══════════════════════════════════════════════════════════════════
-
-    private record DialogueTreeDto
-    {
-        public string DialogueTreeId { get; init; } = string.Empty;
-        public string Title { get; init; } = string.Empty;
-        public string? Description { get; init; }
-        public string? RootNodeId { get; init; }
-        public string? SpeakerTag { get; init; }
-        public List<DialogueNodeDto>? Nodes { get; init; }
-    }
-
-    private record DialogueNodeDto
-    {
-        public string Id { get; init; } = string.Empty;
-        public string Type { get; init; } = "NpcText";
-        public string? SpeakerTag { get; init; }
-        public string Text { get; init; } = string.Empty;
-        public int SortOrder { get; init; }
-        public string? ParentNodeId { get; init; }
-        public List<DialogueConditionDto>? Conditions { get; init; }
-        public List<DialogueChoiceDto>? Choices { get; init; }
-        public List<DialogueActionDto>? Actions { get; init; }
-    }
-
-    private record DialogueChoiceDto
-    {
-        public string TargetNodeId { get; init; } = string.Empty;
-        public string ResponseText { get; init; } = string.Empty;
-        public int SortOrder { get; init; }
-        public List<DialogueConditionDto>? Conditions { get; init; }
-    }
-
-    private record DialogueConditionDto
-    {
-        public string Type { get; init; } = string.Empty;
-        public bool Negate { get; init; }
-        public Dictionary<string, string>? Parameters { get; init; }
-    }
-
-    private record DialogueActionDto
-    {
-        public string ActionType { get; init; } = string.Empty;
-        public Dictionary<string, string>? Parameters { get; init; }
-        public int ExecutionOrder { get; init; }
-    }
 }

@@ -6,7 +6,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.
 public enum DialogueNodeType
 {
     /// <summary>
-    /// The root/entry point of the dialogue tree. Each tree has exactly one.
+    /// A greeting candidate. Conditional greetings run in priority order; RootNodeId identifies the default.
     /// </summary>
     Root,
 

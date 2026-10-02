@@ -50,6 +50,9 @@ public class DialogueApiService : ApiServiceBase
             $"{DialogueBase}/{Uri.EscapeDataString(dialogueTreeId)}", dto);
     }
 
+    public Task<DialogueRuntimeStatusDto?> GetRuntimeStatusAsync(string dialogueTreeId) =>
+        GetAsync<DialogueRuntimeStatusDto>($"{DialogueBase}/{Uri.EscapeDataString(dialogueTreeId)}/runtime");
+
     public async Task DeleteAsync(string dialogueTreeId)
     {
         await DeleteRequestAsync($"{DialogueBase}/{Uri.EscapeDataString(dialogueTreeId)}");

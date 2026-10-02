@@ -1,3 +1,4 @@
+using AmiaReforged.Shared.Dialogue;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.Conditions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Domain.Enums;
@@ -37,7 +38,8 @@ public sealed class DialogueSession
     /// <summary>
     /// The current node in the dialogue tree.
     /// </summary>
-    public DialogueNodeId CurrentNodeId { get; private set; }
+    public DialoguePlayback Playback { get; }
+    public DialogueNodeId CurrentNodeId => Playback.CurrentNodeId is { } id ? new DialogueNodeId(Guid.Parse(id)) : Tree.RootNodeId;
 
     /// <summary>
     /// Current text page index (0-based) for paginated NPC text.
@@ -49,14 +51,13 @@ public sealed class DialogueSession
     /// </summary>
     public bool IsEnded { get; private set; }
 
-    public DialogueSession(DialogueTree tree, NwPlayer player, Guid characterId, NwCreature npc,
-        DialogueNodeId? resolvedRootId = null)
+    public DialogueSession(DialogueTree tree, NwPlayer player, Guid characterId, NwCreature npc)
     {
         Tree = tree;
         Player = player;
         CharacterId = characterId;
         Npc = npc;
-        CurrentNodeId = resolvedRootId ?? tree.RootNodeId;
+        Playback = new DialoguePlayback(DialogueTreeMapper.ToDto(tree));
     }
 
     /// <summary>
@@ -76,12 +77,19 @@ public sealed class DialogueSession
     /// <summary>
     /// Gets the NPC portrait ResRef from the speaking creature.
     /// </summary>
-    public string GetPortraitResRef() => Npc.PortraitResRef ?? string.Empty;
+    public string GetPortraitResRef() => GetCurrentSpeaker()?.PortraitResRef ?? string.Empty;
 
     /// <summary>
     /// Gets the NPC display name.
     /// </summary>
-    public string GetNpcName() => Npc.Name;
+    public string GetNpcName() => GetCurrentSpeaker()?.Name ?? GetCurrentSpeakerTag();
+
+    public NwCreature? GetCurrentSpeaker()
+    {
+        string? tag = GetCurrentNode()?.SpeakerTag;
+        if (string.IsNullOrWhiteSpace(tag) || tag == Npc.Tag) return Npc;
+        return NwObject.FindObjectsWithTag<NwCreature>(tag).FirstOrDefault(c => c.IsValid && c.Area == Npc.Area);
+    }
 
     // ──────────────────── Text Pagination ────────────────────
 
@@ -126,45 +134,12 @@ public sealed class DialogueSession
     public async Task<List<DialogueChoice>> GetVisibleChoicesAsync(DialogueConditionRegistry conditionRegistry)
     {
         DialogueNode? node = GetCurrentNode();
-        if (node == null) return [];
-
-        List<DialogueChoice> visible = [];
-
-        foreach (DialogueChoice choice in node.Choices.OrderBy(c => c.SortOrder))
-        {
-            bool conditionsMet = await conditionRegistry.EvaluateAllAsync(
-                choice.Conditions, Player, CharacterId);
-
-            if (conditionsMet)
-            {
-                visible.Add(choice);
-            }
-        }
-
-        return visible;
+        List<DialogueChoiceDto> visible = await Playback.GetVisibleChoicesAsync(conditions => EvaluateAsync(conditionRegistry, conditions));
+        return node is null ? [] : visible.Select(choice => node.Choices.First(c => c.Id.ToString() == choice.Id)).ToList();
     }
 
-    // ──────────────────── Navigation ────────────────────
-
-    /// <summary>
-    /// Advances the conversation to the target node of the selected choice.
-    /// Returns the new node, or null if the choice was invalid.
-    /// </summary>
-    public DialogueNode? SelectChoice(DialogueChoice choice)
-    {
-        DialogueNode? targetNode = Tree.FindNode(choice.TargetNodeId);
-        if (targetNode == null) return null;
-
-        CurrentNodeId = choice.TargetNodeId;
-        TextPage = 0;
-
-        if (targetNode.Type == DialogueNodeType.End)
-        {
-            IsEnded = true;
-        }
-
-        return targetNode;
-    }
+    public Task<bool> EvaluateAsync(DialogueConditionRegistry registry, IReadOnlyList<DialogueConditionDto> conditions) =>
+        registry.EvaluateAllAsync(conditions.Select(DialogueTreeMapper.FromDto).ToList(), Player, CharacterId, Npc);
 
     /// <summary>
     /// Marks the session as ended.
