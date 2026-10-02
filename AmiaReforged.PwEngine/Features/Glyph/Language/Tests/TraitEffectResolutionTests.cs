@@ -12,6 +12,7 @@ public class TraitEffectResolutionTests
     private GlyphBootstrap _runtime = null!;
     [SetUp] public void Setup() => _runtime = new(new GlyphNodeDefinitionRegistry());
 
+    [TestCase("main")]
     [TestCase("client_enter")]
     [TestCase("level_up")]
     [TestCase("respawn")]
@@ -34,6 +35,8 @@ public class TraitEffectResolutionTests
     [TestCase("glyph a : trait.on_effect_resolution { respawn { let attacker = killer } }")]
     [TestCase("glyph a : trait.on_effect_resolution { attempted {} }")]
     [TestCase("glyph a : trait.on_effect_resolution { client_enter {} client_enter {} }")]
+    [TestCase("glyph a : trait.on_effect_resolution { main {} main {} }")]
+    [TestCase("glyph a : interaction { main {} }")]
     [TestCase("glyph a : trait.on_effect_resolution { trait.add_effect(effect.haste()) }")]
     public void Invalid_stage_or_context_is_rejected(string source)
     {
@@ -47,6 +50,7 @@ public class TraitEffectResolutionTests
     {
         var result = _runtime.Compiler.Compile("""
             glyph test : trait.on_effect_resolution {
+                main { var marker = 0 }
                 client_enter { var marker = 1 }
                 level_up { var marker = 2 }
                 respawn { var marker = 3 }
@@ -109,7 +113,7 @@ public class TraitEffectResolutionTests
     {
         var metadata = _runtime.LanguageMetadata;
         var evt = metadata.Events.Single(e => e.Name == "trait.on_effect_resolution");
-        Assert.That(evt.Stages, Is.EqualTo(new[] { "client_enter", "level_up", "respawn", "confirmed", "death" }));
+        Assert.That(evt.Stages, Is.EqualTo(new[] { "main", "client_enter", "level_up", "respawn", "confirmed", "death" }));
         var add = metadata.Functions.Single(f => f.Name == "trait.add_effect");
         Assert.That(add.AvailableIn.Select(s => s.Stage), Is.EquivalentTo(evt.Stages.Where(s => s != "death")));
         var scopes = metadata.Contexts.Where(c => c.Event == evt.Name).ToList();

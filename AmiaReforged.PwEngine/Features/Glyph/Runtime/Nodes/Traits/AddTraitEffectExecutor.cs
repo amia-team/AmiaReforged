@@ -14,7 +14,7 @@ public sealed partial class AddTraitEffectExecutor : GlyphNodeBase
         Archetype = GlyphNodeArchetype.Action,
         RestrictToEventType = GlyphEventType.TraitEffectResolution, ScriptCategory = GlyphScriptCategory.Trait,
         Parameters = [Pins.In("effect", "Effect", GlyphDataType.Effect)],
-        Exports = [new("trait.add_effect", AllowedStages: ["client_enter", "level_up", "respawn", "confirmed"])]
+        Exports = [new("trait.add_effect", AllowedStages: ["main", "client_enter", "level_up", "respawn", "confirmed"])]
     };
     public override string TypeId => Descriptor.TypeId;
     public override GlyphNodeDefinition CreateDefinition() => Descriptor.CreateDefinition();

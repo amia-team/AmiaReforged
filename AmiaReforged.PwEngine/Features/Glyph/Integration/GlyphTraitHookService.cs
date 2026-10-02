@@ -114,7 +114,8 @@ public class GlyphTraitHookService
     }
 
     /// <summary>
-    /// Executes only the requested lifecycle stage and returns effects contributed by successful scripts.
+    /// Executes main before the requested rebuild stage and returns effects contributed by successful scripts.
+    /// Death dispatches only its lifecycle stage. Older published graphs without main remain supported.
     /// Called on the game thread with a snapshot of active, confirmed traits, including glyph-only traits.
     /// </summary>
     public List<GlyphNwnEffect> RunEffectResolution(
@@ -155,7 +156,11 @@ public class GlyphTraitHookService
 
             try
             {
-                bool succeeded = _bootstrap.Interpreter.ExecuteStageAsync(ctx, stageTypeId).GetAwaiter().GetResult();
+                bool succeeded = true;
+                if (stage != TraitEffectResolutionStage.Death && graph.FindStageNode(TraitMainStageExecutor.NodeTypeId) != null)
+                    succeeded = _bootstrap.Interpreter.ExecuteStageAsync(ctx, TraitMainStageExecutor.NodeTypeId).GetAwaiter().GetResult();
+                if (succeeded)
+                    succeeded = _bootstrap.Interpreter.ExecuteStageAsync(ctx, stageTypeId).GetAwaiter().GetResult();
                 if (succeeded && stage != TraitEffectResolutionStage.Death)
                     effects.AddRange(traitContext.Effects);
             }

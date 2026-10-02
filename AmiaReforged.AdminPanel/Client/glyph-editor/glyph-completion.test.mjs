@@ -33,7 +33,7 @@ function completionQuery(marked, result) {
 
 test('trait lifecycle stage and context completions follow server metadata', () => {
   const event = 'trait.on_effect_resolution';
-  const stages = ['client_enter', 'level_up', 'respawn', 'confirmed', 'death'];
+  const stages = ['main', 'client_enter', 'level_up', 'respawn', 'confirmed', 'death'];
   const catalog = {
     ...metadata,
     events: [...metadata.events, { name: event, category: 'Trait', stages }],
@@ -51,6 +51,7 @@ test('trait lifecycle stage and context completions follow server metadata', () 
   assert.deepEqual(options(`glyph shield : ${event} { | }`), stages);
   assert.deepEqual(options(`glyph shield : ${event} { confirmed {} | }`), stages.filter(s => s !== 'confirmed'));
   assert.ok(options(`glyph shield : ${event} { confirmed { trait.| } }`).includes('add_effect'));
+  assert.ok(options(`glyph shield : ${event} { main { trait.| } }`).includes('add_effect'));
   assert.ok(!options(`glyph shield : ${event} { death { trait.| } }`).includes('add_effect'));
   assert.ok(options(`glyph shield : ${event} { death { context.| } }`).includes('killer'));
   assert.ok(!options(`glyph shield : ${event} { respawn { context.| } }`).includes('killer'));

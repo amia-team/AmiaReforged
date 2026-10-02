@@ -3,6 +3,8 @@ using AmiaReforged.PwEngine.Features.Glyph.Nwn;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Platform;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
+using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Traits;
+using AmiaReforged.PwEngine.Features.Glyph.Runtime.Programs;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Effects;
 using Moq;
@@ -60,6 +62,7 @@ public class GlyphTraitEffectResolutionHookTests
     {
         await Bind("""
             glyph shield : trait.on_effect_resolution {
+                main { trait.add_effect(test.effect(9)) }
                 client_enter { if has_trait("brave") { trait.add_effect(test.effect(1)) } }
                 level_up { trait.add_effect(test.effect(2)) }
                 respawn { trait.add_effect(test.effect(3)) }
@@ -68,15 +71,62 @@ public class GlyphTraitEffectResolutionHookTests
             }
             """);
         GlyphExecutionContext? execution = null;
-        _runtime.Interpreter.ExecutionCompleted += context => execution = context;
+        List<string?> stages = [];
+        _runtime.Interpreter.ExecutionCompleted += context =>
+        {
+            execution = context;
+            stages.Add(context.CurrentPipelineStage);
+        };
         var effects = Run(stage);
-        Assert.That(effects.Select(e => e.Handle.ToInt32()), Is.EqualTo(expected == 0 ? Array.Empty<int>() : new[] { expected }));
+        Assert.That(effects.Select(e => e.Handle.ToInt32()), Is.EqualTo(expected == 0 ? Array.Empty<int>() : new[] { 9, expected }));
+        Assert.That(stages.Count, Is.EqualTo(stage == TraitEffectResolutionStage.Death ? 1 : 2));
+        if (stage != TraitEffectResolutionStage.Death)
+            Assert.That(stages[0], Is.EqualTo(TraitMainStageExecutor.NodeTypeId));
         Assert.That(execution, Is.Not.Null);
         Assert.That(execution!.CharacterId, Is.EqualTo(_characterId.ToString()));
         Assert.That(execution.TraitTag, Is.EqualTo("shield"));
         Assert.That(execution.TargetCreature, Is.EqualTo(123u));
         if (stage == TraitEffectResolutionStage.Death)
             Assert.That(execution.Locals.Values.Single().Value, Is.EqualTo(456u));
+    }
+
+    [Test]
+    public async Task Main_only_script_runs_on_every_rebuild_without_lifecycle_blocks()
+    {
+        await Bind("glyph common : trait.on_effect_resolution { main { trait.add_effect(test.effect(9)) } }");
+        foreach (var stage in Enum.GetValues<TraitEffectResolutionStage>().Where(s => s != TraitEffectResolutionStage.Death))
+        {
+            Assert.That(Run(stage).Select(e => e.Handle.ToInt32()), Is.EqualTo(new[] { 9 }));
+            Assert.That(Run(stage).Select(e => e.Handle.ToInt32()), Is.EqualTo(new[] { 9 }));
+        }
+        Assert.That(Run(TraitEffectResolutionStage.Death), Is.Empty);
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task Failure_in_either_block_discards_all_contributions_and_continues_other_bindings(bool failMain)
+    {
+        string source = failMain
+            ? "glyph failed : trait.on_effect_resolution { main { trait.add_effect(test.effect(1)) test.fail() } confirmed { trait.add_effect(test.effect(2)) } }"
+            : "glyph failed : trait.on_effect_resolution { main { trait.add_effect(test.effect(1)) } confirmed { trait.add_effect(test.effect(2)) test.fail() } }";
+        await Bind(source, 0);
+        await Bind("glyph next : trait.on_effect_resolution { main { trait.add_effect(test.effect(3)) } }", 1);
+        List<(string Name, string? Stage)> executions = [];
+        _runtime.Interpreter.ExecutionCompleted += context => executions.Add((context.Graph.Name, context.CurrentPipelineStage));
+        Assert.That(Run(TraitEffectResolutionStage.Confirmed).Select(e => e.Handle.ToInt32()), Is.EqualTo(new[] { 3 }));
+        Assert.That(executions.Contains(("failed", TraitConfirmedStageExecutor.NodeTypeId)), Is.EqualTo(!failMain));
+    }
+
+    [Test]
+    public async Task Older_published_IR_without_main_still_runs_the_lifecycle_block()
+    {
+        Guid id = await Bind("glyph older : trait.on_effect_resolution { confirmed { trait.add_effect(test.effect(1)) } }");
+        GlyphExecutable program = _runtime.Programs.GetActive(id)!.Executable;
+        GlyphGraph graph = program.CreateExecutionGraph();
+        graph.Nodes.RemoveAll(n => n.TypeId == TraitMainStageExecutor.NodeTypeId);
+        await _runtime.Programs.ActivateAsync(id, new GlyphExecutable(graph, program.SourceText, program.SourceHash,
+            program.SourceMap, program.LanguageVersion, program.DependencyLock));
+        Assert.That(Run(TraitEffectResolutionStage.Confirmed).Select(e => e.Handle.ToInt32()), Is.EqualTo(new[] { 1 }));
     }
 
     [Test]

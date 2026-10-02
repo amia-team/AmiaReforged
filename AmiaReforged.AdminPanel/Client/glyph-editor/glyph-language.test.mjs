@@ -45,7 +45,7 @@ test('keyword specializations stay aligned with GlyphLexer', async () => {
 });
 
 test('trait effect resolution stages parse and highlight as independent blocks', () => {
-    const stages = ['client_enter', 'level_up', 'respawn', 'confirmed', 'death'];
+    const stages = ['main', 'client_enter', 'level_up', 'respawn', 'confirmed', 'death'];
     const source = `glyph shield : trait.on_effect_resolution { ${stages.map(stage => `${stage} { }`).join('\n')} }`;
     const tree = parse(source);
     assert.deepEqual(errors(tree), [], tree.toString());

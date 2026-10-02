@@ -114,22 +114,21 @@ Interaction scripts place statements inside `attempted`, `started`, `tick`, and/
 `completed` blocks. Each interaction stage can appear at most once. Omitted stages
 are independent no-ops, and local bindings do not carry between stages.
 
-`trait.on_effect_resolution` uses independent `client_enter`, `level_up`, `respawn`,
-`confirmed`, and `death` blocks. Bind the definition to a trait tag. The four rebuild
-blocks can call `trait.add_effect(effect: Effect)` to contribute permanent supernatural
+`trait.on_effect_resolution` supports a shared `main` block plus `client_enter`, `level_up`,
+`respawn`, `confirmed`, and `death` blocks. Bind the definition to a trait tag. `main` runs
+first on every effect rebuild, even when the matching lifecycle block is omitted. `main`
+and the four rebuild blocks can call `trait.add_effect(effect: Effect)` to contribute permanent supernatural
 effects, tagged and reapplied by the trait system alongside built-in modifiers. The
 `confirmed` block follows confirmation in the trait selection UI. Glyph-only traits
 are supported; only active, confirmed traits run. All blocks expose `creature`,
 `target_creature`, `character_id`, and `trait_tag`; `death` also exposes `killer`.
-Death runs its block without rebuilding permanent effects and cannot call `trait.add_effect`.
+Death runs only its block, without `main` or rebuilding permanent effects, and cannot call `trait.add_effect`.
 
 ```glyph
 fn protection(): Void { trait.add_effect(effect.ac_increase(2)) }
 glyph protected : trait.on_effect_resolution {
-    client_enter { protection() }
-    level_up { protection() }
-    respawn { protection() }
-    confirmed { protection() }
+    main { protection() }
+    respawn { floating_text(creature, "Your protection returns.") }
     death { floating_text(creature, "Your protection fades.") }
 }
 ```

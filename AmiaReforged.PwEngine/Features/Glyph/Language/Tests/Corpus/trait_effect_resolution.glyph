@@ -4,10 +4,8 @@ fn restore_trait(): Void {
 }
 
 glyph resilient : trait.on_effect_resolution {
-    client_enter { restore_trait() }
-    level_up { restore_trait() }
-    respawn { restore_trait() }
-    confirmed { restore_trait() }
+    main { restore_trait() }
+    respawn { floating_text(creature, "Your protection returns.") }
     death {
         if nwn.get_is_object_valid(killer) {
             floating_text(creature, "Your protection fades.")

@@ -52,7 +52,7 @@ statement {
 }
 
 StageDeclaration[@dynamicPrecedence=3] { StageName Block }
-StageName { kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | @extend[@name=client_enter]<Identifier, "client_enter"> | @extend[@name=level_up]<Identifier, "level_up"> | @extend[@name=respawn]<Identifier, "respawn"> | @extend[@name=confirmed]<Identifier, "confirmed"> | @extend[@name=death]<Identifier, "death"> }
+StageName { kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | @extend[@name=main]<Identifier, "main"> | @extend[@name=client_enter]<Identifier, "client_enter"> | @extend[@name=level_up]<Identifier, "level_up"> | @extend[@name=respawn]<Identifier, "respawn"> | @extend[@name=confirmed]<Identifier, "confirmed"> | @extend[@name=death]<Identifier, "death"> }
 LetStatement { kw<"let"> BindingName "=" expression }
 VarStatement { kw<"var"> BindingName "=" expression }
 BindingName { Identifier }

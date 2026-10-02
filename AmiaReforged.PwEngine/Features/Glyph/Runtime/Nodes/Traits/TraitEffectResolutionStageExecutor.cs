@@ -37,6 +37,7 @@ public partial class TraitClientEnterStageExecutor : TraitEffectResolutionStageE
     public const string NodeTypeId = "stage.trait_client_enter";
     public static GlyphEventDescriptor Event { get; } = new("trait.on_effect_resolution", GlyphEventType.TraitEffectResolution,
         GlyphScriptCategory.Trait, Stages: [
+            new("main", TraitMainStageExecutor.NodeTypeId),
             new("client_enter", NodeTypeId),
             new("level_up", TraitLevelUpStageExecutor.NodeTypeId),
             new("respawn", TraitRespawnStageExecutor.NodeTypeId),
@@ -46,6 +47,15 @@ public partial class TraitClientEnterStageExecutor : TraitEffectResolutionStageE
     public override string TypeId => NodeTypeId;
     public override string SourceDisplayName => "Client Enter";
     protected override string Description => "Resolves trait effects when the player enters the module.";
+}
+
+[GlyphNode]
+public partial class TraitMainStageExecutor : TraitEffectResolutionStageExecutor
+{
+    public const string NodeTypeId = "stage.trait_main";
+    public override string TypeId => NodeTypeId;
+    public override string SourceDisplayName => "Main";
+    protected override string Description => "Runs before the matching lifecycle block on every trait effect rebuild. Does not run during death.";
 }
 
 [GlyphNode]
