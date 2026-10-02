@@ -21,5 +21,4 @@ public sealed class InteractionGlyphContext
     public string? CancelInteractionMessage { get; set; }
     public Dictionary<string, object>? InteractionMetadata { get; set; }
     public AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Interactions.InteractionSession? Session { get; set; }
-    public string? CurrentPipelineStage { get; set; }
 }

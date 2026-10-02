@@ -7,7 +7,7 @@ public sealed record GlyphCallAlias(string Name, string Target, string? Implicit
 /// <summary>Source spellings shared by binding and editor metadata.</summary>
 public static class GlyphLanguageAliases
 {
-    public static IReadOnlyList<string> Stages { get; } = Platform.GlyphEvents.Get(GlyphEventType.InteractionPipeline).Stages!.Select(s => s.Name).ToArray();
+    public static IReadOnlyList<string> Stages { get; } = Platform.GlyphEvents.All.SelectMany(e => e.Stages ?? []).Select(s => s.Name).Distinct().ToArray();
     private static readonly IReadOnlyList<GlyphNodeDefinition> Definitions =
         Platform.GlyphGeneratedRegistry.CreateExecutors().Select(e => e.CreateDefinition()).ToArray();
     private static IEnumerable<Platform.GlyphIntrinsicExport> Intrinsics => Definitions.SelectMany(d => d.Intrinsics);
@@ -23,8 +23,8 @@ public static class GlyphLanguageAliases
     public static string MetadataSetter => Metadata.Setter;
     private static Platform.GlyphContextSchema? Context(GlyphEventType evt) =>
         Definitions
-            .FirstOrDefault(d => d.TypeId == (evt == GlyphEventType.InteractionPipeline
-                ? Platform.GlyphEvents.Get(evt).Stages![0].EntryTypeId : Platform.GlyphEvents.Get(evt).Entry()))?.ContextSchema;
+            .FirstOrDefault(d => d.TypeId == (Platform.GlyphEvents.Get(evt).EntryTypeId
+                ?? Platform.GlyphEvents.Get(evt).Stages![0].EntryTypeId))?.ContextSchema;
     public static string ContextPin(string path, GlyphEventType evt) => Context(evt)?.Resolve(path) ?? path;
     public static IEnumerable<string> ContextNames(string pin, GlyphEventType evt) =>
         Context(evt)?.Fields.Any(f => f.PinId == pin) == true ? Context(evt)!.Names(pin) : [pin, "context." + pin, "chaos." + pin];

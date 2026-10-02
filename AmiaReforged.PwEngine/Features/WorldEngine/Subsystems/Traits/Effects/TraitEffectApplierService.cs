@@ -1,17 +1,21 @@
 using System.Text.Json;
 using AmiaReforged.Core.UserInterface;
+using AmiaReforged.PwEngine.Features.Glyph.Integration;
+using AmiaReforged.PwEngine.Features.Glyph.Nwn;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Effects;
 
 /// <summary>
-///     Applies trait effects (skill/ability modifiers) to player creatures as NWN permanent effects.
+///     Applies built-in and Glyph-contributed trait effects to player creatures as NWN permanent effects.
 ///     Subscribes to module enter, level up, and respawn events to reapply effects automatically.
 ///     Also exposes <see cref="ApplyTraits" /> for on-demand application after trait confirmation.
+///     Player death dispatches only the Glyph death stage, without rebuilding effects.
 /// </summary>
 [ServiceBinding(typeof(TraitEffectApplierService))]
 public class TraitEffectApplierService
@@ -21,21 +25,25 @@ public class TraitEffectApplierService
     private readonly TraitEffectApplicationService _effectService;
     private readonly ICharacterTraitRepository _characterTraitRepo;
     private readonly ITraitRepository _traitRepo;
+    private readonly Lazy<GlyphTraitHookService> _traitHooks;
     private readonly AbilityResolver _abilityResolver = new();
     private readonly SkillResolver _skillResolver = new();
 
     public TraitEffectApplierService(
         TraitEffectApplicationService effectService,
         ICharacterTraitRepository characterTraitRepo,
-        ITraitRepository traitRepo)
+        ITraitRepository traitRepo,
+        Lazy<GlyphTraitHookService> traitHooks)
     {
         _effectService = effectService;
         _characterTraitRepo = characterTraitRepo;
         _traitRepo = traitRepo;
+        _traitHooks = traitHooks;
 
         NwModule.Instance.OnClientEnter += OnClientEnter;
         NwModule.Instance.OnPlayerLevelUp += OnPlayerLevelUp;
         NwModule.Instance.OnPlayerRespawn += OnPlayerRespawn;
+        NwModule.Instance.OnPlayerDeath += OnPlayerDeath;
 
         Log.Info("TraitEffectApplierService initialized.");
     }
@@ -45,8 +53,11 @@ public class TraitEffectApplierService
     ///     to the player's creature.
     /// </summary>
     /// <param name="player">The player whose creature should receive trait effects.</param>
-    public void ApplyTraits(NwPlayer player)
+    /// <param name="stage">The lifecycle stage to dispatch; explicit confirmation is the default.</param>
+    public void ApplyTraits(NwPlayer player, TraitEffectResolutionStage stage = TraitEffectResolutionStage.Confirmed)
     {
+        if (stage == TraitEffectResolutionStage.Death)
+            throw new ArgumentException("Death dispatch must not rebuild trait effects.", nameof(stage));
         NwCreature? creature = player.LoginCreature;
         if (creature == null) return;
 
@@ -55,14 +66,28 @@ public class TraitEffectApplierService
 
         RefundOrphanedTraits(player, characterId);
         StripTraitEffects(creature);
-        ApplyActiveTraitEffects(creature, characterId);
+        ApplyActiveTraitEffects(creature, characterId, stage);
     }
 
-    private void OnClientEnter(ModuleEvents.OnClientEnter e) => ApplyTraits(e.Player);
+    private void OnClientEnter(ModuleEvents.OnClientEnter e) => ApplyTraits(e.Player, TraitEffectResolutionStage.ClientEnter);
 
-    private void OnPlayerLevelUp(ModuleEvents.OnPlayerLevelUp e) => ApplyTraits(e.Player);
+    private void OnPlayerLevelUp(ModuleEvents.OnPlayerLevelUp e) => ApplyTraits(e.Player, TraitEffectResolutionStage.LevelUp);
 
-    private void OnPlayerRespawn(ModuleEvents.OnPlayerRespawn e) => ApplyTraits(e.Player);
+    private void OnPlayerRespawn(ModuleEvents.OnPlayerRespawn e) => ApplyTraits(e.Player, TraitEffectResolutionStage.Respawn);
+
+    private void OnPlayerDeath(ModuleEvents.OnPlayerDeath e)
+    {
+        NwCreature? creature = e.DeadPlayer.LoginCreature;
+        if (creature == null) return;
+        Guid characterId = PcKeyUtils.GetPcKey(e.DeadPlayer);
+        if (characterId == Guid.Empty) return;
+
+        List<Trait> traits = _effectService.GetActiveTraits(characterId);
+        List<string> tags = traits.Select(t => t.Tag).ToList();
+        foreach (Trait trait in traits)
+            _traitHooks.Value.RunEffectResolution(trait.Tag, characterId, creature.ObjectId,
+                TraitEffectResolutionStage.Death, tags, e.Killer?.ObjectId ?? NWScript.OBJECT_INVALID);
+    }
 
     /// <summary>
     ///     Detects character traits whose definitions no longer exist in the in-memory repository,
@@ -123,23 +148,36 @@ public class TraitEffectApplierService
     /// </summary>
     /// <param name="creature">The creature to apply effects to.</param>
     /// <param name="characterId">The persisted character identifier.</param>
-    private void ApplyActiveTraitEffects(NwCreature creature, Guid characterId)
+    /// <param name="stage">The lifecycle stage to dispatch for every active, confirmed trait.</param>
+    private void ApplyActiveTraitEffects(NwCreature creature, Guid characterId, TraitEffectResolutionStage stage)
     {
-        List<(string TraitTag, TraitEffect Effect)> activeEffects = _effectService.GetActiveEffects(characterId);
-        if (activeEffects.Count == 0) return;
-
-        foreach ((string traitTag, TraitEffect traitEffect) in activeEffects)
+        List<Trait> traits = _effectService.GetActiveTraits(characterId);
+        List<string> tags = traits.Select(t => t.Tag).ToList();
+        int applied = 0;
+        foreach (Trait trait in traits)
         {
-            Effect? nwnEffect = MapToNwnEffect(traitEffect);
-            if (nwnEffect == null) continue;
+            string effectTag = TraitEffectApplicationService.EffectTagPrefix + trait.Tag;
+            foreach (TraitEffect traitEffect in trait.Effects)
+            {
+                Effect? nwnEffect = MapToNwnEffect(traitEffect);
+                if (nwnEffect == null) continue;
 
-            nwnEffect.Tag = TraitEffectApplicationService.EffectTagPrefix + traitTag;
-            nwnEffect.SubType = EffectSubType.Supernatural;
+                nwnEffect.Tag = effectTag;
+                nwnEffect.SubType = EffectSubType.Supernatural;
+                creature.ApplyEffect(EffectDuration.Permanent, nwnEffect);
+                applied++;
+            }
 
-            creature.ApplyEffect(EffectDuration.Permanent, nwnEffect);
+            foreach (GlyphNwnEffect effect in _traitHooks.Value.RunEffectResolution(
+                         trait.Tag, characterId, creature.ObjectId, stage, tags))
+            {
+                IntPtr taggedEffect = NWScript.TagEffect(NWScript.SupernaturalEffect(effect.Handle), effectTag);
+                NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_PERMANENT, taggedEffect, creature.ObjectId);
+                applied++;
+            }
         }
 
-        Log.Info($"Applied {activeEffects.Count} trait effect(s) to {creature.Name}.");
+        Log.Info($"Applied {applied} trait effect(s) to {creature.Name}.");
     }
 
     /// <summary>

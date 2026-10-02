@@ -54,5 +54,8 @@ public enum GlyphEventType
     /// Fires when a boss or mini-boss creature is spawned, before its bonuses are applied.
     /// Provides the boss creature reference and encounter context.
     /// </summary>
-    OnBossSpawn
+    OnBossSpawn,
+
+    /// <summary>Independent trait effect resolution and death lifecycle stages.</summary>
+    TraitEffectResolution
 }

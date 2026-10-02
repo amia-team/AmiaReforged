@@ -344,9 +344,10 @@ public sealed class GlyphParser(IReadOnlyList<GlyphToken> tokens, int languageVe
         if (Eat("return"))
             return new ReturnStatementSyntax(At(";") || At("}") ? null : Expression(), Through(start));
 
-        if (At("attempted") || At("started") || At("tick") || At("completed"))
+        if (Binding.GlyphLanguageAliases.Stages.Contains(Current.Text) &&
+            tokens[Math.Min(_position + 1, tokens.Count - 1)].Kind == "{")
         {
-            string stage = Take().Kind;
+            string stage = Take().Text;
             return new StageDeclarationSyntax(stage, Block(), Through(start));
         }
 

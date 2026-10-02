@@ -1,4 +1,5 @@
-using AmiaReforged.PwEngine.Features.Encounters.Models;
+using AmiaReforged.PwEngine.Features.Glyph.Nwn;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Runtime;
 
@@ -7,4 +8,6 @@ public sealed class TraitGlyphContext
 {
     public string? TraitTag { get; set; }
     public uint TargetCreature { get; set; }
+    public uint Killer { get; set; } = NWScript.OBJECT_INVALID;
+    public List<GlyphNwnEffect> Effects { get; } = [];
 }

@@ -54,7 +54,7 @@ public sealed class GlyphBinder(GlyphLanguageCatalog catalog, GlyphGlobalEnviron
             {
                 if (statement is not StageDeclarationSyntax stage)
                 {
-                    Error("GLYPH3003", "Interaction statements must be inside a stage.", statement.Span);
+                    Error("GLYPH3003", $"Statements for '{syntax.Event}' must be inside a stage.", statement.Span);
                     continue;
                 }
 

@@ -44,6 +44,26 @@ test('keyword specializations stay aligned with GlyphLexer', async () => {
     assert.deepEqual(errors(parse(source)), []);
 });
 
+test('trait effect resolution stages parse and highlight as independent blocks', () => {
+    const stages = ['client_enter', 'level_up', 'respawn', 'confirmed', 'death'];
+    const source = `glyph shield : trait.on_effect_resolution { ${stages.map(stage => `${stage} { }`).join('\n')} }`;
+    const tree = parse(source);
+    assert.deepEqual(errors(tree), [], tree.toString());
+    assert.equal(nodes(tree, 'StageDeclaration').length, stages.length);
+    for (const stage of stages)
+        assert.ok(highlights(source).some(span => span.text === stage && span.style === 'glyph-keyword'));
+});
+
+test('trait stage names remain identifiers in functions, members and local bindings', () => {
+    const source = `fn death(): Effect = effect.death()
+        glyph shield : trait.on_effect_resolution {
+            confirmed { let respawn = death() trait.add_effect(respawn) }
+        }`;
+    const tree = parse(source);
+    assert.deepEqual(errors(tree), [], tree.toString());
+    assert.equal(nodes(tree, 'StageDeclaration').length, 1);
+});
+
 test('typed namespaced constants and NWN value helpers parse without recovery', () => {
     const source = `const Custom.MASK : Int = -2147483648
         const Custom.NONE : Object = 2130706432

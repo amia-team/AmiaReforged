@@ -51,8 +51,8 @@ statement {
   MatchStatement | BreakStatement | ContinueStatement | ReturnStatement | FailStatement | AssignmentStatement | ExpressionStatement
 }
 
-StageDeclaration { StageName Block }
-StageName { kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> }
+StageDeclaration[@dynamicPrecedence=3] { StageName Block }
+StageName { kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | @extend[@name=client_enter]<Identifier, "client_enter"> | @extend[@name=level_up]<Identifier, "level_up"> | @extend[@name=respawn]<Identifier, "respawn"> | @extend[@name=confirmed]<Identifier, "confirmed"> | @extend[@name=death]<Identifier, "death"> }
 LetStatement { kw<"let"> BindingName "=" expression }
 VarStatement { kw<"var"> BindingName "=" expression }
 BindingName { Identifier }
@@ -110,7 +110,7 @@ ArgumentName {
   Identifier | kw<"mod"> | kw<"using"> | kw<"pub"> | kw<"glyph"> | kw<"struct"> | kw<"type"> | kw<"match"> | kw<"let"> |
   kw<"var"> | kw<"while"> | kw<"for"> | kw<"continue"> | kw<"step"> |
   kw<"if"> | kw<"else"> | kw<"foreach"> | kw<"in"> | kw<"break"> |
-  kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | kw<"fn"> | kw<"const"> | kw<"return"> | kw<"impl"> | kw<"List"> | kw<"Dictionary">
+  kw<"attempted"> | kw<"started"> | kw<"tick"> | kw<"completed"> | @extend[@name=client_enter]<Identifier, "client_enter"> | @extend[@name=level_up]<Identifier, "level_up"> | @extend[@name=respawn]<Identifier, "respawn"> | @extend[@name=confirmed]<Identifier, "confirmed"> | @extend[@name=death]<Identifier, "death"> | kw<"fn"> | kw<"const"> | kw<"return"> | kw<"impl"> | kw<"List"> | kw<"Dictionary">
 }
 AssignmentOperator { "=" | "+=" | "-=" | "*=" | "/=" }
 kw<term> { @specialize[@name={term}]<Identifier, term> }

@@ -31,6 +31,31 @@ function completionQuery(marked, result) {
   return source.slice(result.from, pos);
 }
 
+test('trait lifecycle stage and context completions follow server metadata', () => {
+  const event = 'trait.on_effect_resolution';
+  const stages = ['client_enter', 'level_up', 'respawn', 'confirmed', 'death'];
+  const catalog = {
+    ...metadata,
+    events: [...metadata.events, { name: event, category: 'Trait', stages }],
+    functions: [...metadata.functions, {
+      name: 'trait.add_effect', canonicalName: 'trait.add_effect', returnType: 'Void', kind: 'Action',
+      parameters: [{ name: 'effect', type: 'Effect', required: true }],
+      availableIn: stages.filter(stage => stage !== 'death').map(stage => ({ event, stage }))
+    }],
+    contexts: [...metadata.contexts, ...stages.map(stage => ({ event, stage, fields: [
+      { name: 'creature', type: 'Object' }, { name: 'trait_tag', type: 'String' },
+      ...(stage === 'death' ? [{ name: 'context.killer', type: 'Object' }] : [])
+    ] }))]
+  };
+  const options = source => complete(source, true, catalog)?.options.map(o => o.label) || [];
+  assert.deepEqual(options(`glyph shield : ${event} { | }`), stages);
+  assert.deepEqual(options(`glyph shield : ${event} { confirmed {} | }`), stages.filter(s => s !== 'confirmed'));
+  assert.ok(options(`glyph shield : ${event} { confirmed { trait.| } }`).includes('add_effect'));
+  assert.ok(!options(`glyph shield : ${event} { death { trait.| } }`).includes('add_effect'));
+  assert.ok(options(`glyph shield : ${event} { death { context.| } }`).includes('killer'));
+  assert.ok(!options(`glyph shield : ${event} { respawn { context.| } }`).includes('killer'));
+});
+
 test("members and functions respect event/stage restrictions and signatures", () => {
   // Object handles expose deliberate domain aliases. Member-mode labels are relative to the final dot.
   const playerMembers = labels(

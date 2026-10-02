@@ -230,7 +230,7 @@ public class GlyphExecutionContext
     /// Used by stage-aware nodes like FailInteraction to determine the appropriate failure behavior.
     /// Null for non-pipeline scripts.
     /// </summary>
-    public string? CurrentPipelineStage { get => Ensure<InteractionGlyphContext>().CurrentPipelineStage; set => Ensure<InteractionGlyphContext>().CurrentPipelineStage = value; }
+    public string? CurrentPipelineStage { get; set; }
 
     // ==================== World Engine API ====================
 

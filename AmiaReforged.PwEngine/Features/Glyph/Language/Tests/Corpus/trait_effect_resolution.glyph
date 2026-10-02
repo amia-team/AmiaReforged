@@ -1,0 +1,16 @@
+fn restore_trait(): Void {
+    trait.add_effect(effect.ac_increase(2))
+    trait.add_effect(effect.damage_resistance(DAMAGE_TYPE.FIRE, 5))
+}
+
+glyph resilient : trait.on_effect_resolution {
+    client_enter { restore_trait() }
+    level_up { restore_trait() }
+    respawn { restore_trait() }
+    confirmed { restore_trait() }
+    death {
+        if nwn.get_is_object_valid(killer) {
+            floating_text(creature, "Your protection fades.")
+        }
+    }
+}

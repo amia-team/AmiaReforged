@@ -1,12 +1,16 @@
 using AmiaReforged.PwEngine.Features.Glyph.Core;
 using AmiaReforged.PwEngine.Features.Glyph.Persistence;
 using AmiaReforged.PwEngine.Features.Glyph.Runtime;
+using AmiaReforged.PwEngine.Features.Glyph.Nwn;
+using AmiaReforged.PwEngine.Features.Glyph.Runtime.Nodes.Traits;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Effects;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Glyph.Integration;
 
@@ -14,6 +18,7 @@ namespace AmiaReforged.PwEngine.Features.Glyph.Integration;
 /// Connects the Glyph interpreter to trait domain events.
 /// Listens for <see cref="TraitSelectedEvent"/> (grant) and <see cref="TraitDeselectedEvent"/> (remove),
 /// then executes any Glyph graphs bound to the affected trait tag.
+/// Also dispatches independent effect-resolution stages for the trait effect applier.
 /// </summary>
 [ServiceBinding(typeof(GlyphTraitHookService))]
 [ServiceBinding(typeof(IEventHandler<TraitSelectedEvent>))]
@@ -106,6 +111,60 @@ public class GlyphTraitHookService
             @event.CharacterId,
             GlyphEventType.OnTraitRemoved,
             cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes only the requested lifecycle stage and returns effects contributed by successful scripts.
+    /// Called on the game thread with a snapshot of active, confirmed traits, including glyph-only traits.
+    /// </summary>
+    public List<GlyphNwnEffect> RunEffectResolution(
+        string traitTag,
+        Guid characterId,
+        uint creature,
+        TraitEffectResolutionStage stage,
+        IReadOnlyList<string> characterTraits,
+        uint killer = NWScript.OBJECT_INVALID)
+    {
+        string stageTypeId = stage switch
+        {
+            TraitEffectResolutionStage.ClientEnter => TraitClientEnterStageExecutor.NodeTypeId,
+            TraitEffectResolutionStage.LevelUp => TraitLevelUpStageExecutor.NodeTypeId,
+            TraitEffectResolutionStage.Respawn => TraitRespawnStageExecutor.NodeTypeId,
+            TraitEffectResolutionStage.Confirmed => TraitConfirmedStageExecutor.NodeTypeId,
+            TraitEffectResolutionStage.Death => TraitDeathStageExecutor.NodeTypeId,
+            _ => throw new ArgumentOutOfRangeException(nameof(stage))
+        };
+        List<GlyphNwnEffect> effects = [];
+        if (!_traitBindingCache.TryGetValue((traitTag, GlyphEventType.TraitEffectResolution), out List<Guid>? graphs))
+            return effects;
+
+        foreach (Guid definitionId in graphs)
+        {
+            var program = _bootstrap.Programs.GetActive(definitionId);
+            if (program == null) continue;
+            GlyphGraph graph = program.CreateExecutionGraph();
+            if (graph.EventType != GlyphEventType.TraitEffectResolution) continue;
+            GlyphExecutionContext ctx = new()
+            {
+                Graph = graph, CharacterId = characterId.ToString(), TraitTag = traitTag,
+                TargetCreature = creature, EnableTracing = true
+            };
+            TraitGlyphContext traitContext = ctx.Get<TraitGlyphContext>()!;
+            traitContext.Killer = killer;
+            ctx.Variables["character_traits"] = characterTraits.ToList();
+
+            try
+            {
+                bool succeeded = _bootstrap.Interpreter.ExecuteStageAsync(ctx, stageTypeId).GetAwaiter().GetResult();
+                if (succeeded && stage != TraitEffectResolutionStage.Death)
+                    effects.AddRange(traitContext.Effects);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error executing {Stage} Glyph '{Name}' for trait '{TraitTag}'.", stage, graph.Name, traitTag);
+            }
+        }
+        return effects;
     }
 
     private async Task RunTraitGraphs(

@@ -34,27 +34,24 @@ public class TraitEffectApplicationService
     /// <returns>List of effects to apply with their source trait tags</returns>
     public List<(string TraitTag, TraitEffect Effect)> GetActiveEffects(Guid characterId)
     {
-        List<CharacterTrait> traits = _characterTraitRepository.GetByCharacterId(CharacterId.From(characterId));
         List<(string TraitTag, TraitEffect Effect)> effects = new();
-
-        foreach (CharacterTrait characterTrait in traits)
-        {
-            // Only apply effects from confirmed, active traits
-            if (!characterTrait.IsConfirmed || !characterTrait.IsActive)
-                continue;
-
-            Trait? traitDefinition = _traitRepository.Get(characterTrait.TraitTag);
-            if (traitDefinition == null)
-                continue;
-
-            // Add all effects from this trait
+        foreach (Trait traitDefinition in GetActiveTraits(characterId))
             foreach (TraitEffect effect in traitDefinition.Effects)
-            {
-                effects.Add((characterTrait.TraitTag, effect));
-            }
-        }
-
+                effects.Add((traitDefinition.Tag, effect));
         return effects;
+    }
+
+    /// <summary>Includes active, confirmed traits with no built-in effects, so their glyphs still run.</summary>
+    public List<Trait> GetActiveTraits(Guid characterId)
+    {
+        List<Trait> traits = [];
+        foreach (CharacterTrait characterTrait in _characterTraitRepository.GetByCharacterId(CharacterId.From(characterId)))
+        {
+            if (!characterTrait.IsConfirmed || !characterTrait.IsActive) continue;
+            if (_traitRepository.Get(characterTrait.TraitTag) is { } definition)
+                traits.Add(definition);
+        }
+        return traits;
     }
 
     /// <summary>
