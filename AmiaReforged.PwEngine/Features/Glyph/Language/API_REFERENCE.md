@@ -300,6 +300,27 @@ Parameters, default values, result types, and event/category restrictions come f
 registered runtime definitions. Adding an alias does not require another binder switch.
 Operations not exposed by this catalog are deliberately unavailable in v1.
 
+### Resolving a character's region
+
+`get_region(area_resref: String): String` returns the region tag containing the area, or an
+empty string for an unregistered area. Regions map areas by their ResRefs, not their live NWN
+tags. Matching uses the region query handler's case-insensitive lookup.
+
+```glyph
+glyph current_region : interaction {
+    tick {
+        let area = nwn.get_area(player)
+        let region = get_region(nwn.get_resref(area))
+        if region != "" { message(player, region) }
+    }
+}
+```
+
+The Regions subsystem's service-injected `RegionGlyphModule` registers this getter. It dispatches
+`GetRegionTagForAreaQuery` through `IQueryDispatcher`, forwarding the execution cancellation token.
+The query handler owns repository access. Server metadata includes this operation; offline tools
+that construct only stateless modules need a Regions module supplied to their bootstrap to use it.
+
 ### Procedural NWN API and typed members
 
 `Object` is an opaque NWN handle, not a statically known creature, item, door or store.
@@ -8424,6 +8445,20 @@ Summon a Familiar
 Source: `NWScript.SummonFamiliar`. Backend: NWScript.
 
 Kind: Action. Canonical: `nwn.summon_familiar`.
+
+Available in: all Glyph events/stages.
+
+### Regions
+
+#### `get_region`
+
+`get_region(area_resref: String) → String`
+
+Returns the region tag containing an area ResRef, or an empty string if the area is unregistered. For a character's current region, pass nwn.get_resref(nwn.get_area(character)).
+
+Source: `GetRegionTagForAreaQuery`. Backend: World Engine.
+
+Kind: Value. Canonical: `get_region`.
 
 Available in: all Glyph events/stages.
 
