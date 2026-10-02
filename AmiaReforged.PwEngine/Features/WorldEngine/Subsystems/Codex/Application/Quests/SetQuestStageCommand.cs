@@ -66,6 +66,9 @@ public sealed class SetQuestStageHandler : ICommandHandler<SetQuestStageCommand>
             QuestId qid = (QuestId)command.QuestId;
             DateTime now = DateTime.UtcNow;
 
+            using CodexMutationLock mutation = await CodexMutationLock.AcquireAsync(
+                _codexRepository, command.CharacterId, cancellationToken);
+
             // Load the player's codex (or create one if it doesn't exist)
             PlayerCodex? codex = await _codexRepository.LoadAsync(command.CharacterId, cancellationToken);
             codex ??= new PlayerCodex(command.CharacterId, now);
@@ -140,6 +143,7 @@ public sealed class SetQuestStageHandler : ICommandHandler<SetQuestStageCommand>
                 _rewardGranter, command.CharacterId, qid, fromStageId, command.StageId, questEntry, _eventBus, cancellationToken);
 
             await _codexRepository.SaveAsync(codex, cancellationToken);
+            mutation.Dispose();
 
             // Create/update the quest session so objective tracking begins immediately
             CodexQuestEntry? updatedEntry = codex.GetQuest(qid);

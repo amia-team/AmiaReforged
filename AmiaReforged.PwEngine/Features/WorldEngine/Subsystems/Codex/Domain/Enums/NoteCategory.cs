@@ -35,3 +35,9 @@ public enum NoteCategory
     /// </summary>
     DmPrivate = 5
 }
+
+public static class NoteCategoryExtensions
+{
+    public static bool IsPlayerCategory(this NoteCategory category) =>
+        category is NoteCategory.General or NoteCategory.Quest or NoteCategory.Character or NoteCategory.Location;
+}

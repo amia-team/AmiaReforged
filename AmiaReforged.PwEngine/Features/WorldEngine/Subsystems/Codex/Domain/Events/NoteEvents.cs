@@ -10,14 +10,17 @@ public sealed record NoteAddedEvent(
     string Content,
     NoteCategory Category,
     bool IsDmNote,
-    bool IsPrivate
+    bool IsPrivate,
+    string? Title = null
 ) : CodexDomainEvent(CharacterId, OccurredAt);
 
 public sealed record NoteEditedEvent(
     CharacterId CharacterId,
     DateTime OccurredAt,
     Guid NoteId,
-    string NewContent
+    string NewContent,
+    string? Title = null,
+    NoteCategory? Category = null
 ) : CodexDomainEvent(CharacterId, OccurredAt);
 
 public sealed record NoteDeletedEvent(

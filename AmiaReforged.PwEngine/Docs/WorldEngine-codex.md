@@ -337,6 +337,40 @@ Subsystems/Codex/
 
 ---
 
+### Player notes
+
+The Notes tab supports creation, editing, deletion, and title/body search. Player notes use
+one system-defined category: General, Quest, Character, or Location. The optional title is
+limited to 200 characters and the required multiline body to 5,000 characters. Search and
+category filters compose; results sort by modification time, then note ID.
+
+Visible DM notes are read-only. Private DM notes are excluded from player note queries,
+including the All filter and search. Player commands resolve their target character from
+the player's key and cannot edit or delete DM notes or another character's notes.
+
+Dirty editors require confirmation before navigation, cancellation, or closing. Native
+window closing is disabled during editing/saving so the Close button can handle that
+confirmation. Forced window closure retains the draft for reopening during the same player
+session; drafts are not persisted across disconnects or server restarts. Failed saves leave
+the editor open. A successful save selects the note in its category and clears the search.
+
+Note handlers persist once and publish notification events afterward. These notifications
+must not be forwarded back into the event processor as additional mutations. All current
+Codex writers share a bounded mutation lock around load/mutate/save, and EF reconciliation
+uses a transaction. Notes and quests retain separate commands, entries, and tables.
+
+Automated verification:
+
+```sh
+dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj --filter 'FullyQualifiedName~Tests.Codex&TestCategory!=CodexPostgres' -m:1
+dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj --filter 'TestCategory=CodexPostgres' -m:1
+```
+
+The PostgreSQL suite requires Docker and uses an isolated disposable container. In-game
+verification should cover multiline/Unicode input, category changes, search, deletion on
+the last page, dirty-draft confirmation, reopening after forced closure, rapid tab changes,
+and reopening saved notes after relogging/server restart.
+
 ## 6. Persistence
 
 ### Entity → table mapping

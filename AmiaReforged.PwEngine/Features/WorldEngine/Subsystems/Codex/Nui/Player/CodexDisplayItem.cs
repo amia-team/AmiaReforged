@@ -114,8 +114,10 @@ public sealed class NoteDisplayItem : ICodexDisplayItem
 
     public NoteDisplayItem(CodexNoteEntry entry) => _entry = entry;
 
-    public string DisplayName => _entry.Title ?? "Untitled Note";
-    public string DetailTitle => _entry.Title ?? "Untitled Note";
+    public CodexNoteEntry Note => _entry;
+
+    public string DisplayName => string.IsNullOrWhiteSpace(_entry.Title) ? "Untitled Note" : _entry.Title;
+    public string DetailTitle => DisplayName;
 
     public string DetailBody
     {

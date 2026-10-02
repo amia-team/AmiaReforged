@@ -11,8 +11,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.Notes;
 
 /// <summary>
-/// Adds a player/DM note to a character's codex. (F-6 audit: CQRS envelope over
-/// <see cref="PlayerCodex.AddNote"/>; in-development feature, no game callers yet.)
+/// Adds a player/DM note to a character's codex.
 /// </summary>
 public record AddNoteCommand : ICommand
 {
@@ -32,6 +31,8 @@ public record EditNoteCommand : ICommand
     public required CharacterId CharacterId { get; init; }
     public required Guid NoteId { get; init; }
     public required string NewContent { get; init; }
+    public required string? Title { get; init; }
+    public required NoteCategory Category { get; init; }
 }
 
 /// <summary>
@@ -57,35 +58,35 @@ public sealed class AddNoteHandler : ICommandHandler<AddNoteCommand>
 
     public async Task<CommandResult> HandleAsync(AddNoteCommand command, CancellationToken cancellationToken = default)
     {
+        CodexNoteEntry note;
         DateTime now = DateTime.UtcNow;
-        PlayerCodex? codex = await _codexRepository.LoadAsync(command.CharacterId, cancellationToken);
-        codex ??= new PlayerCodex(command.CharacterId, now);
-
-        CodexNoteEntry note = new(
-            Guid.NewGuid(),
-            command.Content,
-            command.Category,
-            now,
-            command.IsDmNote,
-            command.IsPrivate,
-            command.Title);
-
         try
         {
-            codex.AddNote(note, now);
+            if (!command.IsDmNote)
+                CodexNoteEntry.ValidatePlayerInput(command.Title, command.Content, command.Category);
+            else if (!Enum.IsDefined(command.Category) || command.Title?.Length > CodexNoteEntry.MaxTitleLength)
+                return CommandResult.Fail("Invalid note category or title");
+
+            note = new CodexNoteEntry(Guid.NewGuid(), command.Content, command.Category, now,
+                command.IsDmNote, command.IsPrivate,
+                string.IsNullOrWhiteSpace(command.Title) ? null : command.Title.Trim());
         }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        catch (ArgumentException ex)
         {
             return CommandResult.Fail(ex.Message);
         }
 
-        await _codexRepository.SaveAsync(codex, cancellationToken);
+        using (await CodexMutationLock.AcquireAsync(_codexRepository, command.CharacterId, cancellationToken))
+        {
+            PlayerCodex codex = await _codexRepository.LoadAsync(command.CharacterId, cancellationToken)
+                                ?? new PlayerCodex(command.CharacterId, now);
+            codex.AddNote(note, now);
+            await _codexRepository.SaveAsync(codex, cancellationToken);
+        }
 
         await _eventBus.PublishAsync(
-            new NoteAddedEvent(
-                command.CharacterId, now, note.Id, note.Content,
-                note.Category, note.IsDmNote, note.IsPrivate),
-            cancellationToken);
+            new NoteAddedEvent(command.CharacterId, now, note.Id, note.Content,
+                note.Category, note.IsDmNote, note.IsPrivate, note.Title), cancellationToken);
 
         return CommandResult.OkWith("noteId", note.Id.ToString());
     }
@@ -105,24 +106,31 @@ public sealed class EditNoteHandler : ICommandHandler<EditNoteCommand>
 
     public async Task<CommandResult> HandleAsync(EditNoteCommand command, CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _codexRepository.LoadAsync(command.CharacterId, cancellationToken);
-        if (codex is null)
-            return CommandResult.Fail($"Codex not found for character '{command.CharacterId.Value}'");
-
-        try
+        DateTime now = DateTime.UtcNow;
+        using (await CodexMutationLock.AcquireAsync(_codexRepository, command.CharacterId, cancellationToken))
         {
-            codex.EditNote(command.NoteId, command.NewContent, DateTime.UtcNow);
-        }
-        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
-        {
-            return CommandResult.Fail(ex.Message);
-        }
+            PlayerCodex? codex = await _codexRepository.LoadAsync(command.CharacterId, cancellationToken);
+            CodexNoteEntry? note = codex?.GetNote(command.NoteId);
+            if (note == null)
+                return CommandResult.Fail("Note not found in your codex");
+            if (!note.CanPlayerEdit)
+                return CommandResult.Fail("DM notes cannot be edited by players");
 
-        await _codexRepository.SaveAsync(codex, cancellationToken);
+            try
+            {
+                codex!.EditNote(command.NoteId, command.Title, command.NewContent, command.Category, now);
+            }
+            catch (ArgumentException ex)
+            {
+                return CommandResult.Fail(ex.Message);
+            }
+
+            await _codexRepository.SaveAsync(codex!, cancellationToken);
+        }
 
         await _eventBus.PublishAsync(
-            new NoteEditedEvent(command.CharacterId, DateTime.UtcNow, command.NoteId, command.NewContent),
-            cancellationToken);
+            new NoteEditedEvent(command.CharacterId, now, command.NoteId, command.NewContent,
+                command.Title, command.Category), cancellationToken);
 
         return CommandResult.Ok();
     }
@@ -142,24 +150,22 @@ public sealed class DeleteNoteHandler : ICommandHandler<DeleteNoteCommand>
 
     public async Task<CommandResult> HandleAsync(DeleteNoteCommand command, CancellationToken cancellationToken = default)
     {
-        PlayerCodex? codex = await _codexRepository.LoadAsync(command.CharacterId, cancellationToken);
-        if (codex is null)
-            return CommandResult.Fail($"Codex not found for character '{command.CharacterId.Value}'");
-
-        try
+        DateTime now = DateTime.UtcNow;
+        using (await CodexMutationLock.AcquireAsync(_codexRepository, command.CharacterId, cancellationToken))
         {
-            codex.DeleteNote(command.NoteId, DateTime.UtcNow);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return CommandResult.Fail(ex.Message);
-        }
+            PlayerCodex? codex = await _codexRepository.LoadAsync(command.CharacterId, cancellationToken);
+            CodexNoteEntry? note = codex?.GetNote(command.NoteId);
+            if (note == null)
+                return CommandResult.Fail("Note not found in your codex");
+            if (!note.CanPlayerEdit)
+                return CommandResult.Fail("DM notes cannot be deleted by players");
 
-        await _codexRepository.SaveAsync(codex, cancellationToken);
+            codex!.DeleteNote(command.NoteId, now);
+            await _codexRepository.SaveAsync(codex, cancellationToken);
+        }
 
         await _eventBus.PublishAsync(
-            new NoteDeletedEvent(command.CharacterId, DateTime.UtcNow, command.NoteId),
-            cancellationToken);
+            new NoteDeletedEvent(command.CharacterId, now, command.NoteId), cancellationToken);
 
         return CommandResult.Ok();
     }

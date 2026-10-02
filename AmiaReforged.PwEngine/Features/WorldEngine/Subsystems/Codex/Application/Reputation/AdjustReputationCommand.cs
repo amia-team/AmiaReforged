@@ -48,6 +48,9 @@ public sealed class AdjustReputationHandler : ICommandHandler<AdjustReputationCo
             return CommandResult.Fail(ex.Message);
         }
 
+        using CodexMutationLock mutation = await CodexMutationLock.AcquireAsync(
+            _codexRepository, command.CharacterId, cancellationToken);
+
         DateTime now = DateTime.UtcNow;
         PlayerCodex? codex = await _codexRepository.LoadAsync(command.CharacterId, cancellationToken);
         codex ??= new PlayerCodex(command.CharacterId, now);
@@ -62,6 +65,8 @@ public sealed class AdjustReputationHandler : ICommandHandler<AdjustReputationCo
         }
 
         await _codexRepository.SaveAsync(codex, cancellationToken);
+
+        mutation.Dispose();
 
         await _eventBus.PublishAsync(
             new ReputationChangedEvent(command.CharacterId, now, factionId, command.Delta, command.Reason),

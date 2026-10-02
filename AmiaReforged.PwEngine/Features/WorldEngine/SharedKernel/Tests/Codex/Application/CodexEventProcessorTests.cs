@@ -260,7 +260,8 @@ public class CodexEventProcessorTests
             Content: "Remember to check the library",
             Category: NoteCategory.General,
             IsDmNote: false,
-            IsPrivate: true
+            IsPrivate: true,
+            Title: "Library reminder"
         );
 
         // When
@@ -278,6 +279,7 @@ public class CodexEventProcessorTests
         Assert.That(note.Content, Is.EqualTo("Remember to check the library"));
         Assert.That(note.Category, Is.EqualTo(NoteCategory.General));
         Assert.That(note.IsPrivate, Is.True);
+        Assert.That(note.Title, Is.EqualTo("Library reminder"));
     }
 
     [Test]
@@ -312,6 +314,29 @@ public class CodexEventProcessorTests
         PlayerCodex? codex = await _repository.LoadAsync(_characterId);
         CodexNoteEntry? note = codex!.GetNote(noteId);
         Assert.That(note!.Content, Is.EqualTo("Updated content"));
+    }
+
+    [Test]
+    public async Task NoteMetadataEditEventUpdatesTitleAndCategory()
+    {
+        Guid noteId = Guid.NewGuid();
+        DateTime created = DateTime.UtcNow;
+        DateTime modified = created.AddMinutes(1);
+        await _processor.EnqueueEventAsync(new NoteAddedEvent(
+            _characterId, created, noteId, "Original", NoteCategory.General, false, false, "Old title"));
+        await _processor.EnqueueEventAsync(new NoteEditedEvent(
+            _characterId, modified, noteId, "Changed", "New title", NoteCategory.Location));
+        using CancellationTokenSource deadline = new(TimeSpan.FromSeconds(5));
+        CodexNoteEntry? note;
+        do
+        {
+            await Task.Delay(10, deadline.Token);
+            note = (await _repository.LoadAsync(_characterId))?.GetNote(noteId);
+        } while (note?.LastModified != modified);
+        await _processor.StopAsync();
+        Assert.That(note.Title, Is.EqualTo("New title"));
+        Assert.That(note.Category, Is.EqualTo(NoteCategory.Location));
+        Assert.That(note.Content, Is.EqualTo("Changed"));
     }
 
     [Test]

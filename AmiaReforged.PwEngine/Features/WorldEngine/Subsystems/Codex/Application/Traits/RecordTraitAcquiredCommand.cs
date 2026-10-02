@@ -50,6 +50,9 @@ public sealed class RecordTraitAcquiredHandler : ICommandHandler<RecordTraitAcqu
             return CommandResult.Fail(ex.Message);
         }
 
+        using CodexMutationLock mutation = await CodexMutationLock.AcquireAsync(
+            _codexRepository, command.CharacterId, cancellationToken);
+
         DateTime now = DateTime.UtcNow;
         PlayerCodex? codex = await _codexRepository.LoadAsync(command.CharacterId, cancellationToken);
         codex ??= new PlayerCodex(command.CharacterId, now);
@@ -74,6 +77,8 @@ public sealed class RecordTraitAcquiredHandler : ICommandHandler<RecordTraitAcqu
         }
 
         await _codexRepository.SaveAsync(codex, cancellationToken);
+
+        mutation.Dispose();
 
         await _eventBus.PublishAsync(
             new TraitAcquiredEvent(command.CharacterId, now, traitTag, command.AcquisitionMethod),

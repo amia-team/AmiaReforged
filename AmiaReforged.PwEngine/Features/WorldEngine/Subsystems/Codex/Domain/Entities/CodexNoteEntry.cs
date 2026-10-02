@@ -8,6 +8,14 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Ent
 /// </summary>
 public class CodexNoteEntry
 {
+    public const int MaxTitleLength = 200;
+    public const int MaxPlayerContentLength = 5000;
+
+    public bool IsPlayerVisible => Enum.IsDefined(Category) && Category != NoteCategory.DmPrivate &&
+        !(IsPrivate && (IsDmNote || Category == NoteCategory.DmNote));
+
+    public bool CanPlayerEdit => !IsDmNote && Category.IsPlayerCategory();
+
     /// <summary>
     /// Unique identifier for this note
     /// </summary>
@@ -55,7 +63,8 @@ public class CodexNoteEntry
         DateTime dateCreated,
         bool isDmNote,
         bool isPrivate,
-        string? title = null)
+        string? title = null,
+        DateTime? lastModified = null)
     {
         if (string.IsNullOrWhiteSpace(content))
             throw new ArgumentException("Note content cannot be empty", nameof(content));
@@ -64,7 +73,7 @@ public class CodexNoteEntry
         Content = content;
         Category = category;
         DateCreated = dateCreated;
-        LastModified = dateCreated;
+        LastModified = lastModified ?? dateCreated;
         IsDmNote = isDmNote;
         IsPrivate = isPrivate;
         Title = title;
@@ -106,6 +115,28 @@ public class CodexNoteEntry
     public void UpdatePrivacy(bool isPrivate, DateTime modifiedAt)
     {
         IsPrivate = isPrivate;
+        LastModified = modifiedAt;
+    }
+
+    public static void ValidatePlayerInput(string? title, string content, NoteCategory category)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            throw new ArgumentException("Note content cannot be empty", nameof(content));
+        if (content.Length > MaxPlayerContentLength)
+            throw new ArgumentException($"Note content cannot exceed {MaxPlayerContentLength} characters", nameof(content));
+        if (title?.Length > MaxTitleLength)
+            throw new ArgumentException($"Note title cannot exceed {MaxTitleLength} characters", nameof(title));
+        if (!category.IsPlayerCategory())
+            throw new ArgumentException("Choose General, Quest, Character, or Location", nameof(category));
+    }
+
+    public void Update(string? title, string content, NoteCategory category, DateTime modifiedAt)
+    {
+        // Validate all fields before changing any of them.
+        ValidatePlayerInput(title, content, category);
+        Title = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
+        Content = content;
+        Category = category;
         LastModified = modifiedAt;
     }
 

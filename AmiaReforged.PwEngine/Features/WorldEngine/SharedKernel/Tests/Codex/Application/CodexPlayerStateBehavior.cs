@@ -97,6 +97,8 @@ public class CodexPlayerStateBehavior
         {
             CharacterId = _characterId,
             NoteId = Guid.NewGuid(),
+            Title = null,
+            Category = NoteCategory.General,
             NewContent = "edited"
         });
 
@@ -127,6 +129,8 @@ public class CodexPlayerStateBehavior
         {
             CharacterId = _characterId,
             NoteId = noteId,
+            Title = null,
+            Category = NoteCategory.Quest,
             NewContent = "updated"
         });
         Assert.That(edited.Success, Is.True);

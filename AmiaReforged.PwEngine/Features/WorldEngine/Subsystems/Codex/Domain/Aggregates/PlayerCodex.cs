@@ -286,6 +286,15 @@ public class PlayerCodex
         LastUpdated = occurredAt;
     }
 
+    public void EditNote(Guid noteId, string? title, string content, NoteCategory category, DateTime occurredAt)
+    {
+        if (!_notes.TryGetValue(noteId, out CodexNoteEntry? note))
+            throw new InvalidOperationException($"Note {noteId} not found in codex");
+
+        note.Update(title, content, category, occurredAt);
+        LastUpdated = occurredAt;
+    }
+
     /// <summary>
     /// Deletes a note from the codex
     /// </summary>

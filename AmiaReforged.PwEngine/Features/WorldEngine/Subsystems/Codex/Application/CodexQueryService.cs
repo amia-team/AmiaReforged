@@ -114,6 +114,11 @@ public class CodexQueryService
 
     #region Note Queries
 
+    public Task<IReadOnlyList<CodexNoteEntry>> GetPlayerNotesAsync(
+        CharacterId characterId, NoteCategory? category, string searchTerm, CancellationToken ct = default) =>
+        _queries.DispatchAsync<GetPlayerCodexNotesQuery, IReadOnlyList<CodexNoteEntry>>(
+            new GetPlayerCodexNotesQuery { CharacterId = characterId, Category = category, SearchTerm = searchTerm }, ct);
+
     /// <summary>
     /// Gets all notes for a character
     /// </summary>

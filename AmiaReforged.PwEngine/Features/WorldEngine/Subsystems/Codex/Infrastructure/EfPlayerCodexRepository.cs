@@ -24,7 +24,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastruc
 public class EfPlayerCodexRepository : IPlayerCodexRepository
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly PwContextFactory _factory;
+    private readonly IDbContextFactory<PwEngineContext> _factory;
 
     private static readonly JsonSerializerOptions StageJsonOpts = new()
     {
@@ -37,7 +37,7 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public EfPlayerCodexRepository(PwContextFactory factory)
+    public EfPlayerCodexRepository(IDbContextFactory<PwEngineContext> factory)
     {
         _factory = factory;
     }
@@ -174,7 +174,7 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         catch (Exception ex)
         {
             Log.Error(ex, "Failed to load codex for character {CharacterId}", characterId);
-            return null;
+            throw;
         }
     }
 
@@ -190,16 +190,19 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
         try
         {
             using PwEngineContext context = _factory.CreateDbContext();
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
             await SaveNotesAsync(context, codex, cancellationToken);
             await SaveLoreAsync(context, codex, cancellationToken);
             await SaveQuestsAsync(context, codex, cancellationToken);
 
             await context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Failed to save codex for character {CharacterId}", codex.OwnerId);
+            throw;
         }
     }
 
@@ -313,7 +316,8 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
             dateCreated: row.CreatedUtc,
             isDmNote: row.IsDmNote,
             isPrivate: row.IsPrivate,
-            title: row.Title
+            title: row.Title,
+            lastModified: row.ModifiedUtc
         );
     }
 

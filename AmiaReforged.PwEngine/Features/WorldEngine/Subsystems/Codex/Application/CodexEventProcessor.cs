@@ -96,9 +96,6 @@ public class CodexEventProcessor
     /// </summary>
     private async Task ProcessEventsAsync(CancellationToken cancellationToken)
     {
-        // TODO: Implement per-character sequential processing using GroupBy or similar
-        // For now, simple sequential processing
-
         await foreach (CodexDomainEvent domainEvent in _eventChannel.Reader.ReadAllAsync(cancellationToken))
         {
             try
@@ -118,6 +115,9 @@ public class CodexEventProcessor
     /// </summary>
     private async Task ProcessSingleEventAsync(CodexDomainEvent domainEvent, CancellationToken cancellationToken)
     {
+        using CodexMutationLock mutation = await CodexMutationLock.AcquireAsync(
+            _repository, domainEvent.CharacterId, cancellationToken);
+
         // Load codex (or create if first event)
         PlayerCodex codex = await _repository.LoadAsync(domainEvent.CharacterId, cancellationToken)
                             ?? new PlayerCodex(domainEvent.CharacterId, domainEvent.OccurredAt);
@@ -175,7 +175,10 @@ public class CodexEventProcessor
                 break;
 
             case NoteEditedEvent nee:
-                codex.EditNote(nee.NoteId, nee.NewContent, nee.OccurredAt);
+                if (nee.Category is { } category)
+                    codex.EditNote(nee.NoteId, nee.Title, nee.NewContent, category, nee.OccurredAt);
+                else
+                    codex.EditNote(nee.NoteId, nee.NewContent, nee.OccurredAt);
                 break;
 
             case NoteDeletedEvent nde:
@@ -341,7 +344,7 @@ public class CodexEventProcessor
             dateCreated: evt.OccurredAt,
             isDmNote: evt.IsDmNote,
             isPrivate: evt.IsPrivate,
-            title: null
+            title: evt.Title
         );
     }
 
