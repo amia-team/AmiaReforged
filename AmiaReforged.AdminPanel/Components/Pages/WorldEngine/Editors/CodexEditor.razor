@@ -132,17 +132,10 @@
                         <div class="form-group" style="flex:1">
                             <label style="font-size:0.8rem">Category</label>
                             <select class="form-control form-control-sm" @bind="_loreItem.Category">
-                                <option value="0">General</option>
-                                <option value="1">History</option>
-                                <option value="2">Geography</option>
-                                <option value="3">Religion</option>
-                                <option value="4">Arcana</option>
-                                <option value="5">Nature</option>
-                                <option value="6">Faction</option>
-                                <option value="7">Character</option>
-                                <option value="8">Item</option>
-                                <option value="9">Quest</option>
-                                <option value="10">Miscellaneous</option>
+                                @foreach (var category in LoreCategoryNames)
+                                {
+                                    <option value="@category.Key">@category.Value</option>
+                                }
                             </select>
                         </div>
                         <div class="form-group" style="flex:1">
@@ -1324,21 +1317,23 @@
             stage.Hints.RemoveAt(hintIndex);
     }
 
-    public static string CeGetLoreCategoryName(int category) => category switch
+    private static readonly IReadOnlyDictionary<int, string> LoreCategoryNames = new Dictionary<int, string>
     {
-        0 => "General",
-        1 => "History",
-        2 => "Geography",
-        3 => "Religion",
-        4 => "Arcana",
-        5 => "Nature",
-        6 => "Faction",
-        7 => "Character",
-        8 => "Item",
-        9 => "Quest",
-        10 => "Miscellaneous",
-        _ => $"Unknown ({category})"
+        [0] = "Arcana",
+        [1] = "Architecture & Engineering",
+        [2] = "Dungeoneering",
+        [3] = "Geography",
+        [4] = "History",
+        [5] = "Local",
+        [6] = "Nature",
+        [7] = "Nobility & Royalty",
+        [8] = "Religion",
+        [9] = "The Planes",
+        [10] = "OOC"
     };
+
+    public static string CeGetLoreCategoryName(int category) =>
+        LoreCategoryNames.TryGetValue(category, out string? name) ? name : $"Unknown ({category})";
 
     public static string CeGetLoreTierName(int tier) => tier switch
     {
