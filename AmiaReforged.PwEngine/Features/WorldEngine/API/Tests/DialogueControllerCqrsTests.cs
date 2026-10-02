@@ -5,7 +5,9 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Dialogue.Application.Queries;
+using AmiaReforged.Shared.Dialogue;
 using Moq;
+using NLog;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Threading;
@@ -51,6 +53,44 @@ public class DialogueControllerCqrsTests
         {
             Services = _services
         };
+
+    [TestCase("quest_rats")]
+    [TestCase("runtime")]
+    public async Task RuntimeStatus_ProductionRouterDiscoversRouteAndDispatchesCorrectTreeId(string treeId)
+    {
+        DialogueRuntimeStatusDto status = new() { State = "Applied", MatchedNpcCount = 2 };
+        _facadeMock.Setup(f => f.QueryAsync<GetDialogueRuntimeStatusQuery, DialogueRuntimeStatusDto?>(
+            It.Is<GetDialogueRuntimeStatusQuery>(q => q.DialogueTreeId == treeId), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(status);
+
+        WorldEngineApiRouter router = new(LogManager.GetCurrentClassLogger());
+        ApiResult result = await router.RouteAsync("GET", $"/api/worldengine/dialogue/{treeId}/runtime",
+            null!, CancellationToken.None, _services);
+
+        Assert.That(result.StatusCode, Is.EqualTo(200));
+        Assert.That(result.Data, Is.SameAs(status));
+        _facadeMock.Verify(f => f.QueryAsync<GetDialogueRuntimeStatusQuery, DialogueRuntimeStatusDto?>(
+            It.Is<GetDialogueRuntimeStatusQuery>(q => q.DialogueTreeId == treeId), It.IsAny<CancellationToken>()), Times.Once);
+        _facadeMock.Verify(f => f.QueryAsync<GetDialogueTreeQuery, PersistedDialogueTree?>(
+            It.IsAny<GetDialogueTreeQuery>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Test]
+    public async Task RuntimeStatus_MissingTreeReturnsController404AfterQueryDispatch()
+    {
+        _facadeMock.Setup(f => f.QueryAsync<GetDialogueRuntimeStatusQuery, DialogueRuntimeStatusDto?>(
+            It.IsAny<GetDialogueRuntimeStatusQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DialogueRuntimeStatusDto?)null);
+
+        WorldEngineApiRouter router = new(LogManager.GetCurrentClassLogger());
+        ApiResult result = await router.RouteAsync("GET", "/api/worldengine/dialogue/missing/runtime",
+            null!, CancellationToken.None, _services);
+
+        Assert.That(result.StatusCode, Is.EqualTo(404));
+        Assert.That(((ErrorResponse)result.Data).Details, Is.EqualTo("Dialogue not found"));
+        _facadeMock.Verify(f => f.QueryAsync<GetDialogueRuntimeStatusQuery, DialogueRuntimeStatusDto?>(
+            It.Is<GetDialogueRuntimeStatusQuery>(q => q.DialogueTreeId == "missing"), It.IsAny<CancellationToken>()), Times.Once);
+    }
 
     // ────────────────────────────────────────────────────────────────────
     //  Create — dispatch + status mapping (no NPC hook)
