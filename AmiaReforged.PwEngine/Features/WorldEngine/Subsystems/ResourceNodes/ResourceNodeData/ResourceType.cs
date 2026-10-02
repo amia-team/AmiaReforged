@@ -11,4 +11,20 @@ public enum ResourceType
     Boulder = 3,
     Tree = 4,
     Flora = 5
+
+
+}
+
+public static class ResourceTypeExtensions
+{
+    public static ResourceType ToResourceType(this string type) =>
+        type.ToLowerInvariant() switch
+        {
+            "ore" => ResourceType.Ore,
+            "geode" => ResourceType.Geode,
+            "boulder" => ResourceType.Boulder,
+            "tree" => ResourceType.Tree,
+            "flora" => ResourceType.Flora,
+            _ => ResourceType.Undefined
+        };
 }
