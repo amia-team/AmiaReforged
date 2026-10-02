@@ -99,6 +99,37 @@ test('browser completion insertion, scope filtering, diagnostics and revision gu
         await page.keyboard.type('player.');
         await menu.waitFor();
         if (process.env.GLYPH_FEATURE_SCREENSHOT) await page.screenshot({ path: process.env.GLYPH_FEATURE_SCREENSHOT });
+        // Blazor renders and delayed module metadata must preserve an active completion query.
+        await page.evaluate(() => {
+            editor.setReadOnly(host, false);
+            editor.setModuleMetadata(host, { functions: [{ ...metadata.functions.find(f => f.name === 'player.has_item'), name: 'player.new_item' }] });
+        });
+        await menu.getByText('new_item', { exact: true }).waitFor({ timeout: 2000 });
+        await page.keyboard.type('new');
+        await page.locator('.cm-tooltip-autocomplete:not(.cm-tooltip-autocomplete-disabled)').waitFor();
+        await menu.getByText('new_item', { exact: true }).click();
+        assert.match(await source(), /player\.new_item\(tag\)/);
+
+        // An explicit query at an empty cursor must also survive metadata refreshes.
+        await document('glyph next : interaction { tick { | } }');
+        await page.keyboard.press('Control+Space');
+        await menu.waitFor();
+        await page.evaluate(() => editor.setModuleMetadata(host, {
+            functions: [{ ...metadata.functions.find(f => f.name === 'message'), name: 'module_helper' }]
+        }));
+        await menu.getByText('module_helper', { exact: true }).waitFor({ timeout: 2000 });
+        await page.keyboard.press('Escape');
+        await page.evaluate(() => editor.setModuleMetadata(host, { functions: [] }));
+        await page.waitForTimeout(350);
+        assert.equal(await menu.count(), 0);
+        await page.keyboard.press('Control+Space');
+        await menu.waitFor();
+        await page.evaluate(() => {
+            editor.setReadOnly(host, true);
+            editor.setModuleMetadata(host, { functions: [] });
+        });
+        await page.waitForTimeout(350);
+        assert.equal(await menu.count(), 0);
         assert.deepEqual(errors, []);
     } finally {
         await browser?.close();

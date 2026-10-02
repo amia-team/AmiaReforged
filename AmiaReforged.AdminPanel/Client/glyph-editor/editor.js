@@ -3,7 +3,7 @@ import { EditorView, keymap, lineNumbers, highlightActiveLine, drawSelection } f
 import { defaultKeymap, history, historyKeymap, insertTab, indentLess } from '@codemirror/commands';
 import { indentUnit } from '@codemirror/language';
 
-import { autocompletion, closeCompletion, snippet } from '@codemirror/autocomplete';
+import { autocompletion, closeCompletion, completionStatus, startCompletion, snippet } from '@codemirror/autocomplete';
 import { lintGutter, setDiagnostics, setDiagnosticsEffect } from '@codemirror/lint';
 import { glyphCompletions, completionScope, functionSnippet } from './glyph-completion.js';
 import { compilerDiagnostics, diagnosticRange } from './glyph-diagnostics.js';
@@ -130,10 +130,13 @@ function configureMetadata(entry) {
         types: [...new Set([...(standard.types || []), ...(modules.types || [])])],
         aggregates: [...(standard.aggregates || []), ...(modules.aggregates || [])], modules: modules.modules || [], sourceLocations: modules.sourceLocations || {}
     } : standard;
-    closeCompletion(entry.view);
+    const resumeCompletion = completionStatus(entry.view.state) !== null &&
+        entry.view.hasFocus && !entry.view.state.readOnly;
     entry.view.dispatch({ effects: [entry.completion.reconfigure(autocompletion({
         override: [glyphCompletions(metadata)]
     })), entry.documentation.reconfigure(metadata ? glyphDocumentation(metadata, entry.callback) : [])] });
+    // Re-query updated metadata, including explicit completion at an empty cursor.
+    if (resumeCompletion) startCompletion(entry.view);
 }
 
 export function showDiagnostics(host, source, diagnostics) {

@@ -59,7 +59,7 @@ public class GlyphDocumentationTests
     [Test] public async Task Editor_documentation_callbacks_validate_the_current_catalog_and_preserve_source()
     {
         using var context = new Bunit.TestContext();
-        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=10"); module.Mode = JSRuntimeMode.Loose;
+        var module = context.JSInterop.SetupModule("./js/glyph-editor.js?v=11"); module.Mode = JSRuntimeMode.Loose;
         module.Setup<GlyphCodeEditor.EditorSnapshot>("capture", _ => true).SetResult(new("original", 0));
         string? selected = null;
         var cut = context.RenderComponent<GlyphCodeEditor>(p => p.Add(c => c.Metadata, GlyphReferencePanelTests.Metadata)
