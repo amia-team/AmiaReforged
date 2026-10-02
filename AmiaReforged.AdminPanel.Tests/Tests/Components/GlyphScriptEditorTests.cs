@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
+using Microsoft.JSInterop;
 
 namespace AmiaReforged.AdminPanel.Tests.Tests.Components;
 
@@ -46,6 +47,10 @@ public class GlyphScriptEditorTests : Bunit.TestContext
         Services.AddSingleton(encounter);
         Services.AddSingleton(trait);
         Services.AddSingleton(new Mock<ILogger<GlyphScriptEditor>>().Object);
+        var js = new Mock<IJSRuntime>();
+        js.Setup(m => m.InvokeAsync<IJSObjectReference>("import", It.IsAny<object?[]>()))
+            .ThrowsAsync(new JSException("Editor unavailable"));
+        Services.AddSingleton(js.Object);
     }
 
     [SetUp]
@@ -82,6 +87,29 @@ public class GlyphScriptEditorTests : Bunit.TestContext
         cut.Instance.SelectEndpoint(null);
 
         cut.Find("div.section").TextContent.Should().Contain("Select a server from the World Engine toolbar");
+    }
+
+    [TestCase("trait.on_granted", "glyph new_program : trait.on_granted {\n    \n}")]
+    [TestCase("interaction", "glyph new_program : interaction {\n    attempted { }\n    started { }\n    tick { }\n    completed { }\n}")]
+    public async Task New_script_uses_selected_event_template(string eventName, string expectedSource)
+    {
+        var metadata = new GlyphLanguageMetadataDto(6, [],
+            [new("trait.on_granted", "OnTraitGranted", "Trait", []),
+             new("interaction", "InteractionPipeline", "Interaction", ["attempted", "started", "tick", "completed"])],
+            [], [], []);
+        _handler.RouteResponses["GET /api/worldengine/glyphs/language-metadata"] = JsonSerializer.Serialize(metadata);
+        var cut = RenderComponent<GlyphScriptEditor>();
+        cut.Instance.SelectEndpoint(_endpointId);
+        await cut.InvokeAsync(() => cut.Instance.LoadListAsync());
+
+        cut.FindAll("button").Single(b => b.TextContent == "New script").Click();
+        cut.WaitForAssertion(() => Assert.That(cut.Find("#glyph-new-event"), Is.Not.Null));
+        Assert.That(cut.FindAll("button").Single(b => b.TextContent == "Open editor").HasAttribute("disabled"), Is.True);
+        cut.Find("#glyph-new-event").Change(eventName);
+        cut.FindAll("button").Single(b => b.TextContent == "Open editor").Click();
+
+        Assert.That(cut.FindComponent<GlyphSourceEditor>().Instance.InitialSource, Is.EqualTo(expectedSource));
+        Assert.That(cut.FindComponent<GlyphSourceEditor>().Instance.DefinitionId, Is.Null);
     }
 
     private class TestHttpMessageHandler : HttpMessageHandler

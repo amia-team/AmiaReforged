@@ -490,8 +490,9 @@ Update a draft:
 
 The update handler applies non-null `name`, `description`, and `sourceText` values.
 Use `{"isActive": false}` to deactivate. `isActive: true` is rejected. The legacy
-`eventType`/`category` update fields are not applied. Activation cannot change a
-definition's event type: create another definition instead.
+`eventType`/`category` update fields are not applied. Activation derives the event
+type and category from the compiled source declaration, including when changing
+an existing script's event. Rollback restores the previous source, event, and category.
 
 Compile source (also the request shape for activation):
 
@@ -594,7 +595,7 @@ late results from the old endpoint. Failed or empty responses can be retried.
 | `400` | Invalid request/ID, invalid source when creating a draft, or unsupported direct activation through create/update. |
 | `401` | Missing or invalid `X-API-Key`. |
 | `404` | Definition or route not found. |
-| `409` | Activation event mismatch or no active rollback target. |
+| `409` | Source or module dependencies require revalidation, or no active rollback target. |
 | `503` | Required Glyph runtime/repository service is unavailable. |
 
 General errors use `error` and `detail`. Compilation failures use the compilation

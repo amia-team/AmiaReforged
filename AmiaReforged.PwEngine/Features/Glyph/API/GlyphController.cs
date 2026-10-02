@@ -147,9 +147,9 @@ public class GlyphController
             var candidate = compilation.Executable!;
             if ((req?.ExpectedCompilationHash != null || candidate.DependencyLock.Count > 0) && req?.ExpectedCompilationHash != candidate.CompilationHash)
                 return new(409, new ErrorResponse("Revalidation required", "Source or module dependencies changed. Compile / validate before activating."));
-            if (candidate.EventType.ToString() != definition.EventType)
-                return new(409, new ErrorResponse("Event mismatch", "Create a new definition to change the event type."));
+            bool eventChanged = candidate.EventType.ToString() != definition.EventType;
             var version = await Runtime.Programs.ActivateAsync(id, candidate, history => PersistVersion(definition, history));
+            if (eventChanged) await RefreshHookCachesAsync();
             return new(200, new { Success = true, Version = VersionDto(version), Diagnostics = Array.Empty<object>() });
         }
         finally { Mutations.Release(); }
@@ -166,7 +166,9 @@ public class GlyphController
             var definition = await Repository.GetDefinitionByIdAsync(id);
             if (definition == null) return new(404, new ErrorResponse("Not found", "Glyph definition not found."));
             Runtime.RestorePublished(definition);
+            string previousEvent = definition.EventType;
             var version = await Runtime.Programs.RollbackAsync(id, history => PersistVersion(definition, history));
+            if (version != null && definition.EventType != previousEvent) await RefreshHookCachesAsync();
             return version == null ? new(409, new ErrorResponse("No previous version", "There is no active rollback target.")) :
                 new(200, new { Success = true, Version = VersionDto(version), Diagnostics = Array.Empty<object>() });
         }
@@ -206,10 +208,19 @@ public class GlyphController
         var active = history[^1].Executable;
         // Repository failure occurs before the atomic publication; no active executable is modified.
         definition.SourceText = active.SourceText;
+        definition.EventType = active.EventType.ToString();
+        definition.Category = active.EventType.GetCategory().ToString();
         definition.LanguageVersion = active.LanguageVersion;
         definition.PublishedVersionsJson = GlyphPublishedVersion.Serialize(history);
         definition.IsActive = true;
         await Repository!.UpdateDefinitionAsync(definition);
+    }
+
+    private static async Task RefreshHookCachesAsync()
+    {
+        if (EncounterHooks != null) await EncounterHooks.RefreshCacheAsync();
+        if (TraitHooks != null) await TraitHooks.RefreshCacheAsync();
+        if (InteractionHooks != null) await InteractionHooks.RefreshCacheAsync();
     }
 
     /// <summary>

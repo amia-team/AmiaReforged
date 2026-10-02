@@ -40,8 +40,6 @@ public sealed class GlyphRuntimeRegistry
         Func<IReadOnlyList<GlyphProgramVersion>, Task>? persist)
     {
         State before = slot.State;
-        if ((before.Active ?? before.History.LastOrDefault()) is { } active && active.Executable.EventType != candidate.EventType)
-            throw new InvalidOperationException("An activated definition cannot change event type; create a new definition.");
         GlyphProgramVersion version = new(Guid.NewGuid(), id, DateTime.UtcNow, (before.Active ?? before.History.LastOrDefault())?.VersionId, candidate);
         IReadOnlyList<GlyphProgramVersion> history = Array.AsReadOnly(before.History.Append(version).ToArray());
         if (persist != null) await persist(history);

@@ -25,7 +25,8 @@ else
     {
         <button class="btn btn-secondary" @onclick="CloseEditor">Back to list</button>
         <input aria-label="Script name" class="form-control my-2" @bind="_newName" disabled="@(_editingDefinition != null)" />
-        <GlyphSourceEditor DefinitionId="_editingDefinition?.Id" Name="@_newName" Created="OnCreated" />
+        <p>Change the event in the <code>glyph name : event</code> declaration, then compile and activate to apply it.</p>
+        <GlyphSourceEditor DefinitionId="_editingDefinition?.Id" Name="@_newName" InitialSource="@_initialSource" Created="OnCreated" />
         @if (_editingDefinition != null)
         {
             <details><summary>Bindings</summary>
@@ -63,6 +64,23 @@ else
     else
     {
         <button class="btn btn-primary" @onclick="NewScript">New script</button>
+        @if (_showNewScript)
+        {
+            <div class="my-2">
+                <label for="glyph-new-name">Script name</label>
+                <input id="glyph-new-name" class="form-control" @bind="_newName" />
+                <label for="glyph-new-event">Event</label>
+                <select id="glyph-new-event" class="form-select" @bind="_newEvent">
+                    <option value="">Choose an event</option>
+                    @foreach (var evt in _events)
+                    {
+                        <option value="@evt.Name">@evt.Category — @evt.Name</option>
+                    }
+                </select>
+                <button class="btn btn-primary" disabled="@(string.IsNullOrWhiteSpace(_newName) || !_events.Any(e => e.Name == _newEvent))" @onclick="StartNewScript">Open editor</button>
+                <button class="btn btn-secondary" @onclick="() => _showNewScript = false">Cancel</button>
+            </div>
+        }
         <table class="table"><thead><tr><th>Name</th><th>Event</th><th>Status</th><th>Actions</th></tr></thead><tbody>
             @foreach (var definition in _definitions)
             {
@@ -89,6 +107,9 @@ else
     private GlyphDefinitionDto? _editingDefinition, _deleteTarget;
     private bool _showEditor, _isSaving;
     private string _newName = "New Glyph";
+    private bool _showNewScript;
+    private string _newEvent = "", _initialSource = "";
+    private IReadOnlyList<GlyphEventMetadataDto> _events = [];
     private string? _error, _success;
     private DefinitionBindingsDto? _definitionBindings;
     private List<SpawnProfileDto> _availableProfiles = [];
@@ -96,7 +117,7 @@ else
     private int _newSpawnBindingPriority, _newTraitBindingPriority, _newInteractionBindingPriority;
     public void SelectEndpoint(Guid? id)
     {
-        _selectedEndpointId = id; _showModules = false; _showEditor = false; _editingDefinition = null; _definitions = [];
+        _selectedEndpointId = id; _showModules = false; _showEditor = false; _showNewScript = false; _editingDefinition = null; _definitions = []; _events = [];
         if (id is { } endpoint) { Api.SelectEndpoint(endpoint); EncounterApi.SelectEndpoint(endpoint); TraitApi.SelectEndpoint(endpoint); }
     }
     public async Task LoadListAsync()
@@ -106,7 +127,26 @@ else
         catch (Exception ex) { _error = ex.Message; }
         StateHasChanged();
     }
-    private void NewScript() { _newName = "New Glyph"; _editingDefinition = null; _showEditor = true; }
+    private async Task NewScript()
+    {
+        _newName = "New Glyph"; _newEvent = ""; _editingDefinition = null; _error = null;
+        try
+        {
+            var metadata = await Api.GetLanguageMetadataAsync();
+            _events = metadata?.Events ?? [];
+            _showNewScript = true;
+        }
+        catch (Exception ex) { _error = $"Failed to load script events: {ex.Message}"; }
+    }
+    private void StartNewScript()
+    {
+        var evt = _events.FirstOrDefault(e => e.Name == _newEvent);
+        if (evt == null || string.IsNullOrWhiteSpace(_newName)) return;
+        string body = evt.Stages.Count == 0 ? "\n    \n" :
+            "\n" + string.Join("\n", evt.Stages.Select(stage => $"    {stage} {{ }}")) + "\n";
+        _initialSource = $"glyph new_program : {evt.Name} {{{body}}}";
+        _showNewScript = false; _showEditor = true;
+    }
     private async Task OpenEditor(GlyphDefinitionDto definition)
     { _editingDefinition = definition; _newName = definition.Name; _showEditor = true; await LoadDefinitionBindings(definition.Id); }
     private async Task OnCreated(GlyphDefinitionDto definition)

@@ -73,6 +73,23 @@ public class GlyphActivationApiTests
         var stored = JsonSerializer.Deserialize<List<GlyphPublishedVersion>>(_definition.PublishedVersionsJson)!;
         Assert.That(stored.Count, Is.EqualTo(3));
     }
+    [Test] public async Task Activation_changes_event_from_source_and_rollback_restores_event_and_category()
+    {
+        await GlyphController.Activate(Context);
+        _definition.SourceText = "glyph brave : trait.on_granted {}";
+
+        Assert.That(Success(await GlyphController.Activate(Context)), Is.True);
+        Assert.That(_definition.EventType, Is.EqualTo(nameof(GlyphEventType.OnTraitGranted)));
+        Assert.That(_definition.Category, Is.EqualTo("Trait"));
+        Assert.That(_runtime.Programs.GetActive(_definition.Id)!.Executable.EventType,
+            Is.EqualTo(GlyphEventType.OnTraitGranted));
+
+        Assert.That(Success(await GlyphController.Rollback(Context)), Is.True);
+        Assert.That(_definition.EventType, Is.EqualTo(nameof(GlyphEventType.InteractionPipeline)));
+        Assert.That(_definition.Category, Is.EqualTo("Interaction"));
+        Assert.That(_runtime.Programs.GetActive(_definition.Id)!.Executable.EventType,
+            Is.EqualTo(GlyphEventType.InteractionPipeline));
+    }
     [Test] public void Production_routes_and_contracts_expose_no_graph_authoring_payloads()
     {
         RouteTable table = new(NLog.LogManager.GetCurrentClassLogger()); table.ScanType(typeof(GlyphController));
