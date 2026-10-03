@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using AmiaReforged.AdminPanel.Components.Pages.WorldEngine.Editors;
 using AmiaReforged.AdminPanel.Models;
 using AmiaReforged.AdminPanel.Services;
@@ -15,10 +16,11 @@ namespace AmiaReforged.AdminPanel.Tests.Tests.Components;
 [TestFixture]
 public class CodexEditorTests : Bunit.TestContext
 {
+    private readonly TestHttpMessageHandler _handler = new();
+
     public CodexEditorTests()
     {
-        var handler = new TestHttpMessageHandler();
-        var httpClient = new HttpClient(handler);
+        var httpClient = new HttpClient(_handler);
         var factory = new Mock<IHttpClientFactory>();
         factory.Setup(f => f.CreateClient("WorldEngine")).Returns(httpClient);
 
@@ -219,6 +221,168 @@ public class CodexEditorTests : Bunit.TestContext
         closeFired.Should().BeTrue();
     }
 
+    // ==================== Deletion ====================
+
+    [TestCase(CodexEditor.CodexSubType.Lore)]
+    [TestCase(CodexEditor.CodexSubType.Quest)]
+    public void Delete_RequiresConfirmation_AndCancelKeepsEntry(CodexEditor.CodexSubType subType)
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(subType);
+
+        cut.Find(".we-ce-toolbar .btn-outline-danger").Click();
+
+        cut.Find("[role='dialog']").TextContent.Should().Contain("Test entry").And.Contain("test_entry");
+        _handler.Requests.Should().NotContain(r => r.Method == HttpMethod.Delete);
+
+        cut.Find("[role='dialog'] .btn-secondary").Click();
+
+        cut.FindAll("[role='dialog']").Should().BeEmpty();
+        cut.Find(".we-ce-toolbar").TextContent.Should().Contain("Test entry");
+        _handler.Requests.Should().NotContain(r => r.Method == HttpMethod.Delete);
+    }
+
+    [TestCase(CodexEditor.CodexSubType.Lore)]
+    [TestCase(CodexEditor.CodexSubType.Quest)]
+    public void Delete_RemovesEntry_ResetsForm_AndRefreshesLists(CodexEditor.CodexSubType subType)
+    {
+        int refreshCount = 0;
+        IRenderedComponent<CodexEditor> cut = RenderEntry(subType, onRefresh: () => refreshCount++);
+        int listRequestsBefore = _handler.Requests.Count(r => r.Path == EntryBase(subType));
+        cut.FindAll(".we-ce-layout-area span").Should().Contain(e => e.TextContent == "Test entry");
+
+        cut.Find(".we-ce-toolbar .btn-outline-danger").Click();
+        cut.Find("[role='dialog'] .btn-danger").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            _handler.Requests.Where(r => r.Method == HttpMethod.Delete).Should().ContainSingle()
+                .Which.Path.Should().Be($"{EntryBase(subType)}/test_entry");
+            refreshCount.Should().Be(1);
+            _handler.Requests.Count(r => r.Path == EntryBase(subType)).Should().Be(listRequestsBefore + 1);
+            cut.Find(".we-ce-toolbar").TextContent.Should().Contain($"New {subType}").And.Contain("entry deleted.");
+            cut.FindAll(".we-ce-toolbar .btn-outline-danger").Should().BeEmpty();
+            cut.FindAll("[role='dialog']").Should().BeEmpty();
+            cut.Find($"input[placeholder='e.g. {(subType == CodexEditor.CodexSubType.Lore ? "lore_ancient_ruins" : "quest_lost_artifact")}']")
+                .GetAttribute("value").Should().BeNullOrEmpty();
+            cut.FindAll(".we-ce-layout-area span").Should().NotContain(e => e.TextContent == "Test entry");
+        });
+    }
+
+    [TestCase(CodexEditor.CodexSubType.Lore)]
+    [TestCase(CodexEditor.CodexSubType.Quest)]
+    public async Task Delete_DisablesActionsUntilRequestCompletes(CodexEditor.CodexSubType subType)
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(subType);
+        var completion = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _handler.DeleteResponse = completion.Task;
+        cut.Find(".we-ce-toolbar .btn-outline-danger").Click();
+
+        Task deleting = cut.Find("[role='dialog'] .btn-danger").ClickAsync(new Microsoft.AspNetCore.Components.Web.MouseEventArgs());
+        try
+        {
+            cut.WaitForAssertion(() =>
+            {
+                cut.Find(".we-ce-toolbar .btn-outline-danger").TextContent.Should().Contain("Deleting");
+                cut.FindAll(".we-ce-toolbar button").Should().OnlyContain(b => b.HasAttribute("disabled"));
+                cut.Find("select").HasAttribute("disabled").Should().BeTrue();
+                _handler.Requests.Where(r => r.Method == HttpMethod.Delete).Should().ContainSingle();
+            });
+        }
+        finally
+        {
+            completion.SetResult(new HttpResponseMessage(HttpStatusCode.NoContent));
+            await deleting;
+        }
+    }
+
+    [TestCase(CodexEditor.CodexSubType.Lore)]
+    [TestCase(CodexEditor.CodexSubType.Quest)]
+    public void Delete_ApiFailure_KeepsEntryAndShowsError(CodexEditor.CodexSubType subType)
+    {
+        int refreshCount = 0;
+        IRenderedComponent<CodexEditor> cut = RenderEntry(subType, deleteFails: true, onRefresh: () => refreshCount++);
+
+        cut.Find(".we-ce-toolbar .btn-outline-danger").Click();
+        cut.Find("[role='dialog'] .btn-danger").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            cut.Find(".we-ce-toolbar").TextContent.Should().Contain("Test entry").And.Contain("Delete failed");
+            cut.Find(".we-ce-toolbar .btn-outline-danger").HasAttribute("disabled").Should().BeFalse();
+            refreshCount.Should().Be(0);
+        });
+    }
+
+    [TestCase(CodexEditor.CodexSubType.Lore)]
+    [TestCase(CodexEditor.CodexSubType.Quest)]
+    public void NewEntry_HasNoDeleteButton(CodexEditor.CodexSubType subType)
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(subType, isNew: true);
+
+        cut.FindAll(".we-ce-toolbar .btn-outline-danger").Should().BeEmpty();
+    }
+
+    [Test]
+    public void SwitchingEntryType_ClearsDeleteTarget()
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Lore);
+
+        cut.Find("select").Change("Quest");
+
+        cut.WaitForAssertion(() =>
+        {
+            cut.Find(".we-ce-toolbar").TextContent.Should().Contain("New Quest");
+            cut.FindAll(".we-ce-toolbar .btn-outline-danger").Should().BeEmpty();
+            _handler.Requests.Should().NotContain(r => r.Method == HttpMethod.Delete);
+        });
+    }
+
+    private IRenderedComponent<CodexEditor> RenderEntry(CodexEditor.CodexSubType subType,
+        bool isNew = false, bool deleteFails = false, Action? onRefresh = null)
+    {
+        _handler.Requests.Clear();
+        _handler.DeleteResponse = null;
+        bool deleted = false;
+        object entry = subType == CodexEditor.CodexSubType.Lore
+            ? new LoreDefinitionDto { LoreId = "test_entry", Title = "Test entry" }
+            : new QuestDefinitionDto { QuestId = "test_entry", Title = "Test entry" };
+        _handler.ResponseFactory = request =>
+        {
+            if (request.Method == HttpMethod.Delete)
+            {
+                deleted = !deleteFails;
+                return deleteFails
+                    ? new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                    {
+                        Content = JsonContent.Create(new { error = "Delete failed", detail = "Test failure" })
+                    }
+                    : new HttpResponseMessage(HttpStatusCode.NoContent);
+            }
+
+            object body = request.RequestUri!.AbsolutePath.EndsWith("/test_entry")
+                ? entry
+                : new
+                {
+                    items = !deleted && request.RequestUri.AbsolutePath == EntryBase(subType)
+                        ? new[] { entry } : Array.Empty<object>()
+                };
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(body) };
+        };
+        Guid endpointId = Guid.NewGuid();
+        Services.GetRequiredService<LoreApiService>().SelectEndpoint(endpointId);
+        Services.GetRequiredService<QuestApiService>().SelectEndpoint(endpointId);
+        Services.GetRequiredService<IndustryApiService>().SelectEndpoint(endpointId);
+
+        return RenderComponent<CodexEditor>(parameters => parameters
+            .Add(p => p.OpenOnParameters, true)
+            .Add(p => p.EntityKey, isNew ? null : "test_entry")
+            .Add(p => p.InitialSubType, subType)
+            .Add(p => p.OnEntityListRefresh, EventCallback.Factory.Create(this, () => onRefresh?.Invoke())));
+    }
+
+    private static string EntryBase(CodexEditor.CodexSubType subType) =>
+        $"/api/worldengine/codex/{(subType == CodexEditor.CodexSubType.Lore ? "lore" : "quests")}";
+
     // ==================== CodexSubType Enum ====================
 
     [Test]
@@ -233,9 +397,17 @@ public class CodexEditorTests : Bunit.TestContext
 
     private class TestHttpMessageHandler : HttpMessageHandler
     {
+        public List<(HttpMethod Method, string Path)> Requests { get; } = [];
+        public Func<HttpRequestMessage, HttpResponseMessage>? ResponseFactory { get; set; }
+        public Task<HttpResponseMessage>? DeleteResponse { get; set; }
+
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            Requests.Add((request.Method, request.RequestUri!.AbsolutePath));
+            if (request.Method == HttpMethod.Delete && DeleteResponse != null) return DeleteResponse;
+            if (ResponseFactory != null) return Task.FromResult(ResponseFactory(request));
+
             var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json")
