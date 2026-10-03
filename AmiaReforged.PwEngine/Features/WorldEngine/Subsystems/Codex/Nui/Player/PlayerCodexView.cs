@@ -52,6 +52,8 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
     public readonly List<NuiBind<string>> EntryNames = new();
     public readonly List<NuiBind<string>> EntrySubtitles = new();
     public readonly List<NuiBind<bool>> EntryRowVisible = new();
+    public readonly List<NuiBind<string>> EntryTextures = new();
+    public readonly List<NuiBind<string>> EntryTooltips = new();
 
     public PlayerCodexView(NwPlayer player)
     {
@@ -60,6 +62,8 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
             EntryNames.Add(new NuiBind<string>($"entry_name_{i}"));
             EntrySubtitles.Add(new NuiBind<string>($"entry_sub_{i}"));
             EntryRowVisible.Add(new NuiBind<bool>($"entry_vis_{i}"));
+            EntryTextures.Add(new NuiBind<string>($"entry_texture_{i}"));
+            EntryTooltips.Add(new NuiBind<string>($"entry_tooltip_{i}"));
         }
         foreach (CodexTab tab in Enum.GetValues<CodexTab>())
             TabTextures.Add(tab, new NuiBind<string>($"codex_tab_texture_{tab.ToString().ToLowerInvariant()}"));
@@ -225,7 +229,7 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
         [
             new NuiLabel(DetailTitle)
             {
-                Width = DetailW, Height = 32, Margin = 0, ForegroundColor = Ink,
+                Width = DetailW, Height = 32, Margin = 0, ForegroundColor = Ink, Tooltip = DetailTitle,
                 HorizontalAlign = NuiHAlign.Center, VerticalAlign = NuiVAlign.Middle
             },
             // Reserve the action strip so showing note controls does not resize the reader.
@@ -329,8 +333,8 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
     {
         for (int i = 0; i < rowCount; i++)
         {
-            NuiImage entry = ImageControl($"btn_entry_{i}", "ui_cdx_ent_n_v2", EntryNames[i],
-                EntryW, rowHeight, EntryNames[i], visible: EntryRowVisible[i]);
+            NuiImage entry = ImageControl($"btn_entry_{i}", EntryTextures[i], EntryNames[i],
+                EntryW, rowHeight, EntryTooltips[i], visible: EntryRowVisible[i]);
             entry.DrawList =
             [
                 new NuiDrawListText(ControlColor, new NuiRect(12, 4, 174, rowHeight / 2), EntryNames[i])

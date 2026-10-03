@@ -40,16 +40,13 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     // State
     private CodexTab _activeTab = CodexTab.Knowledge;
     private string _activeCategory = "all";
-    private int _currentPage;
-    private Guid? _selectedNoteId;
+    private readonly CodexBrowseState _browse = new(PlayerCodexView.EntriesPerPage);
     private CodexNoteDraft? _draft;
     private string? _pendingAction;
     private bool _busy;
     private bool _closed;
-    private int _loadVersion;
     private string _searchTerm = "";
     private int PageSize => _activeTab == CodexTab.Notes ? PlayerCodexView.NotesPerPage : PlayerCodexView.EntriesPerPage;
-    private List<ICodexDisplayItem> _currentEntries = new();
     private CharacterId? _characterId;
     private List<IndustryMembership> _memberships = new();
     private IndustryMembership? _activeMembership;
@@ -98,6 +95,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         _token.SetBindValue(View.ShowNoteActions, false);
         _token.SetBindValue(View.Status, "");
         _token.SetBindValue(View.NoteSearch, "");
+        RefreshEntryList();
 
         if (_characterId == null)
         {
@@ -151,11 +149,10 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         if (_busy || _closed) return false;
         if (id is "codex_confirm" or "codex_keep") return _pendingAction != null;
         if (id == "btn_select_traits") return _activeTab == CodexTab.Traits;
-        if (id == "btn_prev_page") return _currentPage > 0;
-        if (id == "btn_next_page") return (_currentPage + 1) * PageSize < _currentEntries.Count;
+        if (id == "btn_prev_page") return _browse.HasPrevious;
+        if (id == "btn_next_page") return _browse.HasNext;
         if (id.StartsWith("btn_entry_", StringComparison.Ordinal))
-            return int.TryParse(id["btn_entry_".Length..], out int row) && row >= 0 && row < PageSize &&
-                   _currentPage * PageSize + row < _currentEntries.Count;
+            return int.TryParse(id["btn_entry_".Length..], out int row) && _browse.GetRow(row) != null;
         return true;
     }
 
@@ -175,7 +172,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         if (_closed) return;
         _closed = true;
         _imageInput.Reset();
-        _loadVersion++;
+        _browse.InvalidateLoad();
         try { _token.Close(); }
         catch { /* token may already be closed by the client */ }
     }
@@ -235,13 +232,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
                 case "tab_traits": await SwitchTabAsync(CodexTab.Traits); break;
                 case "tab_economy": await SwitchTabAsync(CodexTab.Economy); break;
                 case "btn_select_traits": SelectionWindowService?.Value.Open(_player); break;
-                case "btn_prev_page":
-                    if (_currentPage > 0) { _currentPage--; RefreshEntryList(); }
-                    break;
-                case "btn_next_page":
-                    int maxPage = Math.Max(0, (_currentEntries.Count - 1) / PageSize);
-                    if (_currentPage < maxPage) { _currentPage++; RefreshEntryList(); }
-                    break;
+                case "btn_prev_page": MovePage(-1); break;
+                case "btn_next_page": MovePage(1); break;
                 case "codex_close": RaiseCloseEvent(); Close(); break;
                 case "note_new": BeginEdit(null); break;
                 case "note_edit":
@@ -258,8 +250,6 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
                     if (_activeTab != CodexTab.Notes) break;
                     _searchTerm = elementId == "note_clear_search" ? "" : (_token.GetBindValue(View.NoteSearch) ?? "").Trim();
                     _token.SetBindValue(View.NoteSearch, _searchTerm);
-                    _currentPage = 0;
-                    _selectedNoteId = null;
                     await ReloadEntriesAsync();
                     break;
                 default:
@@ -283,8 +273,6 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         _activeTab = tab;
         RefreshTabTextures();
         _activeCategory = "all";
-        _currentPage = 0;
-        _selectedNoteId = null;
         SwapCategorySidebar();
         SwapEntryListPane();
         _token.SetBindValue(View.ShowNoteActions, false);
@@ -297,15 +285,12 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     {
         _activeCategory = category;
         SwapCategorySidebar();
-        _currentPage = 0;
-        _selectedNoteId = null;
         await ReloadEntriesAsync();
     }
 
     private async Task ReloadEntriesAsync(Guid? selectNoteId = null)
     {
-        int version = ++_loadVersion;
-        _currentEntries = new();
+        int version = _browse.BeginLoad(PageSize);
         RefreshEntryList();
         _token.SetBindValue(View.ShowNoteActions, false);
         SetStatus("Loading...");
@@ -319,7 +304,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         {
             Log.Error(ex, "Failed to load Codex entries for {CharacterId}", _characterId);
             await NwTask.SwitchToMainThread();
-            if (!_closed && version == _loadVersion)
+            if (!_closed && _browse.IsCurrentLoad(version))
             {
                 SetStatus("Unable to load entries. Please try again.");
                 if (_draft == null) SetDetailContent("Unable to Load", "Select the tab again to retry.");
@@ -327,27 +312,24 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             return;
         }
         await NwTask.SwitchToMainThread();
-        if (_closed || version != _loadVersion) return;
-        _currentEntries = entries;
+        if (_closed || !_browse.TryCompleteLoad(version, entries)) return;
         if (selectNoteId.HasValue)
         {
             int index = entries.FindIndex(e => e is NoteDisplayItem n && n.Note.Id == selectNoteId);
             if (index >= 0)
             {
-                _selectedNoteId = selectNoteId;
-                _currentPage = index / PageSize;
+                _browse.SelectIndex(index);
             }
         }
         RefreshEntryList();
         if (_activeTab == CodexTab.Economy) RefreshProficiencyDisplay();
         if (_draft != null) return;
         SetStatus("");
-        if (_activeTab == CodexTab.Notes) ShowSelectedNote();
-        else SetDetailContent("Select an Entry", "Choose an entry from the list to view its details.");
+        ShowBrowseDetail();
     }
 
     private CodexNoteEntry? SelectedNote() => _activeTab == CodexTab.Notes
-        ? _currentEntries.OfType<NoteDisplayItem>().FirstOrDefault(n => n.Note.Id == _selectedNoteId)?.Note
+        ? (_browse.SelectedItem as NoteDisplayItem)?.Note
         : null;
 
     private void BeginEdit(CodexNoteEntry? note, CodexNoteDraft? restoredDraft = null)
@@ -365,6 +347,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         _token.SetBindWatch(View.NoteContent, true);
         _token.SetBindWatch(View.NoteCategorySelection, true);
         _token.SetBindValue(View.CanCloseWindow, false);
+        RefreshEntryTextures();
         SetStatus("Save your note or cancel editing.");
     }
 
@@ -387,6 +370,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         _token.SetBindWatch(View.NoteCategorySelection, false);
         _token.SetGroupLayout(View.DetailGroup, View.BuildDetailContent());
         _token.SetBindValue(View.CanCloseWindow, !_busy);
+        RefreshEntryTextures();
         ShowSelectedNote();
     }
 
@@ -481,7 +465,6 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
                 SetStatus("Note was not deleted. Please try again.");
                 return;
             }
-            _selectedNoteId = null;
             await ReloadEntriesAsync();
             if (!_closed) SetStatus("Note deleted.");
         }
@@ -501,7 +484,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             NoteDisplayItem item = new(note);
             SetDetailContent(item.DetailTitle, item.DetailBody);
         }
-        else if (_currentEntries.Count == 0)
+        else if (_browse.Entries.Count == 0)
             SetDetailContent("No Notes", "No notes match this category or search. Use New Note to write one.");
         else
             SetDetailContent("Select a Note", "Choose a note to read it, or use New Note to write one.");
@@ -648,43 +631,56 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     private void RefreshEntryList()
     {
         _imageInput.Reset();
-        int totalPages = Math.Max(1, (int)Math.Ceiling(_currentEntries.Count / (double)PageSize));
-        _currentPage = Math.Clamp(_currentPage, 0, totalPages - 1);
-        int startIndex = _currentPage * PageSize;
-        int endIndex = Math.Min(startIndex + PageSize, _currentEntries.Count);
-
-        _token.SetBindValue(View.PageInfo, $"{_currentPage + 1} / {totalPages}");
-        _token.SetBindValue(View.ShowPrevPage, _currentPage > 0);
-        _token.SetBindValue(View.ShowNextPage, _currentPage < totalPages - 1 && _currentEntries.Count > 0);
+        _token.SetBindValue(View.PageInfo, _browse.PageInfo);
+        _token.SetBindValue(View.ShowPrevPage, _browse.HasPrevious);
+        _token.SetBindValue(View.ShowNextPage, _browse.HasNext);
 
         for (int i = 0; i < PlayerCodexView.EntriesPerPage; i++)
         {
-            int entryIndex = startIndex + i;
-            if (i < PageSize && entryIndex < endIndex)
-            {
-                ICodexDisplayItem item = _currentEntries[entryIndex];
-                _token.SetBindValue(View.EntryNames[i], item.DisplayName);
-                _token.SetBindValue(View.EntrySubtitles[i], item.Subtitle);
-                _token.SetBindValue(View.EntryRowVisible[i], true);
-            }
-            else
-            {
-                _token.SetBindValue(View.EntryRowVisible[i], false);
-            }
+            ICodexDisplayItem? item = _browse.GetRow(i);
+            _token.SetBindValue(View.EntryNames[i], item?.DisplayName ?? "");
+            _token.SetBindValue(View.EntrySubtitles[i], item?.Subtitle ?? "");
+            _token.SetBindValue(View.EntryTooltips[i], item == null ? "" :
+                string.IsNullOrWhiteSpace(item.Subtitle) ? item.DisplayName : $"{item.DisplayName}\n{item.Subtitle}");
+            _token.SetBindValue(View.EntryRowVisible[i], item != null);
         }
+        RefreshEntryTextures();
+    }
+
+    private void RefreshEntryTextures()
+    {
+        for (int i = 0; i < PlayerCodexView.EntriesPerPage; i++)
+        {
+            bool selected = _draft == null && _browse.GetRow(i) != null &&
+                            _browse.SelectedIndex == _browse.PageIndex * _browse.PageSize + i;
+            _token.SetBindValue(View.EntryTextures[i], selected ? "ui_cdx_ent_s_v2" : "ui_cdx_ent_n_v2");
+        }
+    }
+
+    private void MovePage(int direction)
+    {
+        if (!_browse.MovePage(direction)) return;
+        RefreshEntryList();
+        ShowBrowseDetail();
+    }
+
+    private void ShowBrowseDetail()
+    {
+        if (_activeTab == CodexTab.Notes) ShowSelectedNote();
+        else if (_browse.SelectedItem is { } item) SetDetailContent(item.DetailTitle, item.DetailBody);
+        else if (_browse.Entries.Count == 0)
+            SetDetailContent("No Entries", "No entries match this category. Choose another category or tab.");
+        else SetDetailContent("Select an Entry", "Choose an entry from the list to view its details.");
+        if (_activeTab != CodexTab.Notes) _token.SetBindValue(View.ShowNoteActions, false);
     }
 
     // ──────────────────────── Entry selection / detail ────────────────────────
 
     private void SelectEntry(int rowIndex)
     {
-        int entryIndex = (_currentPage * PageSize) + rowIndex;
-        if (rowIndex < 0 || rowIndex >= PageSize || entryIndex >= _currentEntries.Count) return;
-
-        ICodexDisplayItem item = _currentEntries[entryIndex];
-        _selectedNoteId = (item as NoteDisplayItem)?.Note.Id;
-        _token.SetBindValue(View.ShowNoteActions, item is NoteDisplayItem note && note.Note.CanPlayerEdit);
-        SetDetailContent(item.DetailTitle, item.DetailBody);
+        if (!_browse.SelectRow(rowIndex)) return;
+        RefreshEntryTextures();
+        ShowBrowseDetail();
     }
 
     private void SetDetailContent(string title, string body)
