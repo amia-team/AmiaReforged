@@ -214,6 +214,12 @@ public class CodexQueryService
 
     #region Trait Queries
 
+    /// <summary>Gets current character traits for the player window, independently of the trait journal.</summary>
+    public Task<IReadOnlyList<PlayerCodexTrait>> GetPlayerTraitsAsync(
+        CharacterId characterId, TraitCategory? category, CancellationToken ct = default) =>
+        _queries.DispatchAsync<GetPlayerCodexTraitsQuery, IReadOnlyList<PlayerCodexTrait>>(
+            new GetPlayerCodexTraitsQuery { CharacterId = characterId, Category = category }, ct);
+
     /// <summary>
     /// Gets all traits for a character
     /// </summary>

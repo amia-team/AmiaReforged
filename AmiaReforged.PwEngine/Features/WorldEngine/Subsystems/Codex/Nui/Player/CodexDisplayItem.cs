@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
@@ -197,6 +198,18 @@ public sealed class TraitDisplayItem : ICodexDisplayItem
     }
 
     public string Subtitle => _entry.Category.DisplayName();
+}
+
+public sealed class PlayerTraitDisplayItem(PlayerCodexTrait trait) : ICodexDisplayItem
+{
+    private string CategoryName => trait.Category?.DisplayName() ?? "Uncategorized";
+    public string DisplayName => trait.Name;
+    public string DetailTitle => trait.Name;
+    public string Subtitle => CategoryName + (trait.IsActive ? "" : " / Inactive") +
+                              (trait.IsConfirmed ? "" : " / Unconfirmed");
+    public string DetailBody => $"Category: {CategoryName}\nAcquired: {trait.DateAcquired:yyyy-MM-dd}" +
+                                $"\nStatus: {(trait.IsActive ? "Active" : "Inactive")} / {(trait.IsConfirmed ? "Confirmed" : "Unconfirmed")}" +
+                                (string.IsNullOrEmpty(trait.Description) ? "" : $"\n\n{trait.Description}");
 }
 
 public sealed class KnowledgeDisplayItem : ICodexDisplayItem

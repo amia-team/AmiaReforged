@@ -604,16 +604,9 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     private async Task<List<ICodexDisplayItem>> LoadTraitEntries(CharacterId cid)
     {
-        IReadOnlyList<CodexTraitEntry> entries;
-
-        if (_activeCategory == "all")
-            entries = await QueryService!.Value.GetAllTraitsAsync(cid);
-        else if (Enum.TryParse<TraitCategory>(_activeCategory, true, out TraitCategory cat))
-            entries = await QueryService!.Value.GetTraitsByCategoryAsync(cid, cat);
-        else
-            entries = await QueryService!.Value.GetAllTraitsAsync(cid);
-
-        return entries.Select(e => (ICodexDisplayItem)new TraitDisplayItem(e)).ToList();
+        TraitCategory? category = Enum.TryParse(_activeCategory, true, out TraitCategory cat) ? cat : null;
+        var entries = await QueryService!.Value.GetPlayerTraitsAsync(cid, category);
+        return entries.Select(e => (ICodexDisplayItem)new PlayerTraitDisplayItem(e)).ToList();
     }
 
     private List<ICodexDisplayItem> LoadEconomyEntries(CharacterId cid)
