@@ -1,4 +1,4 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Prototype;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui;
 using Anvil.API;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -66,6 +66,18 @@ public class CodexImageInputTests
         input.Handle(NuiEventType.MouseDown, "entry", 0, true);
         input.Handle(NuiEventType.MouseUp, "body", null, false);
         Assert.That(input.Handle(NuiEventType.MouseUp, "entry", 0, true), Is.False);
+    }
+
+    [Test]
+    public void LayoutOrBusyStateChange_CancelsCapturedPress()
+    {
+        CodexImageInput input = new();
+        input.Handle(NuiEventType.MouseDown, "btn_entry_0", 0, true);
+        input.Reset();
+        Assert.That(input.Handle(NuiEventType.MouseUp, "btn_entry_0", 0, true), Is.False,
+            "An old press must not activate a replacement control with the same ID.");
+        input.Handle(NuiEventType.MouseDown, "btn_entry_0", 0, true);
+        Assert.That(input.Handle(NuiEventType.MouseUp, "btn_entry_0", 0, true), Is.True);
     }
 
     [Test]

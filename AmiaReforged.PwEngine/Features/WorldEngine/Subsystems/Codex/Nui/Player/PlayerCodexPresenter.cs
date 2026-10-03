@@ -12,6 +12,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using Newtonsoft.Json;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Player;
 
@@ -26,6 +27,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+    private readonly CodexImageInput _imageInput = new();
 
     // Injected services
     [Inject] private Lazy<CodexQueryService>? QueryService { get; init; }
@@ -63,11 +65,10 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), "Codex")
+        _window = new NuiWindow(View.RootLayout(), null!)
         {
-            Geometry = new NuiRect(40f, 40f, PlayerCodexView.WindowW, PlayerCodexView.WindowH),
-            Resizable = true,
-            Closable = View.CanCloseWindow
+            Geometry = View.Geometry, Transparent = true, Border = false,
+            Resizable = false, Closable = false, Collapsed = false
         };
 
         // Resolve CharacterId from the player's ds_pckey item
@@ -88,7 +89,10 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             return;
         }
 
+        Position(-1, -1);
         _token.SetBindValue(View.CanInteract, true);
+        _token.SetBindValue(View.ControlColor, PlayerCodexView.Gold);
+        RefreshTabTextures();
         _token.SetBindValue(View.CanCloseWindow, true);
         _token.SetBindValue(View.ShowConfirmation, false);
         _token.SetBindValue(View.ShowNoteActions, false);
@@ -116,12 +120,52 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
         if (_closed) return;
-        if (eventData.EventType == NuiEventType.Click)
+        bool image = View.ImageActionIds.Contains(eventData.ElementId);
+        if (eventData.EventType is NuiEventType.MouseDown or NuiEventType.MouseUp)
+        {
+            int? button = null;
+            if (image)
+            {
+                try { button = eventData.GetEventPayload<CodexMousePayload>()?.MouseButton; }
+                catch (JsonException) { /* Missing or invalid buttons must not become left clicks. */ }
+            }
+            if (_imageInput.Handle(eventData.EventType, eventData.ElementId, button,
+                    image && IsImageActionEnabled(eventData.ElementId)))
+                _ = HandleClickAsync(eventData.ElementId);
+            return;
+        }
+
+        // Image actions never dispatch Click as well as MouseUp. Native note buttons still use Click.
+        if (eventData.EventType == NuiEventType.Click && !image &&
+            eventData.ElementId is "note_new" or "note_edit" or "note_delete" or "note_save" or
+                "note_cancel" or "note_search" or "note_clear_search")
             _ = HandleClickAsync(eventData.ElementId);
         else if (eventData.EventType == NuiEventType.Watch && _draft != null && !_busy &&
                  (eventData.ElementId == View.NoteTitle.Key || eventData.ElementId == View.NoteContent.Key ||
                   eventData.ElementId == View.NoteCategorySelection.Key))
             ReadDraft();
+    }
+
+    private bool IsImageActionEnabled(string id)
+    {
+        if (_busy || _closed) return false;
+        if (id is "codex_confirm" or "codex_keep") return _pendingAction != null;
+        if (id == "btn_select_traits") return _activeTab == CodexTab.Traits;
+        if (id == "btn_prev_page") return _currentPage > 0;
+        if (id == "btn_next_page") return (_currentPage + 1) * PageSize < _currentEntries.Count;
+        if (id.StartsWith("btn_entry_", StringComparison.Ordinal))
+            return int.TryParse(id["btn_entry_".Length..], out int row) && row >= 0 && row < PageSize &&
+                   _currentPage * PageSize + row < _currentEntries.Count;
+        return true;
+    }
+
+    private void Position(float x, float y) => _token.SetBindValue(View.Geometry,
+        new NuiRect(x, y, PlayerCodexView.WindowW, PlayerCodexView.WindowH));
+
+    private void RefreshTabTextures()
+    {
+        foreach ((CodexTab tab, NuiBind<string> texture) in View.TabTextures)
+            _token.SetBindValue(texture, tab == _activeTab ? "ui_cdx_tab_s_v2" : "ui_cdx_tab_n_v2");
     }
 
     public override void UpdateView() { }
@@ -130,6 +174,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     {
         if (_closed) return;
         _closed = true;
+        _imageInput.Reset();
         _loadVersion++;
         try { _token.Close(); }
         catch { /* token may already be closed by the client */ }
@@ -140,6 +185,12 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         if (_closed || _busy) return;
         try
         {
+            if (View.ImageActionIds.Contains(elementId) && !IsImageActionEnabled(elementId)) return;
+            if (elementId is "codex_center" or "codex_top_left")
+            {
+                Position(elementId == "codex_center" ? -1 : 24, elementId == "codex_center" ? -1 : 24);
+                return;
+            }
             if (elementId == "codex_keep")
             {
                 ClearConfirmation();
@@ -230,6 +281,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     private async Task SwitchTabAsync(CodexTab tab)
     {
         _activeTab = tab;
+        RefreshTabTextures();
         _activeCategory = "all";
         _currentPage = 0;
         _selectedNoteId = null;
@@ -244,6 +296,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     private async Task ApplyCategoryAsync(string category)
     {
         _activeCategory = category;
+        SwapCategorySidebar();
         _currentPage = 0;
         _selectedNoteId = null;
         await ReloadEntriesAsync();
@@ -396,6 +449,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             EndEdit();
             // A saved note must remain visible after changing its category or text.
             _activeCategory = category.ToString();
+            SwapCategorySidebar();
             _searchTerm = "";
             _token.SetBindValue(View.NoteSearch, "");
             await ReloadEntriesAsync(savedId);
@@ -456,7 +510,9 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     private void SetBusy(bool busy)
     {
         _busy = busy;
+        _imageInput.Reset();
         _token.SetBindValue(View.CanInteract, !busy);
+        _token.SetBindValue(View.ControlColor, busy ? PlayerCodexView.Muted : PlayerCodexView.Gold);
         _token.SetBindValue(View.CanCloseWindow, !busy && _draft == null);
     }
 
@@ -591,6 +647,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     private void RefreshEntryList()
     {
+        _imageInput.Reset();
         int totalPages = Math.Max(1, (int)Math.Ceiling(_currentEntries.Count / (double)PageSize));
         _currentPage = Math.Clamp(_currentPage, 0, totalPages - 1);
         int startIndex = _currentPage * PageSize;
@@ -645,6 +702,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     private void SwapCategorySidebar()
     {
+        _imageInput.Reset();
         NuiColumn sidebar = _activeTab switch
         {
             CodexTab.Knowledge => BuildCategoryColumn(
@@ -701,36 +759,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         _token.SetGroupLayout(View.CategoryGroup, sidebar);
     }
 
-    private NuiColumn BuildCategoryColumn(params (string Label, string Id)[] categories)
-    {
-        List<NuiElement> children = new()
-        {
-            new NuiLabel(_activeTab.ToString())
-            {
-                Height = 28f,
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            },
-            new NuiSpacer { Height = 4f }
-        };
-
-        foreach ((string label, string id) in categories)
-        {
-            children.Add(new NuiButton(label)
-            {
-                Id = $"cat_{id}",
-                Enabled = View.CanInteract,
-                Width = 120f,
-                Height = 28f,
-                Tooltip = $"Show {label.ToLower()}"
-            });
-            children.Add(new NuiSpacer { Height = 2f });
-        }
-
-        children.Add(new NuiSpacer());
-
-        return new NuiColumn { Children = children };
-    }
+    private NuiColumn BuildCategoryColumn(params (string Label, string Id)[] categories) =>
+        View.BuildCategoryColumn(_activeTab, _activeCategory, categories);
 
     private NuiColumn BuildEconomyCategoryColumn()
     {
@@ -754,6 +784,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     private void SwapEntryListPane()
     {
+        _imageInput.Reset();
         NuiColumn layout = _activeTab switch
         {
             CodexTab.Economy => View.BuildEconomyEntryList(),

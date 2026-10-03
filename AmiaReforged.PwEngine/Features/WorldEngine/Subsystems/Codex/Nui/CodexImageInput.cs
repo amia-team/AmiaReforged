@@ -1,12 +1,14 @@
 using Anvil.API;
 using Newtonsoft.Json;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Prototype;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui;
 
-/// <summary>Image actions use a matching left press/release; Click is diagnostic only.</summary>
+/// <summary>Image actions use a matching left press/release; Click never dispatches image actions.</summary>
 public sealed class CodexImageInput
 {
     private string? _pressedId;
+
+    public void Reset() => _pressedId = null;
 
     public bool Handle(NuiEventType eventType, string elementId, int? mouseButton, bool enabled)
     {
