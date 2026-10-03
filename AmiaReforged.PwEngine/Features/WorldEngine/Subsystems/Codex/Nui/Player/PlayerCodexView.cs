@@ -34,6 +34,7 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
     public readonly NuiBind<string> NoteContent = new("codex_note_content");
     public readonly NuiBind<int> NoteCategorySelection = new("codex_note_category");
     public readonly NuiBind<string> NoteSearch = new("codex_note_search");
+    public readonly NuiBind<string> NoteEditorTitle = new("codex_note_editor_title");
     public readonly NuiBind<string> Status = new("codex_status");
     public readonly NuiBind<bool> CanInteract = new("codex_can_interact");
     public readonly NuiBind<bool> CanCloseWindow = new("codex_can_close");
@@ -238,11 +239,13 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                 Width = DetailW, Height = 32, Margin = 0, Padding = 0, Border = false, Scrollbars = NuiScrollbars.None,
                 Element = new NuiRow
                 {
-                    Height = 32, Margin = 0, Padding = 0, Visible = ShowNoteActions,
+                    Width = DetailW, Height = 32, Margin = 0, Padding = 0, Visible = ShowNoteActions,
                     Children =
                     [
-                        new NuiButton("Edit") { Id = "note_edit", Height = 30, Margin = 0, Enabled = CanInteract },
-                        new NuiButton("Delete") { Id = "note_delete", Height = 30, Margin = 0, Enabled = CanInteract }
+                        new NuiSpacer { Margin = 0 },
+                        ImageControl("note_edit", "ui_cdx_ent_n_v2", "Edit", 96, 32, "Edit this personal note"),
+                        new NuiSpacer { Width = 8, Margin = 0 },
+                        ImageControl("note_delete", "ui_cdx_ent_n_v2", "Delete", 96, 32, "Delete this personal note; confirmation required")
                     ]
                 }
             },
@@ -259,25 +262,51 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
         Width = DetailW, Height = 398, Margin = 0, Padding = 0,
         Children =
         [
-            new NuiLabel("Edit Note") { Height = 28, Margin = 0, ForegroundColor = Ink, HorizontalAlign = NuiHAlign.Center },
-            new NuiTextEdit("Title (optional)", NoteTitle, CodexNoteEntry.MaxTitleLength, false)
-            { Height = 32, Margin = 0, Enabled = CanInteract },
-            new NuiCombo
+            new NuiLabel(NoteEditorTitle)
+            { Width = DetailW, Height = 26, Margin = 0, ForegroundColor = Ink, HorizontalAlign = NuiHAlign.Center },
+            new NuiSpacer { Height = 4, Margin = 0 },
+            InputFrame(new NuiTextEdit("Title (optional)", NoteTitle, CodexNoteEntry.MaxTitleLength, false)
             {
-                Id = "note_category", Height = 32, Margin = 0, Enabled = CanInteract,
-                Selected = NoteCategorySelection,
-                Entries = new List<NuiComboEntry> { new("General", (int)NoteCategory.General), new("Quest", (int)NoteCategory.Quest),
-                    new("Character", (int)NoteCategory.Character), new("Location", (int)NoteCategory.Location) }
-            },
-            new NuiTextEdit("Note", NoteContent, CodexNoteEntry.MaxPlayerContentLength, true)
-            { Height = 272, Margin = 0, WordWrap = true, Enabled = CanInteract },
-            new NuiRow
+                Id = "note_title_input", Width = 394, Height = 32, Margin = 0, Enabled = CanInteract,
+                ForegroundColor = ControlColor, Tooltip = $"Optional title; up to {CodexNoteEntry.MaxTitleLength} characters"
+            }, DetailW, 44),
+            new NuiSpacer { Height = 6, Margin = 0 },
+            InputFrame(new NuiRow
             {
-                Height = 34, Margin = 0, Padding = 0,
+                Width = 394, Height = 32, Margin = 0, Padding = 0,
                 Children =
                 [
-                    new NuiButton("Save") { Id = "note_save", Height = 30, Margin = 0, Enabled = CanInteract },
-                    new NuiButton("Cancel") { Id = "note_cancel", Height = 30, Margin = 0, Enabled = CanInteract }
+                    new NuiLabel("Category")
+                    { Width = 78, Height = 32, Margin = 0, ForegroundColor = ControlColor, VerticalAlign = NuiVAlign.Middle },
+                    new NuiSpacer { Width = 8, Margin = 0 },
+                    new NuiCombo
+                    {
+                        Id = "note_category", Width = 308, Height = 32, Margin = 0, Enabled = CanInteract,
+                        ForegroundColor = ControlColor, Selected = NoteCategorySelection, Tooltip = "Personal note category",
+                        Entries = new List<NuiComboEntry>
+                        {
+                            new("General", (int)NoteCategory.General), new("Quest", (int)NoteCategory.Quest),
+                            new("Character", (int)NoteCategory.Character), new("Location", (int)NoteCategory.Location)
+                        }
+                    }
+                ]
+            }, DetailW, 44),
+            new NuiSpacer { Height = 6, Margin = 0 },
+            InputFrame(new NuiTextEdit("Write your note", NoteContent, CodexNoteEntry.MaxPlayerContentLength, true)
+            {
+                Id = "note_content_input", Width = 394, Height = 216, Margin = 0, WordWrap = true,
+                Enabled = CanInteract, ForegroundColor = ControlColor,
+                Tooltip = $"Up to {CodexNoteEntry.MaxPlayerContentLength} characters; scroll to read longer notes"
+            }, DetailW, 228),
+            new NuiSpacer { Height = 6, Margin = 0 },
+            new NuiRow
+            {
+                Width = DetailW, Height = 34, Margin = 0, Padding = 0,
+                Children =
+                [
+                    ImageControl("note_save", "ui_cdx_ent_n_v2", "Save", 196, 34, "Save this note"),
+                    new NuiSpacer { Width = 14, Margin = 0 },
+                    ImageControl("note_cancel", "ui_cdx_ent_n_v2", "Cancel", 196, 34, "Cancel editing; unsaved changes require confirmation")
                 ]
             }
         ]
@@ -287,18 +316,25 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
     {
         List<NuiElement> children =
         [
-            new NuiButton("New Note") { Id = "note_new", Height = 32, Margin = 0, Enabled = CanInteract },
+            ImageControl("note_new", "ui_cdx_ent_n_v2", "New Note", EntryW, 32, "Write a personal note", "ui_cdx_i_scroll", 20),
+            new NuiSpacer { Height = 6, Margin = 0 },
+            InputFrame(new NuiTextEdit("Search notes", NoteSearch, 100, false)
+            {
+                Id = "note_search_input", Width = 214, Height = 28, Margin = 0, Enabled = CanInteract,
+                ForegroundColor = ControlColor, Tooltip = "Search personal and visible DM notes by title or content"
+            }, EntryW, 40),
+            new NuiSpacer { Height = 4, Margin = 0 },
             new NuiRow
             {
-                Height = 32, Margin = 0, Padding = 0,
+                Width = EntryW, Height = 32, Margin = 0, Padding = 0,
                 Children =
                 [
-                    new NuiTextEdit("Search notes", NoteSearch, 100, false) { Height = 28, Margin = 0, Enabled = CanInteract },
-                    new NuiButton("Find") { Id = "note_search", Width = 48, Height = 28, Margin = 0, Enabled = CanInteract },
-                    new NuiButton("X")
-                    { Id = "note_clear_search", Width = 28, Height = 28, Margin = 0, Tooltip = "Clear search", Enabled = CanInteract }
+                    ImageControl("note_search", "ui_cdx_ent_n_v2", "Find", 109, 32, "Apply the search text"),
+                    new NuiSpacer { Width = 8, Margin = 0 },
+                    ImageControl("note_clear_search", "ui_cdx_ent_n_v2", "Clear", 109, 32, "Clear the search text")
                 ]
-            }
+            },
+            new NuiSpacer { Height = 6, Margin = 0 }
         ];
         AddEntryRowsAndPagination(children, NotesPerPage);
         return EntryColumn(children);
@@ -328,6 +364,14 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
 
     private static NuiColumn EntryColumn(List<NuiElement> children) => new()
     { Width = EntryW, Height = 426, Margin = 0, Padding = 0, Children = children };
+
+    private static NuiGroup InputFrame(NuiElement input, float width, float height) => new()
+    {
+        Width = width, Height = height, Margin = 0, Padding = 0, Border = false,
+        Scrollbars = NuiScrollbars.None, Scissor = true,
+        DrawList = [Picture("ui_cdx_bg", 0, 0, width, height), .. Frame(width, height, "pn", 12)],
+        Element = Inset(input, width, height, 6)
+    };
 
     private void AddEntryRowsAndPagination(List<NuiElement> children, int rowCount = EntriesPerPage, float rowHeight = 44)
     {

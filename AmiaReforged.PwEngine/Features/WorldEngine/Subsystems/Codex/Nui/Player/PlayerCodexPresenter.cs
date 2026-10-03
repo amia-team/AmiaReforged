@@ -133,12 +133,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             return;
         }
 
-        // Image actions never dispatch Click as well as MouseUp. Native note buttons still use Click.
-        if (eventData.EventType == NuiEventType.Click && !image &&
-            eventData.ElementId is "note_new" or "note_edit" or "note_delete" or "note_save" or
-                "note_cancel" or "note_search" or "note_clear_search")
-            _ = HandleClickAsync(eventData.ElementId);
-        else if (eventData.EventType == NuiEventType.Watch && _draft != null && !_busy &&
+        // All action controls are images. Native editors update the draft through Watch.
+        if (eventData.EventType == NuiEventType.Watch && _draft != null && !_busy &&
                  (eventData.ElementId == View.NoteTitle.Key || eventData.ElementId == View.NoteContent.Key ||
                   eventData.ElementId == View.NoteCategorySelection.Key))
             ReadDraft();
@@ -147,6 +143,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     private bool IsImageActionEnabled(string id)
     {
         if (_busy || _closed) return false;
+        if (id.StartsWith("note_", StringComparison.Ordinal))
+            return CanActivateNoteAction(id, _activeTab, _draft, SelectedNote());
         if (id is "codex_confirm" or "codex_keep") return _pendingAction != null;
         if (id == "btn_select_traits") return _activeTab == CodexTab.Traits;
         if (id == "btn_prev_page") return _browse.HasPrevious;
@@ -155,6 +153,15 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             return int.TryParse(id["btn_entry_".Length..], out int row) && _browse.GetRow(row) != null;
         return true;
     }
+
+    internal static bool CanActivateNoteAction(string id, CodexTab tab, CodexNoteDraft? draft,
+        CodexNoteEntry? selectedNote) => tab == CodexTab.Notes && id switch
+    {
+        "note_new" or "note_search" or "note_clear_search" => true,
+        "note_save" or "note_cancel" => draft != null,
+        "note_edit" or "note_delete" => draft == null && selectedNote?.CanPlayerEdit == true,
+        _ => false
+    };
 
     private void Position(float x, float y) => _token.SetBindValue(View.Geometry,
         new NuiRect(x, y, PlayerCodexView.WindowW, PlayerCodexView.WindowH));
@@ -339,7 +346,9 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             ? cat : NoteCategory.General;
         _draft = restoredDraft ?? new CodexNoteDraft(note, category);
         DraftStore?.Value.Set(_player, _characterId.Value, _draft);
+        _imageInput.Reset();
         _token.SetGroupLayout(View.DetailGroup, View.BuildNoteEditor());
+        _token.SetBindValue(View.NoteEditorTitle, _draft.NoteId == null ? "New Note" : "Edit Note");
         _token.SetBindValue(View.NoteTitle, _draft.Title);
         _token.SetBindValue(View.NoteContent, _draft.Content);
         _token.SetBindValue(View.NoteCategorySelection, (int)_draft.Category);
@@ -368,6 +377,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         _token.SetBindWatch(View.NoteTitle, false);
         _token.SetBindWatch(View.NoteContent, false);
         _token.SetBindWatch(View.NoteCategorySelection, false);
+        _imageInput.Reset();
         _token.SetGroupLayout(View.DetailGroup, View.BuildDetailContent());
         _token.SetBindValue(View.CanCloseWindow, !_busy);
         RefreshEntryTextures();
