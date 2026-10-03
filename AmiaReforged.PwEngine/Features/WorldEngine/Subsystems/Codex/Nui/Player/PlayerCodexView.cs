@@ -277,12 +277,16 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                 Children =
                 [
                     new NuiLabel("Category")
-                    { Width = 78, Height = 32, Margin = 0, ForegroundColor = ControlColor, VerticalAlign = NuiVAlign.Middle },
+                    {
+                        Width = 78, Height = 32, Margin = 0, ForegroundColor = ControlColor,
+                        VerticalAlign = NuiVAlign.Middle, Tooltip = "Personal note category"
+                    },
                     new NuiSpacer { Width = 8, Margin = 0 },
+                    // Combo and tooltip use the same native popup; keep help on the label.
                     new NuiCombo
                     {
                         Id = "note_category", Width = 308, Height = 32, Margin = 0, Enabled = CanInteract,
-                        ForegroundColor = ControlColor, Selected = NoteCategorySelection, Tooltip = "Personal note category",
+                        ForegroundColor = ControlColor, Selected = NoteCategorySelection,
                         Entries = new List<NuiComboEntry>
                         {
                             new("General", (int)NoteCategory.General), new("Quest", (int)NoteCategory.Quest),
