@@ -1,5 +1,5 @@
-using System.Text.Json.Serialization;
 using Anvil.API;
+using Newtonsoft.Json;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Prototype;
 
@@ -26,6 +26,6 @@ public sealed class CodexImageInput
 
 public sealed class CodexMousePayload
 {
-    [JsonPropertyName("mouse_btn")]
+    [JsonProperty("mouse_btn")]
     public int? MouseButton { get; init; }
 }

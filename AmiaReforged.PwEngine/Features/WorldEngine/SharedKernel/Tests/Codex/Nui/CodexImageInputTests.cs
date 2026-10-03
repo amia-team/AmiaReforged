@@ -1,6 +1,6 @@
-using System.Text.Json;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Prototype;
 using Anvil.API;
+using Newtonsoft.Json;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Nui;
@@ -79,11 +79,26 @@ public class CodexImageInputTests
         }
     }
 
-    [Test]
-    public void Payload_UsesMouseButtonField_WithoutTreatingMissingAsLeft()
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    public void AnvilPayloadParser_MapsMouseButtonField(int button)
     {
-        Assert.That(JsonSerializer.Deserialize<CodexMousePayload>("{\"mouse_btn\":2,\"mouse_pos\":{\"x\":12,\"y\":34}}")!.MouseButton,
-            Is.EqualTo(2));
-        Assert.That(JsonSerializer.Deserialize<CodexMousePayload>("{}")!.MouseButton, Is.Null);
+        // GetEventPayload<T> uses JsonUtility.FromJson<T> in the installed Anvil version.
+        string json = $"{{\"mouse_btn\":{button},\"mouse_pos\":{{\"x\":12,\"y\":34}}}}";
+        Assert.That(JsonUtility.FromJson<CodexMousePayload>(json)!.MouseButton, Is.EqualTo(button));
+    }
+
+    [Test]
+    public void AnvilPayloadParser_MissingButton_DoesNotDefaultToLeft()
+    {
+        Assert.That(JsonUtility.FromJson<CodexMousePayload>("{}")!.MouseButton, Is.Null);
+    }
+
+    [Test]
+    public void AnvilPayloadParser_InvalidButton_RaisesTheCaughtExceptionType()
+    {
+        Assert.Catch<JsonException>(() =>
+            JsonUtility.FromJson<CodexMousePayload>("{\"mouse_btn\":{}}"));
     }
 }

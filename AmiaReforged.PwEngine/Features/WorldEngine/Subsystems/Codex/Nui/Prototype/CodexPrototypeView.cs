@@ -22,10 +22,15 @@ public sealed class CodexPrototypeView : IScryView
     public readonly NuiBind<string> Status = new("cdxp_status");
     public readonly NuiBind<string> Events = new("cdxp_events");
 
-    public NuiLayout RootLayout() => new NuiColumn
+    public NuiLayout RootLayout() => new NuiGroup
     {
         Width = WindowWidth, Height = WindowHeight, Margin = 0, Padding = 0,
-        Children = [BuildShell()]
+        Border = false, Scrollbars = NuiScrollbars.None,
+        Element = new NuiColumn
+        {
+            Width = WindowWidth, Height = WindowHeight, Margin = 0, Padding = 0,
+            Children = [BuildShell()]
+        }
     };
 
     // Drawing directly on the root group did not render on the client. Use a child

@@ -1,7 +1,7 @@
-using System.Text.Json;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using Newtonsoft.Json;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Prototype;
 
@@ -35,7 +35,7 @@ public sealed class CodexPrototypePresenter(NwPlayer player) : ScryPresenter<Cod
 
         Position(-1, -1);
         _token.SetBindValue(View.Header,
-            $"CODEX / 001 r3 - GUI {player.GetDeviceProperty(PlayerDeviceProperty.GuiWidth)}x" +
+            $"CODEX / 001 r4 - GUI {player.GetDeviceProperty(PlayerDeviceProperty.GuiWidth)}x" +
             $"{player.GetDeviceProperty(PlayerDeviceProperty.GuiHeight)} / " +
             $"{player.GetDeviceProperty(PlayerDeviceProperty.GuiScale)}%");
         _token.SetBindValue(View.Title, "A page from the Codex");
