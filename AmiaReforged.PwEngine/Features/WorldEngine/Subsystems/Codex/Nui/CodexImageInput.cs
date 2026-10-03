@@ -7,21 +7,24 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui;
 public sealed class CodexImageInput
 {
     private string? _pressedId;
-    internal string? PressedId => _pressedId;
 
     public void Reset() => _pressedId = null;
 
-    public bool Handle(NuiEventType eventType, string elementId, int? mouseButton, bool enabled)
+    public bool Handle(NuiEventType eventType, string elementId, int? mouseButton, bool enabled,
+        bool isActionElement = true)
     {
         if (eventType == NuiEventType.MouseDown)
         {
+            // NUI also emits MouseDown for decorative ancestor groups after the child.
+            // Keep the child's capture; a release elsewhere still cancels it below.
+            if (!isActionElement) return false;
             _pressedId = mouseButton == 0 && enabled ? elementId : null;
             return false;
         }
 
         if (eventType != NuiEventType.MouseUp) return false;
 
-        bool activate = mouseButton == 0 && enabled && _pressedId == elementId;
+        bool activate = isActionElement && mouseButton == 0 && enabled && _pressedId == elementId;
         _pressedId = null;
         return activate;
     }

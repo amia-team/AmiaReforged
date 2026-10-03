@@ -8,6 +8,23 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Nu
 [TestFixture]
 public class CodexImageInputTests
 {
+    [TestCase("tab_quests")]
+    [TestCase("btn_entry_0")]
+    [TestCase("cat_all")]
+    [TestCase("codex_top_left")]
+    [TestCase("codex_close")]
+    public void ChildPressAndRelease_WithParentMouseEvents_ActivatesExactlyOnce(string actionId)
+    {
+        CodexImageInput input = new();
+        input.Handle(NuiEventType.MouseDown, actionId, 0, true);
+        input.Handle(NuiEventType.MouseDown, "codex_shell", null, false, isActionElement: false);
+        Assert.That(input.Handle(NuiEventType.MouseUp, actionId, 0, true), Is.True,
+            "The decorative parent's bubbled MouseDown must not erase the child's press.");
+        Assert.That(input.Handle(NuiEventType.MouseUp, "codex_shell", null, false, isActionElement: false), Is.False);
+        Assert.That(input.Handle(NuiEventType.Click, actionId, null, true), Is.False);
+        Assert.That(input.Handle(NuiEventType.MouseUp, actionId, 0, true), Is.False);
+    }
+
     [Test]
     public void PressClickReleaseClick_ActivatesExactlyOnce()
     {
@@ -64,7 +81,8 @@ public class CodexImageInputTests
     {
         CodexImageInput input = new();
         input.Handle(NuiEventType.MouseDown, "entry", 0, true);
-        input.Handle(NuiEventType.MouseUp, "body", null, false);
+        input.Handle(NuiEventType.MouseDown, "codex_shell", null, false, isActionElement: false);
+        input.Handle(NuiEventType.MouseUp, "body", null, false, isActionElement: false);
         Assert.That(input.Handle(NuiEventType.MouseUp, "entry", 0, true), Is.False);
     }
 

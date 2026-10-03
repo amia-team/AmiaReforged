@@ -51,7 +51,7 @@ public sealed class CodexPrototypePresenter(NwPlayer player) : ScryPresenter<Cod
     {
         bool image = ev.ElementId is "cdxp_category" or "cdxp_entry" or "cdxp_close";
         if (!image && ev.EventType is NuiEventType.MouseDown or NuiEventType.MouseUp)
-            _imageInput.Handle(ev.EventType, ev.ElementId, null, false);
+            _imageInput.Handle(ev.EventType, ev.ElementId, null, false, isActionElement: false);
 
         if (image && ev.EventType is NuiEventType.MouseDown or NuiEventType.MouseUp or NuiEventType.Click)
         {
