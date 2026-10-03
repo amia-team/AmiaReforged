@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.Chat.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Player;
 using Anvil.API;
 using Anvil.Services;
 
@@ -20,7 +21,7 @@ public class CodexCommand : IChatCommand
     }
 
     public string Command => "./codex";
-    public string Description => "Opens your codex (Knowledge, Quests, Notes, Reputation)";
+    public string Description => "Opens your codex; ./codex display reports viewport and GUI scale";
     public string AllowedRoles => "Player";
 
     public async Task ExecuteCommand(NwPlayer caller, string[] args)
@@ -28,6 +29,18 @@ public class CodexCommand : IChatCommand
         if (caller.IsDM)
         {
             caller.SendServerMessage("The codex is not available for DMs at this time.", ColorConstants.Orange);
+            return;
+        }
+
+        if (args.Length > 0 && args[0].Equals("display", StringComparison.OrdinalIgnoreCase))
+        {
+            int width = caller.GetDeviceProperty(PlayerDeviceProperty.GuiWidth);
+            int height = caller.GetDeviceProperty(PlayerDeviceProperty.GuiHeight);
+            int scale = caller.GetDeviceProperty(PlayerDeviceProperty.GuiScale);
+            caller.SendServerMessage($"Codex display: client GUI {width} x {height}, GUI scale {scale}%. " +
+                                     $"Layout {PlayerCodexView.WindowW} x {PlayerCodexView.WindowH} logical units.", ColorConstants.Cyan);
+            if (width <= 0 || height <= 0 || scale <= 0)
+                caller.SendServerMessage("Client display properties are unavailable. Report your game resolution and GUI scale instead.", ColorConstants.Cyan);
             return;
         }
 

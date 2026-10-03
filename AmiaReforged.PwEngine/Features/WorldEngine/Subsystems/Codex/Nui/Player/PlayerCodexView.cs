@@ -108,14 +108,14 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                                         DarkPanel(160, new NuiGroup
                                         {
                                             Id = "grp_categories", Width = CategoryW, Height = 426,
-                                            Margin = 0, Padding = 0, Border = false, Scrollbars = NuiScrollbars.None,
+                                            Margin = 0, Padding = 0, Border = false, Scrollbars = NuiScrollbars.None, Scissor = true,
                                             Element = new NuiColumn { Margin = 0, Padding = 0, Children = [new NuiSpacer()] }
                                         }.Assign(out CategoryGroup)),
                                         new NuiSpacer { Width = 12, Margin = 0 },
                                         DarkPanel(250, new NuiGroup
                                         {
                                             Id = "grp_entry_list", Width = EntryW, Height = 426,
-                                            Margin = 0, Padding = 0, Border = false, Scrollbars = NuiScrollbars.None,
+                                            Margin = 0, Padding = 0, Border = false, Scrollbars = NuiScrollbars.None, Scissor = true,
                                             Element = BuildEntryListInner()
                                         }.Assign(out EntryListGroup)),
                                         new NuiSpacer { Width = 12, Margin = 0 },
@@ -127,7 +127,7 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                                             Element = Inset(new NuiGroup
                                             {
                                                 Id = "grp_detail", Width = DetailW, Height = 398,
-                                                Margin = 0, Padding = 0, Border = false, Scrollbars = NuiScrollbars.None,
+                                                Margin = 0, Padding = 0, Border = false, Scrollbars = NuiScrollbars.None, Scissor = true,
                                                 Element = BuildDetailContent()
                                             }.Assign(out DetailGroup), 458, BodyH, 26)
                                         }
@@ -212,7 +212,7 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                 Heading(tab.ToString(), CategoryW, 26),
                 new NuiGroup
                 {
-                    Width = CategoryW, Height = listHeight, Margin = 0, Padding = 0, Border = false,
+                    Width = CategoryW, Height = listHeight, Margin = 0, Padding = 0, Border = false, Scissor = true,
                     Scrollbars = scroll ? NuiScrollbars.Y : NuiScrollbars.None,
                     Element = new NuiColumn
                     { Width = controlWidth, Height = contentHeight, Margin = 0, Padding = 0, Children = rows }
