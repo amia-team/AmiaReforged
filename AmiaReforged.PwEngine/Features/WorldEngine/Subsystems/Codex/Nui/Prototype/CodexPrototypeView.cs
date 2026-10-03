@@ -22,8 +22,17 @@ public sealed class CodexPrototypeView : IScryView
     public readonly NuiBind<string> Status = new("cdxp_status");
     public readonly NuiBind<string> Events = new("cdxp_events");
 
-    public NuiLayout RootLayout() => new NuiGroup
+    public NuiLayout RootLayout() => new NuiColumn
     {
+        Width = WindowWidth, Height = WindowHeight, Margin = 0, Padding = 0,
+        Children = [BuildShell()]
+    };
+
+    // Drawing directly on the root group did not render on the client. Use a child
+    // widget for the shell, as with the category, entry and parchment panels.
+    private NuiGroup BuildShell() => new()
+    {
+        Id = "cdxp_shell",
         Width = WindowWidth, Height = WindowHeight, Margin = 0, Padding = 0,
         Border = false, Scrollbars = NuiScrollbars.None, Scissor = true,
         DrawList =
