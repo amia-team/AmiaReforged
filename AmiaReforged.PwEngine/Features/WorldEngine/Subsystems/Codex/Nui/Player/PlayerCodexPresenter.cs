@@ -13,6 +13,8 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Player;
 
@@ -28,6 +30,9 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
     private readonly CodexImageInput _imageInput = new();
+    private bool _traceInput;
+    private int _sourceInputEvents;
+    private int _routedInputEvents;
 
     // Injected services
     [Inject] private Lazy<CodexQueryService>? QueryService { get; init; }
@@ -62,6 +67,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     public override void InitBefore()
     {
+        _traceInput = UtilPlugin.GetEnvironmentVariable("SERVER_MODE") != "live";
         _window = new NuiWindow(View.RootLayout(), null!)
         {
             Geometry = View.Geometry, Transparent = true, Border = false,
@@ -97,6 +103,15 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         _token.SetBindValue(View.NoteSearch, "");
         RefreshEntryList();
 
+        if (_traceInput)
+        {
+            // Observe the token independently of WindowDirector to distinguish missing
+            // client events from an unregistered presenter. This never dispatches actions.
+            _token.OnNuiEvent += TraceInputSource;
+            TraceInput($"ready token={_token.Token}, enabled={_token.GetBindValue(View.CanInteract)}, " +
+                       $"controls={View.ImageActionIds.Count}. Click Top left, then Quests.");
+        }
+
         if (_characterId == null)
         {
             _player.SendServerMessage("No character key found. Cannot open codex.", ColorConstants.Orange);
@@ -127,8 +142,14 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
                 try { button = eventData.GetEventPayload<CodexMousePayload>()?.MouseButton; }
                 catch (JsonException) { /* Missing or invalid buttons must not become left clicks. */ }
             }
-            if (_imageInput.Handle(eventData.EventType, eventData.ElementId, button,
-                    image && IsImageActionEnabled(eventData.ElementId)))
+            bool enabled = image && IsImageActionEnabled(eventData.ElementId);
+            string? pressed = _imageInput.PressedId;
+            bool activate = _imageInput.Handle(eventData.EventType, eventData.ElementId, button, enabled);
+            if (_traceInput && ++_routedInputEvents <= 16)
+                TraceInput($"routed {_routedInputEvents}: {eventData.ElementId} {eventData.EventType}, " +
+                           $"button={button?.ToString() ?? "missing"}, image={image}, enabled={enabled}, " +
+                           $"pressed={pressed ?? "none"}, activate={activate}");
+            if (activate)
                 _ = HandleClickAsync(eventData.ElementId);
             return;
         }
@@ -142,6 +163,25 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
                  (eventData.ElementId == View.NoteTitle.Key || eventData.ElementId == View.NoteContent.Key ||
                   eventData.ElementId == View.NoteCategorySelection.Key))
             ReadDraft();
+    }
+
+    private void TraceInputSource(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType is not (NuiEventType.MouseDown or NuiEventType.MouseUp or NuiEventType.Click) ||
+            ++_sourceInputEvents > 16) return;
+
+        string payload;
+        try { payload = ev.GetEventPayload<JObject>()?.ToString(Formatting.None) ?? "null"; }
+        catch (JsonException ex) { payload = $"invalid: {ex.Message}"; }
+        TraceInput($"source {_sourceInputEvents}: token={ev.Token.Token}, {ev.ElementId} {ev.EventType}, " +
+                   $"payload={payload}, routed={_routedInputEvents}, " +
+                   $"enabled={_token.GetBindValue(View.CanInteract)}, busy={_busy}, closed={_closed}");
+    }
+
+    private void TraceInput(string message)
+    {
+        Log.Info("Codex input trace for {Player}: {Message}", _player.PlayerName, message);
+        _player.SendServerMessage($"Codex input: {message}", ColorConstants.Cyan);
     }
 
     private bool IsImageActionEnabled(string id)
@@ -173,6 +213,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         _closed = true;
         _imageInput.Reset();
         _browse.InvalidateLoad();
+        if (_traceInput) _token.OnNuiEvent -= TraceInputSource;
         try { _token.Close(); }
         catch { /* token may already be closed by the client */ }
     }

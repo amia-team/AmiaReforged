@@ -7,6 +7,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui;
 public sealed class CodexImageInput
 {
     private string? _pressedId;
+    internal string? PressedId => _pressedId;
 
     public void Reset() => _pressedId = null;
 
