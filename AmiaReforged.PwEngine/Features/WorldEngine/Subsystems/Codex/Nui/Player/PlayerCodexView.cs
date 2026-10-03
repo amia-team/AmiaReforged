@@ -44,12 +44,13 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
     public readonly NuiBind<string> DetailTitle = new("codex_detail_title");
     public readonly NuiBind<string> DetailBody = new("codex_detail_body");
     public readonly NuiBind<string> ProficiencyLevelText = new("codex_prof_level");
+    public readonly NuiBind<string> IndustryName = new("codex_industry_name");
+    public readonly NuiBind<bool> ShowProficiency = new("codex_show_proficiency");
     public readonly NuiBind<float> ProficiencyProgressValue = new("codex_prof_progress");
     public readonly NuiBind<string> ProficiencyProgressLabel = new("codex_prof_label");
     public readonly NuiBind<string> PageInfo = new("codex_page_info");
     public readonly NuiBind<bool> ShowPrevPage = new("codex_show_prev");
     public readonly NuiBind<bool> ShowNextPage = new("codex_show_next");
-    public readonly NuiBind<bool> ShowSelectTraits = new("codex_show_select_traits");
     public readonly List<NuiBind<string>> EntryNames = new();
     public readonly List<NuiBind<string>> EntrySubtitles = new();
     public readonly List<NuiBind<bool>> EntryRowVisible = new();
@@ -173,9 +174,6 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                     ImageControl("codex_center", "ui_cdx_ent_n_v2", "Center", 88, 32, "Center Codex"),
                     new NuiSpacer { Width = 8, Margin = 0 },
                     ImageControl("codex_top_left", "ui_cdx_ent_n_v2", "Top left", 88, 32, "Move Codex to the top left"),
-                    new NuiSpacer { Width = 8, Margin = 0 },
-                    ImageControl("btn_select_traits", "ui_cdx_ent_n_v2", "Select Traits", 160, 32,
-                        "Open trait selection", "ui_cdx_i_head", 20, ShowSelectTraits),
                     new NuiSpacer { Margin = 0 },
                     ImageControl("codex_confirm", "ui_cdx_ent_n_v2", ConfirmLabel, 100, 32,
                         "Confirm the pending action", visible: ShowConfirmation),
@@ -355,14 +353,34 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
     {
         List<NuiElement> children =
         [
+            new NuiLabel(IndustryName)
+            { Height = 26, Margin = 0, HorizontalAlign = NuiHAlign.Center, ForegroundColor = Gold, Tooltip = IndustryName },
             new NuiLabel(ProficiencyLevelText)
-            { Height = 30, Margin = 0, HorizontalAlign = NuiHAlign.Center, ForegroundColor = Gold },
-            new NuiProgress(ProficiencyProgressValue) { Height = 24, Margin = 0 },
+            { Height = 26, Margin = 0, HorizontalAlign = NuiHAlign.Center, ForegroundColor = Gold },
+            new NuiGroup
+            {
+                Width = EntryW, Height = 24, Margin = 0, Padding = 0, Border = false, Scrollbars = NuiScrollbars.None,
+                Element = new NuiProgress(ProficiencyProgressValue)
+                { Width = EntryW, Height = 24, Margin = 0, Visible = ShowProficiency, ForegroundColor = Gold }
+            },
             new NuiLabel(ProficiencyProgressLabel)
-            { Height = 22, Margin = 0, HorizontalAlign = NuiHAlign.Center, ForegroundColor = Gold },
+            { Height = 20, Margin = 0, HorizontalAlign = NuiHAlign.Center, ForegroundColor = Gold },
             new NuiSpacer { Height = 6, Margin = 0 }
         ];
         AddEntryRowsAndPagination(children, rowHeight: 36);
+        return EntryColumn(children);
+    }
+
+    public NuiColumn BuildTraitsEntryList()
+    {
+        List<NuiElement> children =
+        [
+            Heading("Entries", EntryW, 26),
+            ImageControl("btn_select_traits", "ui_cdx_ent_n_v2", "Select Traits", EntryW, 32,
+                "Open trait selection", "ui_cdx_i_head", 20),
+            new NuiSpacer { Height = 6, Margin = 0 }
+        ];
+        AddEntryRowsAndPagination(children, rowHeight: 40);
         return EntryColumn(children);
     }
 

@@ -277,13 +277,13 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     private async Task SwitchTabAsync(CodexTab tab)
     {
+        SetProficiencyDisplay("", new("", 0, "", false));
         _activeTab = tab;
         RefreshTabTextures();
         _activeCategory = "all";
         SwapCategorySidebar();
         SwapEntryListPane();
         _token.SetBindValue(View.ShowNoteActions, false);
-        SetSelectTraitsVisible(tab == CodexTab.Traits);
         if (tab == CodexTab.Notes) _token.SetBindValue(View.NoteSearch, _searchTerm);
         await ReloadEntriesAsync();
     }
@@ -298,6 +298,11 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     private async Task ReloadEntriesAsync(Guid? selectNoteId = null)
     {
         int version = _browse.BeginLoad(PageSize);
+        if (_activeTab == CodexTab.Economy)
+        {
+            _activeMembership = null;
+            SetProficiencyDisplay("Loading industries...", new("", 0, "", false));
+        }
         RefreshEntryList();
         _token.SetBindValue(View.ShowNoteActions, false);
         SetStatus("Loading...");
@@ -313,6 +318,8 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             await NwTask.SwitchToMainThread();
             if (!_closed && _browse.IsCurrentLoad(version))
             {
+                if (_activeTab == CodexTab.Economy)
+                    SetProficiencyDisplay("Industry unavailable", CodexProficiencyDisplay.FromMembership(null));
                 SetStatus("Unable to load entries. Please try again.");
                 if (_draft == null) SetDetailContent("Unable to Load", "Select the tab again to retry.");
             }
@@ -611,7 +618,9 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     private List<ICodexDisplayItem> LoadEconomyEntries(CharacterId cid)
     {
-        if (MembershipService?.Value == null) return new List<ICodexDisplayItem>();
+        _activeMembership = null;
+        _memberships = new();
+        if (MembershipService?.Value == null) throw new InvalidOperationException("Industry membership service unavailable");
 
         _memberships = MembershipService.Value.GetMemberships(cid);
 
@@ -620,7 +629,6 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         if (_activeCategory == "all")
         {
             knowledge = MembershipService.Value.GetAllCharacterKnowledge(cid);
-            _activeMembership = _memberships.FirstOrDefault();
         }
         else
         {
@@ -699,11 +707,6 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
         _token.SetBindValue(View.DetailBody, body);
     }
 
-    private void SetSelectTraitsVisible(bool visible)
-    {
-        _token.SetBindValue(View.ShowSelectTraits, visible);
-    }
-
     // ──────────────────────── Category sidebar ────────────────────────
 
     private void SwapCategorySidebar()
@@ -779,7 +782,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
         foreach (IndustryMembership m in _memberships)
         {
-            string name = IndustryRepository?.Value?.GetByTag(m.IndustryTag)?.Name ?? m.IndustryTag.Value;
+            string name = IndustryName(m);
             categories.Add((name, m.IndustryTag.Value));
         }
 
@@ -791,10 +794,12 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     private void SwapEntryListPane()
     {
         _imageInput.Reset();
+        View.ImageActionIds.Remove("btn_select_traits");
         NuiColumn layout = _activeTab switch
         {
             CodexTab.Economy => View.BuildEconomyEntryList(),
             CodexTab.Notes => View.BuildNotesEntryList(),
+            CodexTab.Traits => View.BuildTraitsEntryList(),
             _ => View.BuildEntryListInner()
         };
 
@@ -805,34 +810,25 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
 
     private void RefreshProficiencyDisplay()
     {
-        if (_activeMembership == null)
+        if (_activeCategory == "all")
         {
-            _token.SetBindValue(View.ProficiencyLevelText, "No Industry Selected");
-            _token.SetBindValue(View.ProficiencyProgressValue, 0f);
-            _token.SetBindValue(View.ProficiencyProgressLabel, "");
+            SetProficiencyDisplay("All Industries", CodexProficiencyDisplay.Overview(_memberships.Count));
             return;
         }
+        SetProficiencyDisplay(_activeMembership == null ? "Industry unavailable" : IndustryName(_activeMembership),
+            CodexProficiencyDisplay.FromMembership(_activeMembership));
+    }
 
-        IndustryMembership m = _activeMembership;
-        int level = m.ProficiencyXpLevel;
-        ProficiencyLevel tier = m.ProficiencyTier;
+    private string IndustryName(IndustryMembership membership) =>
+        IndustryRepository?.Value.GetByTag(membership.IndustryTag)?.Name ?? membership.IndustryTag.Value;
 
-        _token.SetBindValue(View.ProficiencyLevelText, $"{tier} (Lv. {level})");
-
-        // XpForLevel(0) returns 0 — for Layman/level 0, show progress toward level 1
-        int xpNeeded = level < 1 ? ProficiencyXpCurve.XpForLevel(1) : ProficiencyXpCurve.XpForLevel(level);
-        if (level >= ProficiencyXpCurve.MaxLevel)
-        {
-            // Grandmaster / max level
-            _token.SetBindValue(View.ProficiencyProgressValue, 1f);
-            _token.SetBindValue(View.ProficiencyProgressLabel, "MAX");
-        }
-        else
-        {
-            float progress = Math.Clamp(m.ProficiencyXp / (float)xpNeeded, 0f, 1f);
-            _token.SetBindValue(View.ProficiencyProgressValue, progress);
-            _token.SetBindValue(View.ProficiencyProgressLabel, $"{m.ProficiencyXp} / {xpNeeded} XP");
-        }
+    private void SetProficiencyDisplay(string industryName, CodexProficiencyDisplay display)
+    {
+        _token.SetBindValue(View.IndustryName, industryName);
+        _token.SetBindValue(View.ProficiencyLevelText, display.LevelText);
+        _token.SetBindValue(View.ProficiencyProgressValue, display.Progress);
+        _token.SetBindValue(View.ProficiencyProgressLabel, display.XpText);
+        _token.SetBindValue(View.ShowProficiency, display.ShowProgress);
     }
 
     // ──────────────────────── CharacterId resolution ────────────────────────
