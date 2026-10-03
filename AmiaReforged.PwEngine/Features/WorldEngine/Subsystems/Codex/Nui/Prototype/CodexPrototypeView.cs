@@ -8,6 +8,7 @@ public sealed class CodexPrototypeView : IScryView
 {
     public const float WindowWidth = 940f;
     public const float WindowHeight = 650f;
+    private const float ShellFillInset = 8f;
     private static readonly Color Gold = new(242, 196, 113);
     private static readonly Color Ink = new(48, 29, 15);
 
@@ -42,7 +43,9 @@ public sealed class CodexPrototypeView : IScryView
         Border = false, Scrollbars = NuiScrollbars.None, Scissor = true,
         DrawList =
         [
-            Picture("ui_cdx_bg", 24, 24, 892, 602, NuiDrawListItemOrder.Before),
+            // Fill extends under the frame; control spacing stays at 24 units.
+            Picture("ui_cdx_bg", ShellFillInset, ShellFillInset,
+                WindowWidth - 2 * ShellFillInset, WindowHeight - 2 * ShellFillInset, NuiDrawListItemOrder.Before),
             .. Frame(WindowWidth, WindowHeight, "fr", 28)
         ],
         Element = Inset(BuildContent(), WindowWidth, WindowHeight, 24)
