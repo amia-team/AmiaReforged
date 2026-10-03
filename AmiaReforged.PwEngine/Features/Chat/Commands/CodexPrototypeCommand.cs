@@ -25,12 +25,16 @@ public sealed class CodexPrototypeCommand(WindowDirector windows) : IChatCommand
 
         if (windows.IsWindowOpen(caller, typeof(CodexPrototypePresenter)))
         {
+            caller.SendServerMessage("Closing.", ColorConstants.Orange);
+
             windows.CloseWindow(caller, typeof(CodexPrototypePresenter));
             return Task.CompletedTask;
         }
 
         try
         {
+            caller.SendServerMessage("Opening.", ColorConstants.Orange);
+
             windows.OpenWindow(new CodexPrototypePresenter(caller));
         }
         catch (Exception ex)
