@@ -17,18 +17,26 @@ public sealed class CodexPrototypeView : IScryView
     public readonly NuiBind<Color> EntryColor = new("cdxp_entry_color");
     public readonly NuiBind<string> DisableLabel = new("cdxp_disable_label");
     public readonly NuiBind<string> Title = new("cdxp_title");
+    public readonly NuiBind<string> Header = new("cdxp_header");
     public readonly NuiBind<string> Body = new("cdxp_body");
     public readonly NuiBind<string> Status = new("cdxp_status");
     public readonly NuiBind<string> Events = new("cdxp_events");
 
-    public NuiLayout RootLayout() => new NuiColumn
+    public NuiLayout RootLayout() => new NuiGroup
     {
-        Width = WindowWidth, Height = WindowHeight, Margin = 0, Padding = 24,
+        Width = WindowWidth, Height = WindowHeight, Margin = 0, Padding = 0,
+        Border = false, Scrollbars = NuiScrollbars.None, Scissor = true,
         DrawList =
         [
             Picture("ui_cdx_bg", 24, 24, 892, 602, NuiDrawListItemOrder.Before),
             .. Frame(WindowWidth, WindowHeight, "fr", 28)
         ],
+        Element = Inset(BuildContent(), WindowWidth, WindowHeight, 24)
+    };
+
+    private NuiColumn BuildContent() => new()
+    {
+        Width = 892, Height = 602, Margin = 0, Padding = 0,
         Children =
         [
             new NuiRow
@@ -46,7 +54,7 @@ public sealed class CodexPrototypeView : IScryView
                             { Order = NuiDrawListItemOrder.After }
                         ]
                     },
-                    new NuiLabel("CODEX / 001 PROTOTYPE")
+                    new NuiLabel(Header)
                     {
                         Width = 614, Height = 60, Margin = 0, ForegroundColor = Gold,
                         HorizontalAlign = NuiHAlign.Center, VerticalAlign = NuiVAlign.Middle
@@ -66,7 +74,7 @@ public sealed class CodexPrototypeView : IScryView
                 [
                     DarkPanel(160, new NuiColumn
                     {
-                        Margin = 0, Padding = 12,
+                        Width = 136, Height = 426, Margin = 0, Padding = 0,
                         Children =
                         [
                             Heading("Categories", 136),
@@ -101,13 +109,13 @@ public sealed class CodexPrototypeView : IScryView
                                     }
                                 ]
                             },
-                            new NuiSpacer()
+                            new NuiSpacer { Margin = 0, Padding = 0 }
                         ]
                     }),
                     new NuiSpacer { Width = 12, Margin = 0 },
                     DarkPanel(250, new NuiColumn
                     {
-                        Margin = 0, Padding = 12,
+                        Width = 226, Height = 426, Margin = 0, Padding = 0,
                         Children =
                         [
                             Heading("Entries", 226),
@@ -125,7 +133,7 @@ public sealed class CodexPrototypeView : IScryView
                                     { Color = EntryColor, Aspect = NuiAspect.Fit, Order = NuiDrawListItemOrder.After }
                                 ]
                             },
-                            new NuiSpacer(),
+                            new NuiSpacer { Margin = 0, Padding = 0 },
                             new NuiLabel("Static sample content")
                             { Width = 226, Height = 28, Margin = 0, ForegroundColor = Gold }
                         ]
@@ -134,11 +142,11 @@ public sealed class CodexPrototypeView : IScryView
                     new NuiGroup
                     {
                         Id = "cdxp_paper", Width = 458, Height = 450, Border = false,
-                        Margin = 0, Padding = 26, Scrollbars = NuiScrollbars.None, Scissor = true,
+                        Margin = 0, Padding = 0, Scrollbars = NuiScrollbars.None, Scissor = true,
                         DrawList = [Picture("ui_cdx_paper", 0, 0, 458, 450, NuiDrawListItemOrder.Before)],
-                        Element = new NuiColumn
+                        Element = Inset(new NuiColumn
                         {
-                            Margin = 0, Padding = 0,
+                            Width = 406, Height = 398, Margin = 0, Padding = 0,
                             Children =
                             [
                                 new NuiLabel(Title)
@@ -148,11 +156,11 @@ public sealed class CodexPrototypeView : IScryView
                                 },
                                 new NuiText(Body)
                                 {
-                                    Id = "cdxp_body", Width = 406, Height = 366, Margin = 0, Padding = 6,
+                                    Id = "cdxp_body", Width = 406, Height = 366, Margin = 0, Padding = 0,
                                     ForegroundColor = Ink, Border = false, Scrollbars = NuiScrollbars.Y, Scissor = true
                                 }
                             ]
-                        }
+                        }, 458, 450, 26)
                     }
                 ]
             },
@@ -169,7 +177,8 @@ public sealed class CodexPrototypeView : IScryView
                     new NuiLabel(Status) { Width = 452, Height = 30, Margin = 0, ForegroundColor = Gold }
                 ]
             },
-            new NuiLabel(Events) { Width = 892, Height = 40, Margin = 0, ForegroundColor = Gold }
+            new NuiLabel(Events) { Width = 892, Height = 40, Margin = 0, ForegroundColor = Gold },
+            new NuiSpacer { Height = 2, Margin = 0, Padding = 0 }
         ]
     };
 
@@ -183,9 +192,32 @@ public sealed class CodexPrototypeView : IScryView
         return new NuiGroup
         {
             Width = width, Height = 450, Margin = 0, Padding = 0, Border = false,
-            Scrollbars = NuiScrollbars.None, Element = content, DrawList = draw
+            Scrollbars = NuiScrollbars.None, Element = Inset(content, width, 450, 12), DrawList = draw,
+            Scissor = true
         };
     }
+
+    // Span padding does not inset children like CSS padding. Keep artwork on the unpadded
+    // group and reserve the content inset with real layout elements in both axes.
+    private static NuiColumn Inset(NuiElement content, float width, float height, float inset) => new()
+    {
+        Width = width, Height = height, Margin = 0, Padding = 0,
+        Children =
+        [
+            new NuiSpacer { Height = inset, Margin = 0, Padding = 0 },
+            new NuiRow
+            {
+                Width = width, Height = height - 2 * inset, Margin = 0, Padding = 0,
+                Children =
+                [
+                    new NuiSpacer { Width = inset, Margin = 0, Padding = 0 },
+                    content,
+                    new NuiSpacer { Width = inset, Margin = 0, Padding = 0 }
+                ]
+            },
+            new NuiSpacer { Height = inset, Margin = 0, Padding = 0 }
+        ]
+    };
 
     // Preserve ornament proportions at fixed corners; only the straight edge spans stretch.
     private static List<NuiDrawListItem> Frame(float width, float height, string prefix, float corner) =>

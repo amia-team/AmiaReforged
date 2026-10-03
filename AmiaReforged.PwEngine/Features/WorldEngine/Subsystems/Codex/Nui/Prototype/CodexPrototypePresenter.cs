@@ -34,6 +34,10 @@ public sealed class CodexPrototypePresenter(NwPlayer player) : ScryPresenter<Cod
             throw new InvalidOperationException("The client could not create the Codex prototype window.");
 
         Position(-1, -1);
+        _token.SetBindValue(View.Header,
+            $"CODEX / 001 - GUI {player.GetDeviceProperty(PlayerDeviceProperty.GuiWidth)}x" +
+            $"{player.GetDeviceProperty(PlayerDeviceProperty.GuiHeight)} / " +
+            $"{player.GetDeviceProperty(PlayerDeviceProperty.GuiScale)}%");
         _token.SetBindValue(View.Title, "A page from the Codex");
         _token.SetBindValue(View.Body, SampleText());
         _token.SetBindValue(View.Events, "Image events: press 0 / release 0 / click 0. Left-click a category or entry.");
