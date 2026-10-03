@@ -11,7 +11,7 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands;
 public sealed class CodexPrototypeCommand(WindowDirector windows) : IChatCommand
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    public string Command => "./codex-ui";
+    public string Command => "./codexui";
     public string Description => "Development-only graphical Codex prototype (toggle)";
     public string AllowedRoles => "All";
 
