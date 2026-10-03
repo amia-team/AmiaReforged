@@ -102,7 +102,7 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
                                         DarkPanel(160, new NuiGroup
                                         {
                                             Id = "grp_categories", Width = CategoryW, Height = 426,
-                                            Margin = 0, Padding = 0, Border = false, Scrollbars = NuiScrollbars.Y,
+                                            Margin = 0, Padding = 0, Border = false, Scrollbars = NuiScrollbars.None,
                                             Element = new NuiColumn { Margin = 0, Padding = 0, Children = [new NuiSpacer()] }
                                         }.Assign(out CategoryGroup)),
                                         new NuiSpacer { Width = 12, Margin = 0 },
@@ -185,15 +185,37 @@ public sealed class PlayerCodexView : ScryView<PlayerCodexPresenter>
     public NuiColumn BuildCategoryColumn(CodexTab tab, string selected, params (string Label, string Id)[] categories)
     {
         ImageActionIds.RemoveWhere(id => id.StartsWith("cat_", StringComparison.Ordinal));
-        List<NuiElement> children = [Heading(tab.ToString(), CategoryW, 26)];
+        const float listHeight = 400;
+        const float rowHeight = 32;
+        const float rowGap = 1;
+        float contentHeight = categories.Length * (rowHeight + rowGap);
+        bool scroll = contentHeight > listHeight;
+        // Native Y scrolling reserves space inside the group. Leave a separate gutter
+        // rather than drawing fixed-width controls underneath its scrollbar.
+        float controlWidth = CategoryW - (scroll ? 24 : 0);
+        List<NuiElement> rows = new();
         foreach ((string label, string id) in categories)
         {
-            children.Add(ImageControl($"cat_{id}",
+            rows.Add(ImageControl($"cat_{id}",
                 string.Equals(id, selected, StringComparison.OrdinalIgnoreCase) ? "ui_cdx_cat_s_v2" : "ui_cdx_cat_n_v2",
-                label, CategoryW, 32, $"Show {label}", TabGlyph(tab), 18));
-            children.Add(new NuiSpacer { Height = 1, Margin = 0 });
+                label, controlWidth, rowHeight, $"Show {label}", TabGlyph(tab), 18));
+            rows.Add(new NuiSpacer { Height = rowGap, Margin = 0 });
         }
-        return new NuiColumn { Width = CategoryW, Margin = 0, Padding = 0, Children = children };
+        return new NuiColumn
+        {
+            Width = CategoryW, Height = 426, Margin = 0, Padding = 0,
+            Children =
+            [
+                Heading(tab.ToString(), CategoryW, 26),
+                new NuiGroup
+                {
+                    Width = CategoryW, Height = listHeight, Margin = 0, Padding = 0, Border = false,
+                    Scrollbars = scroll ? NuiScrollbars.Y : NuiScrollbars.None,
+                    Element = new NuiColumn
+                    { Width = controlWidth, Height = contentHeight, Margin = 0, Padding = 0, Children = rows }
+                }
+            ]
+        };
     }
 
     public NuiColumn BuildDetailContent() => new()
