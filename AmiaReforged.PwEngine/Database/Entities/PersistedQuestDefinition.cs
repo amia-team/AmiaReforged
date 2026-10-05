@@ -61,8 +61,8 @@ public class PersistedQuestDefinition
     public string CompletionRewardJson { get; set; } = "{}";
 
     /// <summary>
-    /// When <c>true</c>, this quest entry is visible to every player without
-    /// requiring an unlock / trigger.
+    /// When <c>true</c>, a missing character quest entry is automatically created
+    /// when their codex is loaded, without requiring an unlock / trigger.
     /// </summary>
     public bool IsAlwaysAvailable { get; set; }
 

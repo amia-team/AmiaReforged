@@ -87,8 +87,17 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                 .Where(d => d.IsAlwaysAvailable && !recordedQuestIds.Contains(d.QuestId))
                 .ToListAsync(cancellationToken);
 
+            if (alwaysAvailableQuests.Count > 0)
+            {
+                await InstantiateAlwaysAvailableQuestsAsync(context, characterId, alwaysAvailableQuests, cancellationToken);
+                questRows = await context.CodexQuests
+                    .AsNoTracking()
+                    .Where(q => q.CharacterId == characterId.Value)
+                    .ToListAsync(cancellationToken);
+            }
+
             if (noteRows.Count == 0 && loreRows.Count == 0 && alwaysAvailable.Count == 0 &&
-                questRows.Count == 0 && alwaysAvailableQuests.Count == 0)
+                questRows.Count == 0)
                 return null;
 
             // Determine creation date from the earliest persisted record
@@ -174,22 +183,6 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                     quest.Stages.Clear();
                     quest.Stages.AddRange(stages);
                 }
-            }
-
-            foreach (PersistedQuestDefinition def in alwaysAvailableQuests)
-            {
-                CodexQuestEntry quest = new()
-                {
-                    QuestId = (QuestId)def.QuestId,
-                    Title = def.Title,
-                    Description = def.Description,
-                    DateStarted = def.CreatedUtc,
-                    QuestGiver = def.QuestGiver,
-                    Location = def.Location,
-                    Keywords = ParseKeywords(def.Keywords),
-                    Stages = DeserializeStages(def.StagesJson)
-                };
-                codex.RecordQuestDiscovered(quest, def.CreatedUtc);
             }
 
             return codex;
@@ -452,6 +445,51 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
     // ═══════════════════════════════════════════════════════════════════
     //  Quest persistence
     // ═══════════════════════════════════════════════════════════════════
+
+    private static async Task InstantiateAlwaysAvailableQuestsAsync(
+        PwEngineContext context, CharacterId characterId, List<PersistedQuestDefinition> definitions, CancellationToken ct)
+    {
+        DateTime discoveredAt = DateTime.UtcNow;
+        foreach (PersistedQuestDefinition definition in definitions)
+        {
+            PersistedCodexQuest entry = new()
+            {
+                CharacterId = characterId.Value,
+                QuestId = definition.QuestId,
+                Title = definition.Title,
+                Description = definition.Description,
+                State = (int)QuestState.Discovered,
+                DateStarted = discoveredAt,
+                QuestGiver = definition.QuestGiver,
+                Location = definition.Location,
+                Keywords = definition.Keywords,
+                StagesJson = definition.StagesJson
+            };
+
+            if (context.Database.IsNpgsql())
+            {
+                // A concurrent journal query or quest command may already have created the entry.
+                // Keep that instance and its progress, then hydrate the persisted rows on return.
+                await context.Database.ExecuteSqlInterpolatedAsync($"""
+                    INSERT INTO codex_quests
+                        (character_id, quest_id, title, description, state, current_stage_id,
+                         date_started, quest_giver, location, keywords, stages_json, completion_count)
+                    VALUES
+                        ({entry.CharacterId}, {entry.QuestId}, {entry.Title}, {entry.Description},
+                         {entry.State}, {entry.CurrentStageId}, {entry.DateStarted}, {entry.QuestGiver},
+                         {entry.Location}, {entry.Keywords}, CAST({entry.StagesJson} AS jsonb), {entry.CompletionCount})
+                    ON CONFLICT (character_id, quest_id) DO NOTHING
+                    """, ct);
+            }
+            else
+            {
+                context.CodexQuests.Add(entry);
+            }
+        }
+
+        if (!context.Database.IsNpgsql())
+            await context.SaveChangesAsync(ct);
+    }
 
     private static async Task SaveQuestsAsync(
         PwEngineContext context, PlayerCodex codex, CancellationToken ct)
