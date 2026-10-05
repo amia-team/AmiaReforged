@@ -1,3 +1,4 @@
+using AmiaReforged.Shared.Quests;
 using System.Net;
 using System.Net.Http.Json;
 using AmiaReforged.AdminPanel.Components.Pages.WorldEngine.Editors;
@@ -46,17 +47,17 @@ public class CodexEditorTests : Bunit.TestContext
     [Test]
     public void GetLoreCategoryName_ReturnsCorrectNames()
     {
-        CodexEditor.CeGetLoreCategoryName(0).Should().Be("General");
-        CodexEditor.CeGetLoreCategoryName(1).Should().Be("History");
-        CodexEditor.CeGetLoreCategoryName(2).Should().Be("Geography");
-        CodexEditor.CeGetLoreCategoryName(3).Should().Be("Religion");
-        CodexEditor.CeGetLoreCategoryName(4).Should().Be("Arcana");
-        CodexEditor.CeGetLoreCategoryName(5).Should().Be("Nature");
-        CodexEditor.CeGetLoreCategoryName(6).Should().Be("Faction");
-        CodexEditor.CeGetLoreCategoryName(7).Should().Be("Character");
-        CodexEditor.CeGetLoreCategoryName(8).Should().Be("Item");
-        CodexEditor.CeGetLoreCategoryName(9).Should().Be("Quest");
-        CodexEditor.CeGetLoreCategoryName(10).Should().Be("Miscellaneous");
+        CodexEditor.CeGetLoreCategoryName(0).Should().Be("Arcana");
+        CodexEditor.CeGetLoreCategoryName(1).Should().Be("Architecture & Engineering");
+        CodexEditor.CeGetLoreCategoryName(2).Should().Be("Dungeoneering");
+        CodexEditor.CeGetLoreCategoryName(3).Should().Be("Geography");
+        CodexEditor.CeGetLoreCategoryName(4).Should().Be("History");
+        CodexEditor.CeGetLoreCategoryName(5).Should().Be("Local");
+        CodexEditor.CeGetLoreCategoryName(6).Should().Be("Nature");
+        CodexEditor.CeGetLoreCategoryName(7).Should().Be("Nobility & Royalty");
+        CodexEditor.CeGetLoreCategoryName(8).Should().Be("Religion");
+        CodexEditor.CeGetLoreCategoryName(9).Should().Be("The Planes");
+        CodexEditor.CeGetLoreCategoryName(10).Should().Be("OOC");
     }
 
     [Test]
@@ -337,17 +338,238 @@ public class CodexEditorTests : Bunit.TestContext
         });
     }
 
+    [Test]
+    public void Quest_CreateAndUpdate_PreservesObjectivesTransitionsAndRewards()
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, isNew: true);
+        cut.Find("[data-quest-title]").Input("Cellar Rats");
+        cut.Find("[data-quest-description]").Input("Help the innkeeper clear the cellar.");
+        cut.Find("[data-add-stage]").Click();
+        cut.Find("[data-stage-journal]").Input("Collect five rat tails.");
+        cut.Find("[data-add-objective]").Click();
+        cut.Find("[data-objective-text]").Input("Collect rat tails");
+        cut.Find("[data-objective-target]").Input("rat_tail");
+        cut.Find("[data-objective-count]").Input("5");
+        cut.FindComponent<QuestRewardEditor>().FindAll("input")[1].Input("100");
+        cut.Find("[data-add-stage]").Click();
+        cut.Find("[data-stage-state]").Change("Completed");
+        SaveButton(cut).Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            _handler.Requests.Should().Contain(r => r.Method == HttpMethod.Post);
+            cut.Instance.HasUnsavedChanges.Should().BeFalse();
+        });
+        QuestDefinitionDto saved = SavedQuest();
+        saved.QuestId.Should().Be("quest_cellar_rats");
+        saved.Stages.Should().HaveCount(2);
+        saved.Stages[0].Rewards!.Gold.Should().Be(100);
+        saved.Stages[0].ObjectiveGroups.Single().Objectives.Single().RequiredCount.Should().Be(5);
+        saved.Stages[1].QuestState.Should().Be("Completed");
+
+        SelectStage(cut, 10);
+        cut.Find("[data-objective-count]").Input("7");
+        cut.Find(".we-qe-journal").TextContent.Should().Contain("0 / 7");
+        SaveButton(cut).Click();
+        cut.WaitForAssertion(() => _handler.Requests.Should().Contain(r => r.Method == HttpMethod.Put && r.Path.EndsWith("/quest_cellar_rats")));
+        SavedQuest().Stages[0].ObjectiveGroups.Single().Objectives.Single().RequiredCount.Should().Be(7);
+        cut.Instance.HasUnsavedChanges.Should().BeFalse();
+    }
+
+    [Test]
+    public void Quest_BrokenBranch_ShowsTheTargetErrorWithoutSendingAWrite()
+    {
+        QuestDefinitionDto quest = ValidQuest();
+        quest.Stages[0].NextStageId = 999;
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: quest);
+        SaveButton(cut).Click();
+
+        cut.Find(".we-qe-validation").TextContent.Should().Contain("linked stage 999 does not exist");
+        cut.Find("[data-next-stage]").TextContent.Should().Contain("Unavailable target: stage 999");
+        _handler.Requests.Should().NotContain(r => r.Method == HttpMethod.Post || r.Method == HttpMethod.Put);
+    }
+
+    [Test]
+    public void Quest_StageRemoval_RequiresConfirmationAndBrokenLinksMustBeRepaired()
+    {
+        QuestDefinitionDto quest = ValidQuest();
+        quest.Stages.Insert(1, new QuestStageDto { StageId = 20, JournalText = "Return to the inn." });
+        quest.Stages[0].NextStageId = 20;
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: quest);
+        SelectStage(cut, 20);
+        cut.Find("[data-remove-stage]").Click();
+        cut.Find("[role='dialog']").TextContent.Should().Contain("Other stages link here");
+        cut.FindAll("[role='dialog'] button").Single(b => b.TextContent.Contains("Keep stage")).Click();
+        cut.FindAll("[data-stage-id]").Should().ContainSingle();
+        cut.Find("[data-remove-stage]").Click();
+        cut.Find("[data-confirm-remove-stage]").Click();
+        cut.Find(".we-qe-validation").TextContent.Should().Contain("linked stage 20 does not exist");
+        SaveButton(cut).Click();
+        _handler.Requests.Should().NotContain(r => r.Method == HttpMethod.Put);
+        cut.Find("[data-next-stage]").Change("30");
+        SaveButton(cut).Click();
+        cut.WaitForAssertion(() => _handler.Requests.Should().Contain(r => r.Method == HttpMethod.Put));
+        SavedQuest().Stages.Select(s => s.StageId).Should().Equal(10, 30);
+    }
+
+    [Test]
+    public void Quest_Close_KeepEditingPreservesDraftAndDiscardCloses()
+    {
+        int closes = 0;
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: ValidQuest(), onClose: () => closes++);
+        cut.Find("[data-stage-journal]").Input("An unsaved journal entry");
+        cut.Find(".we-ce-toolbar .btn-secondary").Click();
+        cut.Find("[role='dialog'] .btn-secondary").Click();
+        closes.Should().Be(0);
+        cut.Find("[data-stage-journal]").GetAttribute("value").Should().Be("An unsaved journal entry");
+        cut.Instance.HasUnsavedChanges.Should().BeTrue();
+        cut.Find(".we-ce-toolbar .btn-secondary").Click();
+        cut.Find("[role='dialog'] .btn-outline-danger").Click();
+        closes.Should().Be(1);
+        cut.Instance.HasUnsavedChanges.Should().BeFalse();
+    }
+
+    [Test]
+    public void Quest_FailedSaveAndContinue_DoesNotCloseOrLoseTheDraft()
+    {
+        int closes = 0;
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest,
+            quest: ValidQuest(), saveFails: true, onClose: () => closes++);
+        cut.Find("[data-stage-journal]").Input("Keep this journal entry");
+        cut.Find(".we-ce-toolbar .btn-secondary").Click();
+        cut.Find("[role='dialog'] .btn-primary").Click();
+        cut.WaitForAssertion(() => cut.Find("[role='dialog']").TextContent.Should().Contain("Save failed"));
+        closes.Should().Be(0);
+        cut.Instance.HasUnsavedChanges.Should().BeTrue();
+        cut.Find("[data-stage-journal]").GetAttribute("value").Should().Be("Keep this journal entry");
+    }
+
+    [Test]
+    public void Quest_ChangingEntryType_PromptsBeforeDiscardingTheDraft()
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: ValidQuest());
+        cut.Find("[data-stage-journal]").Input("Changed");
+        cut.Find("select[aria-label='Entry type']").Change("Lore");
+        cut.Find("[role='dialog']").TextContent.Should().Contain("unsaved changes");
+        cut.FindAll(".we-qe-workspace").Should().ContainSingle();
+        cut.Find("[role='dialog'] .btn-outline-danger").Click();
+        cut.WaitForAssertion(() => cut.Find(".we-ce-toolbar").TextContent.Should().Contain("New Lore"));
+    }
+
+    [Test]
+    public void Quest_InvalidConfiguration_CannotBeSavedAndStillCountsAsUnsaved()
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: ValidQuest());
+        cut.Find("[data-config-json]").Input("{unfinished");
+        cut.Instance.HasUnsavedChanges.Should().BeTrue();
+        SaveButton(cut).Click();
+        cut.Find(".we-qe-validation").TextContent.Should().Contain("valid JSON object");
+        _handler.Requests.Should().NotContain(r => r.Method == HttpMethod.Put);
+        cut.Find("[data-config-json]").Input("{\"track_loss\":\"true\"}");
+        SaveButton(cut).Click();
+        cut.WaitForAssertion(() => _handler.Requests.Should().Contain(r => r.Method == HttpMethod.Put));
+    }
+
+    [Test]
+    public void Quest_ChangingStageId_UpdatesExistingLinksAndDisallowsDuplicateIds()
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: ValidQuest());
+        SelectStage(cut, 30);
+        cut.Find("[data-stage-id]").Change("40");
+        SelectStage(cut, 10);
+        cut.Find("[data-next-stage]").GetAttribute("value").Should().Be("40");
+        cut.Find("[data-stage-id]").Change("40");
+        SaveButton(cut).Click();
+        _handler.Requests.Should().NotContain(r => r.Method == HttpMethod.Put);
+        cut.Find(".we-qe-validation").TextContent.Should().Contain("positive, unused stage ID");
+        cut.Find("[data-stage-id]").GetAttribute("value").Should().Be("40");
+        cut.Find("[data-stage-id]").Closest("details")!.HasAttribute("open").Should().BeTrue();
+    }
+
+    [Test]
+    public void Quest_KeepingTheDraftAfterChangingEntryType_RestoresTheSelector()
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: ValidQuest());
+        cut.Find("[data-stage-journal]").Input("Keep this draft");
+        cut.Find("select[aria-label='Entry type']").Change("Lore");
+        cut.Find("[role='dialog'] .btn-secondary").Click();
+        cut.Find("select[aria-label='Entry type']").GetAttribute("value").Should().Be("Quest");
+        cut.Find("[data-stage-journal]").GetAttribute("value").Should().Be("Keep this draft");
+    }
+
+    [Test]
+    public void Quest_ConfigJsonAndTheTypedControlsStayInSync()
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: ValidQuest());
+        cut.Find("[data-config-json]").Input("{\"track_loss\":true,\"custom\":42}");
+        var checkbox = cut.Find(".we-qe-objective input[type='checkbox']");
+        checkbox.HasAttribute("checked").Should().BeTrue();
+        checkbox.Change(false);
+        cut.Find("[data-config-json]").GetAttribute("value").Should().Contain("\"false\"").And.Contain("42");
+        SaveButton(cut).Click();
+        cut.WaitForAssertion(() => _handler.Requests.Should().Contain(r => r.Method == HttpMethod.Put));
+        SavedQuest().Stages[0].ObjectiveGroups[0].Objectives[0].Config["custom"].ToString().Should().Be("42");
+    }
+
+    [Test]
+    public void Quest_TabDeactivation_PreservesAndClosesTheInvestigationCanvas()
+    {
+        JSInterop.Mode = JSRuntimeMode.Loose;
+        const string graph = "{\"clues\":[],\"deductions\":[]}";
+        JSInterop.Setup<string>("clueGraphEditor.getGraphJson").SetResult(graph);
+        QuestDefinitionDto quest = ValidQuest();
+        quest.Stages[0].ObjectiveGroups[0].Objectives[0].TypeTag = "investigate";
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: quest);
+        cut.FindAll("button").Single(b => b.TextContent == "Open investigation editor").Click();
+        cut.WaitForAssertion(() => JSInterop.Invocations.Should().Contain(i => i.Identifier == "clueGraphEditor.init"));
+        cut.SetParametersAndRender(p => p.Add(e => e.IsActive, false));
+        cut.FindAll("#ce-graph-canvas").Should().BeEmpty();
+        cut.Instance.HasUnsavedChanges.Should().BeTrue();
+        cut.Find("[data-config-json]").GetAttribute("value").Should().Contain("graph_json");
+        JSInterop.Invocations.Should().Contain(i => i.Identifier == "clueGraphEditor.destroy");
+    }
+
+    private static QuestDefinitionDto ValidQuest() => new()
+    {
+        QuestId = "test_entry", Title = "Test entry", Description = "Clear the cellar.",
+        Stages =
+        [
+            new() { StageId = 10, JournalText = "Collect the tails.", NextStageId = 30,
+                ObjectiveGroups = [new() { DisplayName = "Collect tails", Objectives = [new()
+                { ObjectiveId = "rat_tails", TypeTag = "collect", DisplayText = "Collect rat tails", TargetTag = "rat_tail", RequiredCount = 5 }] }] },
+            new() { StageId = 30, JournalText = "The cellar is clear.", QuestState = "Completed" }
+        ]
+    };
+
+    private QuestDefinitionDto SavedQuest() => System.Text.Json.JsonSerializer.Deserialize<QuestDefinitionDto>(
+        _handler.Bodies.Last(), new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+    private static AngleSharp.Dom.IElement SaveButton(IRenderedComponent<CodexEditor> cut) => cut.Find(".we-ce-toolbar .btn-primary");
+    private static void SelectStage(IRenderedComponent<CodexEditor> cut, int id) => cut.FindAll(".we-qe-nav-button")
+        .Single(b => b.QuerySelector(".we-qe-stage-id")?.TextContent == id.ToString()).Click();
+
     private IRenderedComponent<CodexEditor> RenderEntry(CodexEditor.CodexSubType subType,
-        bool isNew = false, bool deleteFails = false, Action? onRefresh = null)
+        bool isNew = false, bool deleteFails = false, Action? onRefresh = null,
+        QuestDefinitionDto? quest = null, bool saveFails = false, Action? onClose = null)
     {
         _handler.Requests.Clear();
+        _handler.Bodies.Clear();
         _handler.DeleteResponse = null;
         bool deleted = false;
         object entry = subType == CodexEditor.CodexSubType.Lore
             ? new LoreDefinitionDto { LoreId = "test_entry", Title = "Test entry" }
-            : new QuestDefinitionDto { QuestId = "test_entry", Title = "Test entry" };
+            : quest ?? new QuestDefinitionDto { QuestId = "test_entry", Title = "Test entry" };
         _handler.ResponseFactory = request =>
         {
+            if (request.Method == HttpMethod.Post || request.Method == HttpMethod.Put)
+            {
+                if (saveFails) return new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = JsonContent.Create(new { error = "Save failed", detail = "Test failure" })
+                };
+                entry = System.Text.Json.JsonSerializer.Deserialize<QuestDefinitionDto>(_handler.Bodies.Last(),
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(entry) };
+            }
             if (request.Method == HttpMethod.Delete)
             {
                 deleted = !deleteFails;
@@ -377,6 +599,7 @@ public class CodexEditorTests : Bunit.TestContext
             .Add(p => p.OpenOnParameters, true)
             .Add(p => p.EntityKey, isNew ? null : "test_entry")
             .Add(p => p.InitialSubType, subType)
+            .Add(p => p.OnClose, EventCallback.Factory.Create(this, () => onClose?.Invoke()))
             .Add(p => p.OnEntityListRefresh, EventCallback.Factory.Create(this, () => onRefresh?.Invoke())));
     }
 
@@ -398,21 +621,23 @@ public class CodexEditorTests : Bunit.TestContext
     private class TestHttpMessageHandler : HttpMessageHandler
     {
         public List<(HttpMethod Method, string Path)> Requests { get; } = [];
+        public List<string> Bodies { get; } = [];
         public Func<HttpRequestMessage, HttpResponseMessage>? ResponseFactory { get; set; }
         public Task<HttpResponseMessage>? DeleteResponse { get; set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(
+        protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Requests.Add((request.Method, request.RequestUri!.AbsolutePath));
-            if (request.Method == HttpMethod.Delete && DeleteResponse != null) return DeleteResponse;
-            if (ResponseFactory != null) return Task.FromResult(ResponseFactory(request));
+            if (request.Content != null) Bodies.Add(await request.Content.ReadAsStringAsync(cancellationToken));
+            if (request.Method == HttpMethod.Delete && DeleteResponse != null) return await DeleteResponse;
+            if (ResponseFactory != null) return ResponseFactory(request);
 
             var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json")
             };
-            return Task.FromResult(response);
+            return response;
         }
     }
 }

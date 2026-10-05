@@ -1,0 +1,63 @@
+@using AmiaReforged.Shared.Quests
+
+<div class="we-qe-reward-values">
+    <label>XP
+        <input class="form-control" type="number" min="0" value="@(Reward?.Xp ?? 0)"
+               @oninput='e => Change(nameof(RewardMixDto.Xp), r => r.Xp = Number(e))' />
+    </label>
+    <label>Gold
+        <input class="form-control" type="number" min="0" value="@(Reward?.Gold ?? 0)"
+               @oninput='e => Change(nameof(RewardMixDto.Gold), r => r.Gold = Number(e))' />
+    </label>
+    <label>Knowledge points
+        <input class="form-control" type="number" min="0" value="@(Reward?.KnowledgePoints ?? 0)"
+               @oninput='e => Change(nameof(RewardMixDto.KnowledgePoints), r => r.KnowledgePoints = Number(e))' />
+    </label>
+</div>
+@if (Reward != null)
+{
+    @for (int i = 0; i < Reward.Proficiencies.Count; i++)
+    {
+        int index = i;
+        ProficiencyRewardDto proficiency = Reward.Proficiencies[i];
+        <div class="we-qe-proficiency" @key="proficiency">
+            <label>Industry
+                <select class="form-select" value="@proficiency.IndustryTag"
+                        @onchange='e => Change($"Proficiencies[{index}].IndustryTag", r => proficiency.IndustryTag = e.Value?.ToString() ?? "")'>
+                    <option value="">Choose an industry</option>
+                    @if (!string.IsNullOrEmpty(proficiency.IndustryTag) && !Industries.Any(i => i.Tag == proficiency.IndustryTag))
+                    {
+                        <option value="@proficiency.IndustryTag">@proficiency.IndustryTag</option>
+                    }
+                    @foreach (IndustryDefinitionDto industry in Industries)
+                    {
+                        <option value="@industry.Tag">@industry.Name</option>
+                    }
+                </select>
+            </label>
+            <label>Proficiency XP
+                <input class="form-control" type="number" min="0" value="@proficiency.ProficiencyXp"
+                       @oninput='e => Change($"Proficiencies[{index}].ProficiencyXp", r => proficiency.ProficiencyXp = Number(e))' />
+            </label>
+            <button class="btn btn-outline-danger" type="button" aria-label="Remove proficiency reward"
+                    @onclick='() => Change("Proficiencies", r => r.Proficiencies.RemoveAt(index))'>Remove</button>
+        </div>
+    }
+}
+<button class="btn btn-sm btn-outline-secondary" type="button"
+        @onclick='() => Change("Proficiencies", r => r.Proficiencies.Add(new ProficiencyRewardDto()))'>Add proficiency reward</button>
+
+@code {
+    [Parameter] public RewardMixDto? Reward { get; set; }
+    [Parameter] public IReadOnlyList<IndustryDefinitionDto> Industries { get; set; } = [];
+    [Parameter] public EventCallback<(RewardMixDto Reward, string Field)> Changed { get; set; }
+
+    private static int Number(ChangeEventArgs e) => int.TryParse(e.Value?.ToString(), out int value) ? value : 0;
+
+    private Task Change(string field, Action<RewardMixDto> edit)
+    {
+        RewardMixDto reward = Reward ?? new();
+        edit(reward);
+        return Changed.InvokeAsync((reward, field));
+    }
+}

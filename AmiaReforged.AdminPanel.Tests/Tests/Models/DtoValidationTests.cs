@@ -1,3 +1,4 @@
+using AmiaReforged.Shared.Quests;
 using System.ComponentModel.DataAnnotations;
 using AmiaReforged.AdminPanel.Models;
 using FluentAssertions;

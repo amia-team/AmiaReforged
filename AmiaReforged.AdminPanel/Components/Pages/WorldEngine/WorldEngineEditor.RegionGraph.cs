@@ -18,6 +18,9 @@ public partial class WorldEngineEditor
     // ═══════════════════════════════════════════════════════════════════
 
     private async Task OpenRegionGraph()
+        => await GuardCodexDrafts(OpenRegionGraphAfterDrafts);
+
+    private async Task OpenRegionGraphAfterDrafts()
     {
         if (_regionGraphOpen) return;
 

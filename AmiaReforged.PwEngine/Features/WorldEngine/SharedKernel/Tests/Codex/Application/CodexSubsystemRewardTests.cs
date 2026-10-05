@@ -5,6 +5,13 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Objectives;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application.DynamicQuests;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Repositories;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Aggregates;
+using Moq;
+using System.Threading.Channels;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Application;
@@ -158,6 +165,39 @@ public class CodexSubsystemRewardTests
         Assert.That(_granter.Calls[0].Rewards.Proficiencies, Has.Count.EqualTo(1));
         Assert.That(_granter.Calls[0].Rewards.Proficiencies[0].IndustryTag, Is.EqualTo("smithing"));
         Assert.That(_granter.Calls[0].Rewards.Proficiencies[0].ProficiencyXp, Is.EqualTo(100));
+    }
+
+    [Test]
+    public async Task Manual_advance_with_the_forwarder_and_processor_pays_exactly_once()
+    {
+        Channel<CodexDomainEvent> channel = Channel.CreateUnbounded<CodexDomainEvent>();
+        TaskCompletionSource saved = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Mock<IPlayerCodexRepository> repository = new();
+        repository.Setup(r => r.LoadAsync(It.IsAny<CharacterId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PlayerCodex?)null);
+        repository.Setup(r => r.SaveAsync(It.IsAny<PlayerCodex>(), It.IsAny<CancellationToken>()))
+            .Callback(() => saved.TrySetResult()).Returns(Task.CompletedTask);
+        CodexEventProcessor processor = new(repository.Object, channel, rewardGranter: _granter);
+        DynamicQuestCodexEventForwarder forwarder = new(processor);
+        InMemoryEventBus bus = new();
+        bus.Subscribe<StageRewardsGrantedEvent>(forwarder.HandleAsync);
+        CodexQuestEntry entry = BuildEntry(
+            new QuestStage { StageId = 10, Rewards = new RewardMix { Gold = 100, Xp = 50 } },
+            new QuestStage { StageId = 20 });
+
+        try
+        {
+            await SetQuestStageHandler.GrantFromStageRewardsAsync(
+                _granter, _characterId, _questId, 10, 20, entry, bus, CancellationToken.None);
+            Assert.That(_granter.Calls, Is.Empty, "The command must not also grant directly when publishing the reward event.");
+            Assert.That(bus.PublishedEvents.OfType<StageRewardsGrantedEvent>().Count(), Is.EqualTo(1));
+            processor.Start();
+            await saved.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.That(_granter.Calls, Has.Count.EqualTo(1));
+            Assert.That(_granter.Calls.Single().Rewards.Gold, Is.EqualTo(100));
+            Assert.That(_granter.Calls.Single().Rewards.Xp, Is.EqualTo(50));
+        }
+        finally { await processor.StopAsync(); }
     }
 
     #region Helpers

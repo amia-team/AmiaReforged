@@ -1,3 +1,4 @@
+using AmiaReforged.Shared.Quests;
 using AmiaReforged.AdminPanel.Models;
 
 namespace AmiaReforged.AdminPanel.Services;

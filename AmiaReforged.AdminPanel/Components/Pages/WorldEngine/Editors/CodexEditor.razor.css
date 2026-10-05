@@ -1,0 +1,5 @@
+.we-ce-layout-area { container-type: inline-size; }
+.we-ce-toolbar { flex-wrap: wrap; height: auto; max-height: none; }
+.we-ce-toolbar__title { min-width: 0; }
+.we-ce-draft-status { color: var(--text-secondary); font-size: .8rem; }
+.we-ce-unsaved-dialog { max-width: 480px; margin: 15vh auto; background: var(--bg-card); border-radius: 8px; padding: 24px; }

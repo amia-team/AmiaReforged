@@ -86,5 +86,6 @@
     </ItemGroup>
   <ItemGroup>
     <Compile Include="../Shared/Dialogue/*.cs" Link="Shared/Dialogue/%(Filename)%(Extension)" />
+    <Compile Include="../Shared/Quests/*.cs" Link="Shared/Quests/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

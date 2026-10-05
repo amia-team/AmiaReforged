@@ -1,0 +1,382 @@
+@using AmiaReforged.Shared.Quests
+
+<div class="we-qe-workspace">
+    <aside class="we-qe-navigation" aria-label="Quest navigation">
+        <details class="we-qe-browser">
+            <summary>Browse entries</summary>
+            @Browser
+        </details>
+        <button type="button" class="we-qe-nav-button" aria-pressed="@(_selectedStage == null)"
+                @onclick='() => SelectStage(null)'>Quest details</button>
+        <h3>Quest stages</h3>
+        @foreach (QuestStageDto item in Model.Stages.OrderBy(s => s.StageId))
+        {
+            <button type="button" class="we-qe-nav-button" aria-pressed="@(_selectedStage == item)" @key="item"
+                    @onclick='() => SelectStage(item)'>
+                <span class="we-qe-stage-id">@item.StageId</span>
+                <span>@StageLabel(item)</span>
+                @if (_showAllErrors && _errors.Any(e => e.StageId == item.StageId))
+                {
+                    <span class="we-qe-error-marker" aria-label="Stage has validation errors">!</span>
+                }
+            </button>
+        }
+        <button type="button" class="btn btn-sm btn-outline-primary" data-add-stage @onclick='AddStage' disabled="@ReadOnly">Add stage</button>
+        @if (Model.Stages.Count == 0)
+        {
+            <p class="we-qe-help">Add a stage to define what the player sees and does.</p>
+        }
+    </aside>
+
+    <main class="we-qe-form" aria-label="Quest editing">
+        @if (_showAllErrors && (_errors.Count > 0 || HasInvalidInput))
+        {
+            <details class="we-qe-validation" open>
+                <summary>Resolve these issues before saving</summary>
+                <ul>
+                    @foreach (QuestValidationError error in _errors)
+                    {
+                        <li><button class="btn btn-link" type="button" @onclick='() => SelectError(error)'>@error.Message</button></li>
+                    }
+                    @foreach (var error in _configErrors)
+                    {
+                        <li><button class="btn btn-link" type="button" @onclick='() => SelectObjectiveError(error.Key)'>@error.Value</button></li>
+                    }
+                    @foreach (var error in _stageIdErrors)
+                    {
+                        <li><button class="btn btn-link" type="button" @onclick='() => SelectStage(error.Key)'>Stage @error.Key.StageId: @error.Value</button></li>
+                    }
+                </ul>
+            </details>
+        }
+        <fieldset disabled="@ReadOnly">
+        @if (_selectedStage is not { } stage)
+        {
+            <h3>Quest details</h3>
+            <label class="we-qe-field">Title
+                <input class="form-control" data-quest-title value="@Model.Title" @oninput='SetTitle' placeholder="e.g. The Lost Artifact" maxlength="200" />
+                @FieldErrors("Title")
+            </label>
+            <label class="we-qe-field">Description
+                <textarea class="form-control" rows="4" data-quest-description value="@Model.Description"
+                          @oninput='e => Change("Description", () => Model.Description = Text(e))' placeholder="What is this quest about?"></textarea>
+                @FieldErrors("Description")
+            </label>
+            <div class="we-qe-fields">
+                <label class="we-qe-field">Quest giver
+                    <input class="form-control" value="@Model.QuestGiver" @oninput='e => Change("QuestGiver", () => Model.QuestGiver = Text(e))' placeholder="NPC tag" />
+                </label>
+                <label class="we-qe-field">Location
+                    <input class="form-control" value="@Model.Location" @oninput='e => Change("Location", () => Model.Location = Text(e))' placeholder="Optional location" />
+                </label>
+            </div>
+            <details class="we-qe-advanced" open="@(_showAllErrors && _errors.Any(e => e.Field is "QuestId" or "Keywords"))">
+                <summary>Advanced: quest ID & discovery</summary>
+                <label class="we-qe-field">Quest ID
+                    <input class="form-control" data-quest-id value="@Model.QuestId" disabled="@(!IsCreating)"
+                           @oninput='SetQuestId' maxlength="100" placeholder="e.g. quest_lost_artifact" />
+                    <span class="we-qe-help">Suggested from the title. Dialogue actions use this ID.</span>
+                    @FieldErrors("QuestId")
+                </label>
+                <label class="we-qe-field">Keywords
+                    <input class="form-control" value="@Model.Keywords" maxlength="1000"
+                           @oninput='e => Change("Keywords", () => Model.Keywords = Text(e))' placeholder="Comma-separated keywords" />
+                    @FieldErrors("Keywords")
+                </label>
+                <label class="we-qe-check"><input type="checkbox" checked="@Model.IsAlwaysAvailable"
+                       @onchange='e => Change("IsAlwaysAvailable", () => Model.IsAlwaysAvailable = Checked(e))' />Always available</label>
+                @if (Model.CompletionReward is { IsEmpty: false } completionReward)
+                {
+                    <p class="we-qe-help">Stored completion reward: @RewardSummary(completionReward). Automatic completion payout is not connected. Use rewards on the stage leading to the ending.</p>
+                }
+            </details>
+        }
+        else
+        {
+            string stageField = StageField(stage);
+            <div class="we-qe-heading">
+                <h3>Stage @stage.StageId · @StageLabel(stage)</h3>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-remove-stage @onclick='() => _removingStage = stage'>Remove stage</button>
+            </div>
+            <label class="we-qe-field">Journal text
+                <textarea class="form-control" rows="4" data-stage-journal value="@stage.JournalText"
+                          @oninput='e => Change(stageField + ".JournalText", () => stage.JournalText = Text(e))'
+                          placeholder="Text shown in the player's journal at this stage…"></textarea>
+            </label>
+            <label class="we-qe-field">On entering this stage
+                <select class="form-select" data-stage-state value="@(QuestDefinitionValidator.EffectiveState(stage) ?? "")"
+                        @onchange='e => SetStageState(stage, Text(e))'>
+                    <option value="">Keep the current quest state</option>
+                    <option value="Discovered">Discover the quest</option>
+                    <option value="InProgress">Start / continue the quest</option>
+                    <option value="Completed">Complete the quest</option>
+                    <option value="Failed">Fail the quest</option>
+                    <option value="Abandoned">Abandon the quest</option>
+                    <option value="Expired">Expire the quest</option>
+                </select>
+                @FieldErrors(stageField + ".QuestState")
+            </label>
+            @if (!QuestDefinitionValidator.IsTerminal(stage))
+            {
+                <div class="we-qe-heading"><h3>What should the player do?</h3>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-add-objective @onclick='() => AddObjective(stage)'>Add objective</button>
+                </div>
+                @if (stage.ObjectiveGroups.Count == 0)
+                {
+                    <p class="we-qe-help">No objectives. A dialogue action or script must advance this stage.</p>
+                }
+            }
+            @for (int gi = 0; gi < stage.ObjectiveGroups.Count; gi++)
+            {
+                int groupIndex = gi;
+                ObjectiveGroupDto group = stage.ObjectiveGroups[gi];
+                string groupField = stageField + $".ObjectiveGroups[{gi}]";
+                <section class="we-qe-group" @key="group" aria-label="@($"Objective group {gi + 1}")">
+                    @for (int oi = 0; oi < group.Objectives.Count; oi++)
+                    {
+                        int objectiveIndex = oi;
+                        ObjectiveDefinitionDto objective = group.Objectives[oi];
+                        string objectiveField = groupField + $".Objectives[{oi}]";
+                        <div class="we-qe-objective" @key="objective">
+                            <div class="we-qe-heading">
+                                <label class="we-qe-field">Player action
+                                    <select class="form-select" data-objective-type value="@objective.TypeTag"
+                                            @onchange='e => ChangeObjectiveType(objective, objectiveField, Text(e))'>
+                                        @foreach (string type in QuestDefinitionValidator.ObjectiveTypes)
+                                        {
+                                            <option value="@type">@ObjectiveTypeLabel(type)</option>
+                                        }
+                                    </select>
+                                    @FieldErrors(objectiveField + ".TypeTag")
+                                </label>
+                                <button class="btn btn-sm btn-outline-danger" type="button" aria-label="Remove objective"
+                                        @onclick='() => Change(groupField + ".Objectives", () => group.Objectives.RemoveAt(objectiveIndex))'>Remove</button>
+                            </div>
+                            @if (objective.TypeTag is not ("collect" or "dialog_choice"))
+                            {
+                                <p class="we-qe-help">This action requires a custom game trigger.</p>
+                            }
+                            <label class="we-qe-field">Objective journal text
+                                <input class="form-control" data-objective-text value="@objective.DisplayText" placeholder="e.g. Collect five rat tails"
+                                       @oninput='e => Change(objectiveField + ".DisplayText", () => objective.DisplayText = Text(e))' />
+                                @FieldErrors(objectiveField + ".DisplayText")
+                            </label>
+                            @if (objective.TypeTag is not ("investigate" or "composite"))
+                            {
+                                <div class="we-qe-target-fields">
+                                    <label class="we-qe-field">@TargetLabel(objective.TypeTag)
+                                        <input class="form-control" data-objective-target value="@objective.TargetTag" placeholder="@TargetPlaceholder(objective.TypeTag)"
+                                               @oninput='e => Change(objectiveField + ".TargetTag", () => objective.TargetTag = Text(e))' />
+                                        @if (objective.TypeTag == "dialog_choice")
+                                        {
+                                            <span class="we-qe-help">Use the dialogue node's short ID (first 8 characters), not the NPC tag.</span>
+                                        }
+                                        @FieldErrors(objectiveField + ".TargetTag")
+                                    </label>
+                                    @if (objective.TypeTag is "collect" or "kill")
+                                    {
+                                        <label class="we-qe-field">Count
+                                            <input class="form-control" type="number" min="1" data-objective-count value="@objective.RequiredCount"
+                                                   @oninput='e => Change(objectiveField + ".RequiredCount", () => objective.RequiredCount = Number(e))' />
+                                            @FieldErrors(objectiveField + ".RequiredCount")
+                                        </label>
+                                    }
+                                </div>
+                            }
+                            @if (objective.TypeTag == "investigate")
+                            {
+                                <label class="we-qe-field">Investigation style
+                                    <select class="form-select" value="@CodexEditor.GetConfigString(objective, "mode", "clue_graph")"
+                                            @onchange='e => SetConfigValue(objective, objectiveField, "mode", Text(e))'>
+                                        <option value="clue_graph">Find and connect clues</option>
+                                        <option value="state_machine">Follow investigation states</option>
+                                    </select>
+                                </label>
+                                <button class="btn btn-sm btn-outline-primary" type="button"
+                                        @onclick='() => GraphEditorRequested.InvokeAsync((stage.StageId, groupIndex, objectiveIndex, CodexEditor.GetConfigString(objective, "mode", "clue_graph")))'>Open investigation editor</button>
+                            }
+                            @if (objective.TypeTag == "escort")
+                            {
+                                <label class="we-qe-field">Destination waypoint
+                                    <input class="form-control" value="@CodexEditor.GetConfigString(objective, "destination_waypoint", "")"
+                                           @oninput='e => SetConfigValue(objective, objectiveField, "destination_waypoint", Text(e))' />
+                                </label>
+                            }
+                            <details class="we-qe-advanced" open="@(HasFieldErrors(objectiveField + ".ObjectiveId") || _configErrors.ContainsKey(objective))">
+                                <summary>Advanced: objective ID & configuration</summary>
+                                <label class="we-qe-field">Objective ID
+                                    <input class="form-control" value="@objective.ObjectiveId"
+                                           @oninput='e => Change(objectiveField + ".ObjectiveId", () => objective.ObjectiveId = Text(e))' />
+                                    @FieldErrors(objectiveField + ".ObjectiveId")
+                                </label>
+                                @if (objective.TypeTag == "collect")
+                                {
+                                    <label class="we-qe-check"><input type="checkbox" checked="@ConfigFlag(objective, "track_loss", false)"
+                                           @onchange='e => SetConfigValue(objective, objectiveField, "track_loss", Checked(e) ? "true" : "false")' />Track item loss</label>
+                                }
+                                @if (objective.TypeTag == "escort")
+                                {
+                                    <label class="we-qe-check"><input type="checkbox" checked="@ConfigFlag(objective, "fail_on_death", true)"
+                                           @onchange='e => SetConfigValue(objective, objectiveField, "fail_on_death", Checked(e) ? "true" : "false")' />Fail if the escort dies</label>
+                                }
+                                <label class="we-qe-field">Configuration JSON
+                                    <textarea class="form-control" rows="4" data-config-json value="@ConfigText(objective)"
+                                              @oninput='e => SetConfigJson(objective, objectiveField, Text(e))'></textarea>
+                                    @if (_configErrors.TryGetValue(objective, out string? configError))
+                                    {
+                                        <span class="we-qe-field-error" role="alert">@configError</span>
+                                    }
+                                </label>
+                            </details>
+                        </div>
+                    }
+                    @FieldErrors(groupField + ".Objectives")
+                    <details class="we-qe-advanced" open="@(HasFieldErrors(groupField + ".DisplayName") || HasFieldErrors(groupField + ".CompletionMode") || HasFieldErrors(groupField + ".CompletionStageId"))">
+                        <summary>Group rules & branching</summary>
+                        <label class="we-qe-field">Group name
+                            <input class="form-control" value="@group.DisplayName" @oninput='e => Change(groupField + ".DisplayName", () => group.DisplayName = Text(e))' />
+                            @FieldErrors(groupField + ".DisplayName")
+                        </label>
+                        <label class="we-qe-field">Which objectives are required?
+                            <select class="form-select" value="@(QuestDefinitionValidator.CompletionModes.FirstOrDefault(m => m.Equals(group.CompletionMode, StringComparison.OrdinalIgnoreCase)) ?? group.CompletionMode)" @onchange='e => Change(groupField + ".CompletionMode", () => group.CompletionMode = Text(e))'>
+                                <option value="All">All objectives</option><option value="Any">Any one objective</option><option value="Sequence">All objectives, in order</option>
+                            </select>
+                            @FieldErrors(groupField + ".CompletionMode")
+                        </label>
+                        <label class="we-qe-field">When this group finishes
+                            <select class="form-select" value="@(group.CompletionStageId?.ToString() ?? "")"
+                                    @onchange='e => Change(groupField + ".CompletionStageId", () => group.CompletionStageId = OptionalNumber(e))'>
+                                <option value="">Follow the stage's next step</option>
+                                @BrokenLinkOption(stage, group.CompletionStageId)
+                                @foreach (QuestStageDto next in Model.Stages.Where(s => s.StageId > stage.StageId).OrderBy(s => s.StageId))
+                                {
+                                    <option value="@next.StageId">@next.StageId · @StageLabel(next)</option>
+                                }
+                            </select>
+                            <span class="we-qe-help">A group branch takes effect immediately, even if other groups are unfinished.</span>
+                            @FieldErrors(groupField + ".CompletionStageId")
+                        </label>
+                        <div class="we-qe-actions">
+                            <button class="btn btn-sm btn-outline-primary" type="button" @onclick='() => AddObjective(stage, group)'>Add objective to this group</button>
+                            <button class="btn btn-sm btn-outline-danger" type="button" @onclick='() => RemoveGroup(stage, group)'>Remove group</button>
+                        </div>
+                    </details>
+                </section>
+            }
+            @if (!QuestDefinitionValidator.IsTerminal(stage))
+            {
+                <label class="we-qe-field">When all objectives are done
+                    <select class="form-select" data-next-stage value="@(stage.NextStageId?.ToString() ?? "")"
+                            @onchange='e => Change(stageField + ".NextStageId", () => stage.NextStageId = OptionalNumber(e))'>
+                        <option value="">@FallbackLabel(stage)</option>
+                        @BrokenLinkOption(stage, stage.NextStageId)
+                        @foreach (QuestStageDto next in Model.Stages.Where(s => s.StageId > stage.StageId).OrderBy(s => s.StageId))
+                        {
+                            <option value="@next.StageId">Go to @next.StageId · @StageLabel(next)</option>
+                        }
+                    </select>
+                    @FieldErrors(stageField + ".NextStageId")
+                </label>
+            }
+            <details class="we-qe-advanced" open="@(HasFieldErrors(stageField + ".StageId") || HasFieldErrors(stageField + ".Rewards") || _stageIdErrors.ContainsKey(stage))">
+                <summary>Advanced: stage ID, hints & rewards</summary>
+                <label class="we-qe-field">Stage ID
+                    <input class="form-control" type="number" min="1" data-stage-id value="@(_stageIdDrafts.GetValueOrDefault(stage) ?? stage.StageId.ToString())" @onchange='e => SetStageId(stage, e)' />
+                    <span class="we-qe-help">Forward transitions must lead to a higher ID. Renaming updates links within this quest; update any dialogue or script references separately.</span>
+                    @FieldErrors(stageField + ".StageId")
+                </label>
+                <h4>Hints</h4>
+                @for (int hi = 0; hi < stage.Hints.Count; hi++)
+                {
+                    int hintIndex = hi;
+                    <div class="we-qe-actions">
+                        <label class="we-qe-field">Hint @(hi + 1)
+                            <input class="form-control" value="@stage.Hints[hi]" @oninput='e => Change(stageField + ".Hints", () => stage.Hints[hintIndex] = Text(e))' />
+                        </label>
+                        <button class="btn btn-sm btn-outline-danger" type="button" aria-label="Remove hint" @onclick='() => Change(stageField + ".Hints", () => stage.Hints.RemoveAt(hintIndex))'>Remove</button>
+                    </div>
+                }
+                <button class="btn btn-sm btn-outline-secondary" type="button" @onclick='() => Change(stageField + ".Hints", () => stage.Hints.Add(""))'>Add hint</button>
+                <h4>Rewards on leaving this stage</h4>
+                <p class="we-qe-help">For a completion payout, put the reward on the stage leading to the completed ending.</p>
+                <QuestRewardEditor Reward="@stage.Rewards" Industries="@Industries"
+                                   Changed='change => Change(stageField + ".Rewards." + change.Field, () => stage.Rewards = change.Reward)' />
+                @foreach (QuestValidationError error in _errors.Where(e => e.Field.StartsWith(stageField + ".Rewards") && (_showAllErrors || _touched.Contains(e.Field))))
+                {
+                    <div class="we-qe-field-error" role="alert">@error.Message</div>
+                }
+                <button class="btn btn-sm btn-outline-secondary" type="button" @onclick='() => AddGroup(stage)'>Add objective group</button>
+            </details>
+        }
+        </fieldset>
+    </main>
+
+    <aside class="we-qe-preview" aria-label="Player journal preview" aria-live="polite">
+        <h3>Player journal preview</h3>
+        <div class="we-qe-journal">
+            <h4>@(string.IsNullOrWhiteSpace(Model.Title) ? "Untitled quest" : Model.Title)</h4>
+            @if (_selectedStage is { } previewStage)
+            {
+                <span class="we-qe-help">@(QuestDefinitionValidator.EffectiveState(previewStage) ?? "In progress")</span>
+                <p>@(string.IsNullOrWhiteSpace(previewStage.JournalText) ? Model.Description : previewStage.JournalText)</p>
+                @foreach (ObjectiveGroupDto group in previewStage.ObjectiveGroups)
+                {
+                    <div class="we-qe-preview-group">
+                        <strong>@group.DisplayName</strong><span class="we-qe-help"> · @GroupModeLabel(group.CompletionMode)</span>
+                        <ul>@foreach (ObjectiveDefinitionDto objective in group.Objectives){<li>@objective.DisplayText @if(objective.RequiredCount > 1){<span class="we-qe-help">(0 / @objective.RequiredCount)</span>}</li>}</ul>
+                        @if (group.CompletionStageId.HasValue){<p class="we-qe-help">Branches to stage @group.CompletionStageId when this group finishes.</p>}
+                    </div>
+                }
+                @if (previewStage.Hints.Count > 0){<h4>Hints</h4><ul>@foreach(string hint in previewStage.Hints){<li>@hint</li>}</ul>}
+            }
+            else
+            {
+                <p>@Model.Description</p>
+                @if (!string.IsNullOrWhiteSpace(Model.QuestGiver)){<p class="we-qe-help">Quest giver: @Model.QuestGiver</p>}
+                @if (!string.IsNullOrWhiteSpace(Model.Location)){<p class="we-qe-help">Location: @Model.Location</p>}
+            }
+        </div>
+        @if (_selectedStage is { } flowStage)
+        {
+            <p class="we-qe-transition" data-stage-transition>@TransitionLabel(flowStage)</p>
+            @if (flowStage.Rewards is { IsEmpty: false } rewards){<p class="we-qe-help">On leaving: @RewardSummary(rewards)</p>}
+        }
+    </aside>
+</div>
+@if (_removingStage is { } removing)
+{
+    <div class="modal-backdrop">
+        <div class="admin-modal we-qe-remove-dialog" role="dialog" aria-modal="true" aria-labelledby="qe-remove-title">
+            <h3 id="qe-remove-title">Remove stage @removing.StageId?</h3>
+            <p>Its journal text, objectives, hints, and rewards will be removed.</p>
+            @if (Model.Stages.Any(s => s != removing && (s.NextStageId == removing.StageId || s.ObjectiveGroups.Any(g => g.CompletionStageId == removing.StageId))))
+            {
+                <p>Other stages link here. You will need to choose new targets before saving.</p>
+            }
+            <div class="we-qe-actions">
+                <button class="btn btn-secondary" type="button" @onclick='() => _removingStage = null'>Keep stage</button>
+                <button class="btn btn-danger" type="button" data-confirm-remove-stage @onclick='RemoveStage'>Remove stage</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private RenderFragment FieldErrors(string field) => @<text>
+        @foreach (QuestValidationError error in _errors.Where(e => e.Field == field && (_showAllErrors || _touched.Contains(field))))
+        {
+            <span class="we-qe-field-error" role="alert">@error.Message</span>
+        }
+        @if (_selectedStage is { } stage && field == StageField(stage) + ".StageId" && _stageIdErrors.TryGetValue(stage, out string? message))
+        {
+            <span class="we-qe-field-error" role="alert">@message</span>
+        }
+    </text>;
+
+    private RenderFragment BrokenLinkOption(QuestStageDto stage, int? target) => @<text>
+        @if (target.HasValue && (target <= stage.StageId || !Model.Stages.Any(s => s.StageId == target)))
+        {
+            <option value="@target">Unavailable target: stage @target</option>
+        }
+    </text>;
+}

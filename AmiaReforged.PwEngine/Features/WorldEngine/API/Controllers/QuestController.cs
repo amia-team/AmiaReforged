@@ -1,3 +1,4 @@
+using AmiaReforged.Shared.Quests;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Database;
@@ -199,70 +200,7 @@ public class QuestController
     // ═══════════════════════════════════════════════════════════════════
 
     private static string? ValidateDto(QuestDefinitionDto dto)
-    {
-        if (string.IsNullOrWhiteSpace(dto.QuestId)) return "QuestId is required";
-        if (dto.QuestId.Length > 100) return "QuestId must not exceed 100 characters";
-        if (string.IsNullOrWhiteSpace(dto.Title)) return "Title is required";
-        if (dto.Title.Length > 200) return "Title must not exceed 200 characters";
-        if (string.IsNullOrWhiteSpace(dto.Description)) return "Description is required";
-        if (dto.Keywords is { Length: > 1000 }) return "Keywords must not exceed 1000 characters";
-
-        // Validate stages and their nested objectives/rewards
-        foreach (QuestStageJsonModel stage in dto.Stages)
-        {
-            if (stage.ObjectiveGroups != null)
-            {
-                foreach (ObjectiveGroupJsonModel group in stage.ObjectiveGroups)
-                {
-                    if (string.IsNullOrWhiteSpace(group.DisplayName))
-                        return $"Stage {stage.StageId}: objective group display name is required";
-
-                    if (group.Objectives != null)
-                    {
-                        foreach (ObjectiveJsonModel obj in group.Objectives)
-                        {
-                            if (string.IsNullOrWhiteSpace(obj.TypeTag))
-                                return $"Stage {stage.StageId}: objective type tag is required";
-                            if (string.IsNullOrWhiteSpace(obj.DisplayText))
-                                return $"Stage {stage.StageId}: objective display text is required";
-                            if (obj.RequiredCount < 0)
-                                return $"Stage {stage.StageId}: objective required count cannot be negative";
-                        }
-                    }
-                }
-            }
-
-            string? rewardError = ValidateReward(stage.Rewards, $"Stage {stage.StageId}");
-            if (rewardError != null) return rewardError;
-        }
-
-        // Validate completion reward
-        string? completionRewardError = ValidateReward(dto.CompletionReward, "Completion reward");
-        if (completionRewardError != null) return completionRewardError;
-
-        return null;
-    }
-
-    private static string? ValidateReward(RewardMixJsonModel? reward, string context)
-    {
-        if (reward == null) return null;
-        if (reward.Xp < 0) return $"{context}: XP reward cannot be negative";
-        if (reward.Gold < 0) return $"{context}: gold reward cannot be negative";
-        if (reward.KnowledgePoints < 0) return $"{context}: knowledge points cannot be negative";
-
-        if (reward.Proficiencies != null)
-        {
-            foreach (ProficiencyRewardJsonModel prof in reward.Proficiencies)
-            {
-                if (string.IsNullOrWhiteSpace(prof.IndustryTag))
-                    return $"{context}: proficiency reward must specify an industry tag";
-                if (prof.ProficiencyXp < 0)
-                    return $"{context}: proficiency XP for '{prof.IndustryTag}' cannot be negative";
-            }
-        }
-
-        return null;
-    }
+        => QuestDefinitionValidator.Validate(dto).FirstOrDefault()?.Message;
 
     private static object ToDto(PersistedQuestDefinition def)
     {
@@ -297,90 +235,30 @@ public class QuestController
         };
     }
 
-    private static List<QuestStageJsonModel> DeserializeStages(string? json)
+    private static List<QuestStageDto> DeserializeStages(string? json)
     {
         if (string.IsNullOrWhiteSpace(json) || json == "[]") return [];
-        try { return JsonSerializer.Deserialize<List<QuestStageJsonModel>>(json, JsonOpts) ?? []; }
+        try { return JsonSerializer.Deserialize<List<QuestStageDto>>(json, JsonOpts) ?? []; }
         catch { return []; }
     }
 
-    private static string SerializeStages(List<QuestStageJsonModel>? stages)
+    private static string SerializeStages(List<QuestStageDto>? stages)
     {
         if (stages == null || stages.Count == 0) return "[]";
         return JsonSerializer.Serialize(stages, JsonOpts);
     }
 
-    private static RewardMixJsonModel? DeserializeReward(string? json)
+    private static RewardMixDto? DeserializeReward(string? json)
     {
         if (string.IsNullOrWhiteSpace(json) || json == "{}") return null;
-        try { return JsonSerializer.Deserialize<RewardMixJsonModel>(json, JsonOpts); }
+        try { return JsonSerializer.Deserialize<RewardMixDto>(json, JsonOpts); }
         catch { return null; }
     }
 
-    private static string SerializeReward(RewardMixJsonModel? reward)
+    private static string SerializeReward(RewardMixDto? reward)
     {
         if (reward == null) return "{}";
         return JsonSerializer.Serialize(reward, JsonOpts);
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  DTOs
-    // ═══════════════════════════════════════════════════════════════════
-
-    private record QuestStageJsonModel
-    {
-        public int StageId { get; init; }
-        public string JournalText { get; init; } = string.Empty;
-        public bool IsCompletionStage { get; init; }
-        public string? QuestState { get; init; }
-        public int? NextStageId { get; init; }
-        public List<string> Hints { get; init; } = [];
-        public List<ObjectiveGroupJsonModel>? ObjectiveGroups { get; init; }
-        public RewardMixJsonModel? Rewards { get; init; }
-    }
-
-    private record ObjectiveGroupJsonModel
-    {
-        public string DisplayName { get; init; } = string.Empty;
-        public string CompletionMode { get; init; } = "All";
-        public int? CompletionStageId { get; init; }
-        public List<ObjectiveJsonModel>? Objectives { get; init; }
-    }
-
-    private record ObjectiveJsonModel
-    {
-        public string ObjectiveId { get; init; } = string.Empty;
-        public string TypeTag { get; init; } = string.Empty;
-        public string DisplayText { get; init; } = string.Empty;
-        public string? TargetTag { get; init; }
-        public int RequiredCount { get; init; } = 1;
-        public Dictionary<string, object>? Config { get; init; }
-    }
-
-    private record RewardMixJsonModel
-    {
-        public int Xp { get; init; }
-        public int Gold { get; init; }
-        public int KnowledgePoints { get; init; }
-        public List<ProficiencyRewardJsonModel>? Proficiencies { get; init; }
-    }
-
-    private record ProficiencyRewardJsonModel
-    {
-        public string IndustryTag { get; init; } = string.Empty;
-        public int ProficiencyXp { get; init; }
-    }
-
-    private record QuestDefinitionDto
-    {
-        public string QuestId { get; init; } = string.Empty;
-        public string Title { get; init; } = string.Empty;
-        public string Description { get; init; } = string.Empty;
-        public List<QuestStageJsonModel> Stages { get; init; } = [];
-        public RewardMixJsonModel? CompletionReward { get; init; }
-        public string? QuestGiver { get; init; }
-        public string? Location { get; init; }
-        public string? Keywords { get; init; }
-        public bool IsAlwaysAvailable { get; init; }
-    }
 }

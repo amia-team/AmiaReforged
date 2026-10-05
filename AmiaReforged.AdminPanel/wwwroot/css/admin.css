@@ -1843,6 +1843,8 @@ a:hover {
 
 /* ========== WorldEngine tab-fill container (tab-driven editors) ========== */
 
+.we-editor__tab-fill[hidden] { display: none; }
+
 .we-editor__tab-fill {
     flex: 1;
     min-height: 0;

@@ -31,10 +31,13 @@
 @inject DeploymentService DeployService
 @inject ILogger<WorldEngineEditor> Logger
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 @rendermode InteractiveServer
 @implements IAsyncDisposable
 
 <PageTitle>World Engine Editor</PageTitle>
+<NavigationLock ConfirmExternalNavigation="@_codexEditors.Values.Any(e => e.HasUnsavedChanges)"
+                OnBeforeInternalNavigation="OnCodexNavigation" />
 
 <CascadingValue Value="_hostContext" IsFixed="true">
 <div class="we-editor">
@@ -46,8 +49,8 @@
         <div class="we-editor__endpoint-selector">
             <label>Server:</label>
             <select class="form-control form-control-sm"
-                    value="@(EditorState.SelectedEndpointId?.ToString() ?? "")"
-                    @onchange="OnEndpointChanged">
+                    @bind:get="EditorState.SelectedEndpointId"
+                    @bind:set="OnEndpointChanged">
                 <option value="">— Select —</option>
                 @foreach (WorldEngineEndpoint ep in _endpoints)
                 {
@@ -554,10 +557,23 @@
                       ActiveTabId="@EditorState.ActiveTabId"
                       GetIcon="@GetEntityIcon"
                       OnActivate="@((string id) => EditorState.ActiveTabId = id)"
-                      OnClose="@CloseTab" />
+                      OnClose="@RequestCloseTab" />
 
             @* Entity editor content *@
             <div class="we-editor__content">
+                @foreach (EditorTab codexTab in EditorState.OpenTabs.Where(t => t.EntityType == WorldEngineEntityType.Codex))
+                {
+                    <div @key="codexTab.Id" class="we-editor__tab-fill" hidden="@(codexTab.Id != EditorState.ActiveTabId)">
+                        <CodexEditor @ref="_codexEditors[codexTab.Id]"
+                                     EntityKey="@codexTab.EntityKey"
+                                     InitialSubType="@GetCodexSubType(codexTab.Id)"
+                                     OpenOnParameters="true"
+                                     IsActive="@(codexTab.Id == EditorState.ActiveTabId)"
+                                     OnClose="@(() => CloseTab(codexTab.Id))"
+                                     OnDirtyChanged="@(dirty => HandleCodexDirty(codexTab.Id, dirty))"
+                                     OnEntityListRefresh="@(async () => await LoadEntityList(reset: true))" />
+                    </div>
+                }
                 @if (EditorState.OpenTabs.Count == 0)
                 {
                     <div class="we-editor__welcome">
@@ -569,15 +585,7 @@
                 {
                     @if (activeTab.EntityType == WorldEngineEntityType.Codex)
                     {
-                        @* Codex editors are self-loading tabs (no _tabData) *@
-                        <div class="we-editor__tab-fill">
-                            <CodexEditor @key="activeTab.Id"
-                                         EntityKey="@activeTab.EntityKey"
-                                         InitialSubType="@GetCodexSubType(activeTab.Id)"
-                                         OpenOnParameters="true"
-                                         OnClose="@(() => CloseTab(activeTab.Id))"
-                                         OnEntityListRefresh="@(async () => await LoadEntityList(reset: true))" />
-                        </div>
+                        @* Codex tabs remain mounted above so drafts survive tab activation. *@
                     }
                     else if (activeTab.EntityType == WorldEngineEntityType.Interactions)
                     {

@@ -1,3 +1,4 @@
+using AmiaReforged.Shared.Quests;
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -7,6 +8,7 @@ using AmiaReforged.AdminPanel.Models;
 using AmiaReforged.AdminPanel.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
@@ -15,6 +17,7 @@ namespace AmiaReforged.AdminPanel.Components.Pages.WorldEngine;
 public partial class WorldEngineEditor
 {
     private WorldEngineEditorHostContext _hostContext = null!;
+    private readonly Dictionary<string, CodexEditor> _codexEditors = new();
     private List<WorldEngineEndpoint> _endpoints = [];
     private bool _listPanelOpen = true;
 
@@ -168,10 +171,15 @@ public partial class WorldEngineEditor
     //  Endpoint
     // ═══════════════════════════════════════════════════════════════════
 
-    private void OnEndpointChanged(ChangeEventArgs e)
+    private async Task OnEndpointChanged(Guid? endpoint)
     {
-        string? val = e.Value?.ToString();
-        EditorState.SelectedEndpointId = Guid.TryParse(val, out Guid id) ? id : null;
+        if (endpoint == EditorState.SelectedEndpointId) return;
+        await GuardCodexDrafts(() =>
+        {
+            foreach (string tabId in _codexEditors.Keys.ToList()) CloseTab(tabId);
+            EditorState.SelectedEndpointId = endpoint;
+            return Task.CompletedTask;
+        });
     }
 
     private void OnEditorEndpointChanged()
@@ -247,6 +255,14 @@ public partial class WorldEngineEditor
     private void CloseListPanel() => _listPanelOpen = false;
 
     private async Task OnActivityBarClick(WorldEngineEntityType entityType)
+    {
+        if (entityType is WorldEngineEntityType.Dialogues or WorldEngineEntityType.Glyphs)
+            await GuardCodexDrafts(() => ActivateEntityType(entityType));
+        else
+            await ActivateEntityType(entityType);
+    }
+
+    private async Task ActivateEntityType(WorldEngineEntityType entityType)
     {
         // Close region graph if switching away from Regions
         if (_regionGraphOpen && entityType != WorldEngineEntityType.Regions)
@@ -609,6 +625,7 @@ public partial class WorldEngineEditor
 
     private void CloseTab(string tabId)
     {
+        _codexEditors.Remove(tabId);
         _tabData.Remove(tabId);
         _codexTabSubTypes.Remove(tabId);
         _interactionNewTabs.Remove(tabId);
@@ -618,6 +635,41 @@ public partial class WorldEngineEditor
         _newRecipeTemplateDtos.Remove(tabId);
         _newItemDtos.Remove(tabId);
         EditorState.CloseTab(tabId);
+    }
+
+    private async Task RequestCloseTab(string tabId)
+    {
+        if (_codexEditors.TryGetValue(tabId, out CodexEditor? editor))
+        {
+            EditorState.ActiveTabId = tabId;
+            await editor.RequestCloseAsync();
+        }
+        else CloseTab(tabId);
+    }
+
+    private void HandleCodexDirty(string tabId, bool dirty) => EditorState.MarkDirty(tabId, dirty);
+
+    private async Task GuardCodexDrafts(Func<Task> continuation)
+    {
+        if (_codexEditors.Values.Any(e => e.IsBusy)) return;
+        KeyValuePair<string, CodexEditor> draft = _codexEditors.FirstOrDefault(pair => pair.Value.HasUnsavedChanges);
+        if (draft.Value != null)
+        {
+            EditorState.ActiveTabId = draft.Key;
+            await draft.Value.RequestLeaveAsync(() => GuardCodexDrafts(continuation));
+        }
+        else await continuation();
+    }
+
+    private async Task OnCodexNavigation(LocationChangingContext context)
+    {
+        if (!_codexEditors.Values.Any(e => e.HasUnsavedChanges || e.IsBusy)) return;
+        context.PreventNavigation();
+        await GuardCodexDrafts(() =>
+        {
+            Navigation.NavigateTo(context.TargetLocation);
+            return Task.CompletedTask;
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════════

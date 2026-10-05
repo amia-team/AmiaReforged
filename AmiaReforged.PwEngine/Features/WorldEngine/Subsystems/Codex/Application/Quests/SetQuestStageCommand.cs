@@ -138,12 +138,12 @@ public sealed class SetQuestStageHandler : ICommandHandler<SetQuestStageCommand>
                 ApplyStageQuestState(codex, entry, qid, command.StageId, now);
             }
 
-            // Grant the completed (from) stage's rewards if any
-            await GrantFromStageRewardsAsync(
-                _rewardGranter, command.CharacterId, qid, fromStageId, command.StageId, questEntry, _eventBus, cancellationToken);
-
             await _codexRepository.SaveAsync(codex, cancellationToken);
             mutation.Dispose();
+
+            // Queue rewards only after the stage change has been persisted.
+            await GrantFromStageRewardsAsync(
+                _rewardGranter, command.CharacterId, qid, fromStageId, command.StageId, questEntry, _eventBus, cancellationToken);
 
             // Create/update the quest session so objective tracking begins immediately
             CodexQuestEntry? updatedEntry = codex.GetQuest(qid);
@@ -250,10 +250,8 @@ public sealed class SetQuestStageHandler : ICommandHandler<SetQuestStageCommand>
     }
 
     /// <summary>
-    /// Grants the FROM stage's rewards (if any) when advancing from one stage to another.
-    /// Skipped when the stage didn't actually change (idempotent advance) or when no
-    /// reward granter is registered. Publishes <see cref="StageRewardsGrantedEvent"/>
-    /// when rewards are granted.
+    /// Routes the FROM stage's rewards through the event processor when a bus is available.
+    /// Direct granting is used only without a bus; using both paths would pay twice.
     /// </summary>
     internal static async Task GrantFromStageRewardsAsync(
         IStageRewardGranter? rewardGranter,
@@ -268,18 +266,21 @@ public sealed class SetQuestStageHandler : ICommandHandler<SetQuestStageCommand>
         // Idempotent: stage didn't change — nothing to grant
         if (fromStageId == toStageId) return;
 
-        if (rewardGranter is null) return;
+        if (rewardGranter is null && eventBus is null) return;
 
         QuestStage? fromStage = entry.Stages.FirstOrDefault(s => s.StageId == fromStageId);
         if (fromStage is null or { Rewards.IsEmpty: true }) return;
 
         try
         {
-            await rewardGranter.GrantRewardsAsync(characterId, questId, fromStageId, fromStage.Rewards);
             if (eventBus is not null)
             {
                 await eventBus.PublishAsync(
                     new StageRewardsGrantedEvent(characterId, DateTime.UtcNow, questId, fromStageId, fromStage.Rewards), ct);
+            }
+            else
+            {
+                await rewardGranter!.GrantRewardsAsync(characterId, questId, fromStageId, fromStage.Rewards);
             }
         }
         catch (Exception ex)
