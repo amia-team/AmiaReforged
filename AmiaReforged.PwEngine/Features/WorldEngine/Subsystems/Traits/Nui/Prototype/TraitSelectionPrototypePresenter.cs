@@ -65,6 +65,8 @@ public sealed class TraitSelectionPrototypePresenter(NwPlayer player, DeviceProp
         _token.SetBindValue(View.ShowSelectButton, _sample.ShowSelect);
         _token.SetBindValue(View.ShowDeselectButton, _sample.ShowRemove);
         _token.SetBindValue(View.ControlsEnabled, _sample.Enabled);
+        _token.SetBindValue(View.HeaderEnabled, _sample.Enabled);
+        _token.SetBindValue(View.HeaderColor, _sample.Enabled ? TraitSelectionGraphicalView.Gold : TraitSelectionGraphicalView.Muted);
         _token.SetBindValue(View.ControlsColor, _sample.Enabled ? TraitSelectionGraphicalView.Gold : TraitSelectionGraphicalView.Muted);
         _token.SetBindValue(View.CollapseGlyph, _compact ? "ui_cdx_i_up" : "ui_cdx_i_down");
         _token.SetBindValue(View.PageInfo, $"{_sample.Page + 1} / {_sample.PageCount}");

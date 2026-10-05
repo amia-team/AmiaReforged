@@ -109,6 +109,36 @@ public class TraitSelectionGraphicalLayoutTests
     }
 
     [Test]
+    public void SwitchingDetailActionUsesAFixedLayoutAndUnregistersTheOldImage()
+    {
+        TraitSelectionGraphicalView view = new();
+        view.RootLayout();
+        float width = view.DetailActionSlot.Width!.Value, height = view.DetailActionSlot.Height!.Value;
+        foreach (bool remove in new[] { true, false })
+        {
+            NuiLayout layout = view.BuildDetailActionLayout(remove);
+            Assert.That(layout.Width, Is.EqualTo(width));
+            Assert.That(layout.Height, Is.EqualTo(height));
+            NuiImage image = Walk(layout).OfType<NuiImage>().Single();
+            Assert.That(image.Id, Is.EqualTo(remove ? "btn_deselect_trait" : "btn_select_trait"));
+            Assert.That(image.Visible, Is.SameAs(remove ? view.ShowDeselectButton : view.ShowSelectButton));
+            Assert.That(view.ImageActionIds.Count, Is.EqualTo(23));
+            Assert.That(view.ImageActionIds, Does.Not.Contain(remove ? "btn_select_trait" : "btn_deselect_trait"));
+        }
+    }
+
+    [Test]
+    public void HeaderControlsHaveIndependentEnabledBindingsForMissingCharacterErrors()
+    {
+        TraitSelectionGraphicalView view = new();
+        Dictionary<string, NuiElement> elements = Named(view.RootLayout());
+        foreach (string id in new[] { "btn_close", "trait_collapse" })
+            Assert.That(elements[id].Enabled, Is.SameAs(view.HeaderEnabled));
+        foreach (string id in new[] { "btn_confirm", "btn_select_trait", "cat_all", "btn_trait_0" })
+            Assert.That(elements[id].Enabled, Is.SameAs(view.ControlsEnabled));
+    }
+
+    [Test]
     public void CompactThenExpandedLayoutsPreserveBindsAndRestoreActionRegistration()
     {
         TraitSelectionGraphicalView view = new();

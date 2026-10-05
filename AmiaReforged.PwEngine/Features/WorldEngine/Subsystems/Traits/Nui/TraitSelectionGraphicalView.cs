@@ -31,6 +31,8 @@ public sealed class TraitSelectionGraphicalView : IScryView
     public readonly NuiBind<bool> ShowDeselectButton = new("trait_show_deselect");
     public readonly NuiBind<bool> ControlsEnabled = new("trait_controls_enabled");
     public readonly NuiBind<Color> ControlsColor = new("trait_controls_color");
+    public readonly NuiBind<bool> HeaderEnabled = new("trait_header_enabled");
+    public readonly NuiBind<Color> HeaderColor = new("trait_header_color");
     public readonly NuiBind<string> CollapseGlyph = new("trait_collapse_glyph");
     public readonly List<NuiBind<string>> EntryNames = [];
     public readonly List<NuiBind<string>> EntrySubtitles = [];
@@ -39,6 +41,7 @@ public sealed class TraitSelectionGraphicalView : IScryView
     public readonly List<NuiBind<bool>> EntryRowVisible = [];
     public readonly List<NuiBind<string>> CategoryTextures = [];
     public readonly HashSet<string> ImageActionIds = [];
+    public NuiGroup DetailActionSlot { get; private set; } = null!;
     private float _scaleFactor = 1f;
 
     public TraitSelectionGraphicalView()
@@ -81,9 +84,11 @@ public sealed class TraitSelectionGraphicalView : IScryView
         { Id = "trait_header_emblem", Width = S(42), Height = S(42), Margin = 0, Padding = 0, ImageAspect = NuiAspect.Fit }, 42),
         Space(16), Label(HeaderTitle, 900, 52, NuiHAlign.Left), Space(238),
         Center("trait_collapse_slot", 38, 52, Action("trait_collapse", "ui_cdx_btn", 38, 38,
-            "Collapse or expand the preview header", glyph: CollapseGlyph, glyphSize: 20), 38),
+            "Collapse or expand trait selection", glyph: CollapseGlyph, glyphSize: 20,
+            enabled: HeaderEnabled, color: HeaderColor), 38),
         Space(18), Center("trait_close_slot", 42, 52,
-            Action("btn_close", "ui_cdx_close", 42, 44, "Close trait selection", aspect: NuiAspect.Fit), 44), Space(24));
+            Action("btn_close", "ui_cdx_close", 42, 44, "Close trait selection", aspect: NuiAspect.Fit,
+                enabled: HeaderEnabled, color: HeaderColor), 44), Space(24));
 
     private NuiRow BuildBudget() => Row(1400, 64, Space(54),
         Label(BudgetLabel, 1010, 64, NuiHAlign.Left), Space(24),
@@ -164,34 +169,47 @@ public sealed class TraitSelectionGraphicalView : IScryView
                     Id = "trait_detail_text", Width = S(496), Height = S(552), Margin = 0, Padding = 0,
                     Border = false, Scrollbars = NuiScrollbars.Y, Scissor = true, ForegroundColor = Gold
                 }, Space(24)), Gap(22)]), Frame(544, 596, "pn", 32)), Space(18)),
-            Gap(20), Row(580, 60, Space(156), Group("trait_detail_action_slot", 268, 60,
-                Action(removeAction ? "btn_deselect_trait" : "btn_select_trait", "ui_dlg_footer", 268, 60,
-                    removeAction ? "Remove this unconfirmed trait" : "Add this trait to your character",
-                    label: removeAction ? "Remove" : "Select", visible: removeAction ? ShowDeselectButton : ShowSelectButton)), Space(156)),
+            Gap(20), Row(580, 60, Space(156), BuildActionSlot(removeAction), Space(156)),
             Gap(16)
         ]), [.. Frame(580, 800, "pn", 48), .. DividerPictures(156, 94, 270, 10)]);
 
+    private NuiGroup BuildActionSlot(bool removeAction) =>
+        DetailActionSlot = Group("trait_detail_action_slot", 268, 60, BuildDetailAction(removeAction));
+
+    public NuiImage BuildDetailAction(bool removeAction)
+    {
+        ImageActionIds.Remove("btn_select_trait");
+        ImageActionIds.Remove("btn_deselect_trait");
+        return Action(removeAction ? "btn_deselect_trait" : "btn_select_trait", "ui_dlg_footer", 268, 60,
+            removeAction ? "Remove this unconfirmed trait" : "Add this trait to your character",
+            label: removeAction ? "Remove" : "Select", visible: removeAction ? ShowDeselectButton : ShowSelectButton);
+    }
+
+    // SetGroupLayout accepts a layout rather than a widget; keep this wrapper at the slot's exact size.
+    public NuiLayout BuildDetailActionLayout(bool removeAction) => Column(268, 60, [BuildDetailAction(removeAction)]);
+
     private NuiImage Action(string id, NuiProperty<string> texture, float width, float height,
         NuiProperty<string> tooltip, NuiProperty<string>? label = null, NuiProperty<bool>? visible = null,
-        NuiProperty<string>? glyph = null, float glyphSize = 22, float labelInset = 44, NuiAspect aspect = NuiAspect.Stretch)
+        NuiProperty<string>? glyph = null, float glyphSize = 22, float labelInset = 44, NuiAspect aspect = NuiAspect.Stretch,
+        NuiProperty<bool>? enabled = null, NuiProperty<Color>? color = null)
     {
         ImageActionIds.Add(id);
         List<NuiDrawListItem> draw = [];
         if (label != null)
         {
             float textHeight = Math.Min(24f, S(height - 8));
-            draw.Add(new NuiDrawListText(ControlsColor, new NuiRect(S(labelInset), (S(height) - textHeight) / 2,
+            draw.Add(new NuiDrawListText(color ?? ControlsColor, new NuiRect(S(labelInset), (S(height) - textHeight) / 2,
                 S(width - labelInset * 2), textHeight), label) { Order = NuiDrawListItemOrder.After });
         }
         if (glyph != null)
             draw.Add(new NuiDrawListImage(glyph, new NuiRect(S((width - glyphSize) / 2), S((height - glyphSize) / 2),
                 S(glyphSize), S(glyphSize)))
-            { Aspect = NuiAspect.Fit, Color = ControlsColor, Order = NuiDrawListItemOrder.After });
+            { Aspect = NuiAspect.Fit, Color = color ?? ControlsColor, Order = NuiDrawListItemOrder.After });
         return new NuiImage(texture)
         {
             Id = id, Width = S(width), Height = S(height), Margin = 0, Padding = 0,
             ImageAspect = aspect, Tooltip = tooltip, Visible = visible ?? new NuiValue<bool>(true),
-            Enabled = ControlsEnabled, DrawList = draw, Scissor = true
+            Enabled = enabled ?? ControlsEnabled, DrawList = draw, Scissor = true
         };
     }
 
