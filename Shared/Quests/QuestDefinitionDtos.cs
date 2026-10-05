@@ -10,6 +10,9 @@ public class QuestStageDto
     /// <summary>NWN-style numeric stage ID (e.g. 10, 20, 30). Gaps allowed for patching.</summary>
     public int StageId { get; set; }
 
+    /// <summary>Optional authoring name displayed in the stage list and links.</summary>
+    public string? Name { get; set; }
+
     /// <summary>Journal text displayed to the player when this stage is reached.</summary>
     public string JournalText { get; set; } = string.Empty;
 

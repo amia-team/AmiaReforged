@@ -15,6 +15,9 @@ public class QuestStage
     /// </summary>
     public int StageId { get; init; }
 
+    /// <summary>Optional authoring name displayed in the stage list and links.</summary>
+    public string? Name { get; init; }
+
     /// <summary>
     /// Journal text displayed to the player when this stage is reached.
     /// </summary>

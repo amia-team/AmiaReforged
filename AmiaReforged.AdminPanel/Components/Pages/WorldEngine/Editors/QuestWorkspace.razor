@@ -98,6 +98,11 @@
                 <h3>Stage @stage.StageId · @StageLabel(stage)</h3>
                 <button type="button" class="btn btn-sm btn-outline-danger" data-remove-stage @onclick='() => _removingStage = stage'>Remove stage</button>
             </div>
+            <label class="we-qe-field">Stage name
+                <input class="form-control" data-stage-name value="@stage.Name" placeholder="@StageLabel(stage)"
+                       @oninput='e => Change(stageField + ".Name", () => stage.Name = Text(e))' />
+                <span class="we-qe-help">Optional label for the stage list and links.</span>
+            </label>
             <label class="we-qe-field">Journal text
                 <textarea class="form-control" rows="4" data-stage-journal value="@stage.JournalText"
                           @oninput='e => Change(stageField + ".JournalText", () => stage.JournalText = Text(e))'

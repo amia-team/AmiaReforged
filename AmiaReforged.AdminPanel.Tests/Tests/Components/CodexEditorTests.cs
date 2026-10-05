@@ -345,6 +345,7 @@ public class CodexEditorTests : Bunit.TestContext
         cut.Find("[data-quest-title]").Input("Cellar Rats");
         cut.Find("[data-quest-description]").Input("Help the innkeeper clear the cellar.");
         cut.Find("[data-add-stage]").Click();
+        cut.Find("[data-stage-name]").Input("Gather rat tails");
         cut.Find("[data-stage-journal]").Input("Collect five rat tails.");
         cut.Find("[data-add-objective]").Click();
         cut.Find("[data-objective-text]").Input("Collect rat tails");
@@ -363,17 +364,47 @@ public class CodexEditorTests : Bunit.TestContext
         QuestDefinitionDto saved = SavedQuest();
         saved.QuestId.Should().Be("quest_cellar_rats");
         saved.Stages.Should().HaveCount(2);
+        saved.Stages[0].Name.Should().Be("Gather rat tails");
         saved.Stages[0].Rewards!.Gold.Should().Be(100);
         saved.Stages[0].ObjectiveGroups.Single().Objectives.Single().RequiredCount.Should().Be(5);
         saved.Stages[1].QuestState.Should().Be("Completed");
 
         SelectStage(cut, 10);
+        cut.Find("[data-stage-name]").Input("Gather seven rat tails");
         cut.Find("[data-objective-count]").Input("7");
         cut.Find(".we-qe-journal").TextContent.Should().Contain("0 / 7");
         SaveButton(cut).Click();
         cut.WaitForAssertion(() => _handler.Requests.Should().Contain(r => r.Method == HttpMethod.Put && r.Path.EndsWith("/quest_cellar_rats")));
         SavedQuest().Stages[0].ObjectiveGroups.Single().Objectives.Single().RequiredCount.Should().Be(7);
+        SavedQuest().Stages[0].Name.Should().Be("Gather seven rat tails");
         cut.Instance.HasUnsavedChanges.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Quest_StageName_UpdatesNavigationAndLinksAndSurvivesReload()
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: ValidQuest());
+        SelectStage(cut, 30);
+        cut.Find("[data-stage-name]").Input("Return to the innkeeper");
+        cut.Instance.HasUnsavedChanges.Should().BeTrue();
+        cut.Find(".we-qe-heading h3").TextContent.Should().Contain("Return to the innkeeper");
+        cut.FindAll(".we-qe-nav-button").Single(b => b.QuerySelector(".we-qe-stage-id")?.TextContent == "30")
+            .TextContent.Should().Contain("Return to the innkeeper");
+        SelectStage(cut, 10);
+        cut.Find("[data-next-stage] option[value='30']").TextContent.Should().Contain("Return to the innkeeper");
+        cut.Find("[data-stage-transition]").TextContent.Should().Contain("Return to the innkeeper");
+        SaveButton(cut).Click();
+        cut.WaitForAssertion(() => cut.Instance.HasUnsavedChanges.Should().BeFalse());
+        SavedQuest().Stages[1].Name.Should().Be("Return to the innkeeper");
+        SavedQuest().Stages[1].JournalText.Should().Be("The cellar is clear.");
+        SavedQuest().Stages[1].StageId.Should().Be(30);
+        SavedQuest().Stages[0].NextStageId.Should().Be(30);
+
+        await cut.InvokeAsync(() => cut.Instance.OpenExistingAsync("test_entry", CodexEditor.CodexSubType.Quest));
+        SelectStage(cut, 30);
+        cut.Find("[data-stage-name]").GetAttribute("value").Should().Be("Return to the innkeeper");
+        cut.Find("[data-stage-name]").Input("");
+        cut.Find(".we-qe-heading h3").TextContent.Should().Contain("Completed");
     }
 
     [Test]

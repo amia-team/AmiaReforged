@@ -206,7 +206,8 @@ public partial class QuestWorkspace
     }
 
     private static string StageLabel(QuestStageDto stage) =>
-        QuestDefinitionValidator.IsTerminal(stage) ? QuestDefinitionValidator.EffectiveState(stage)!
+        !string.IsNullOrWhiteSpace(stage.Name) ? stage.Name
+        : QuestDefinitionValidator.IsTerminal(stage) ? QuestDefinitionValidator.EffectiveState(stage)!
         : stage.ObjectiveGroups.SelectMany(g => g.Objectives).FirstOrDefault(o => !string.IsNullOrWhiteSpace(o.DisplayText))?.DisplayText
           ?? (string.IsNullOrWhiteSpace(stage.JournalText) ? "New stage" : stage.JournalText);
 

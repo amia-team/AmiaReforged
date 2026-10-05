@@ -23,7 +23,7 @@ public class QuestControllerTests
         [
             new()
             {
-                StageId = 10, JournalText = "Collect tails.", QuestState = "InProgress", NextStageId = 30,
+                StageId = 10, Name = "Gather rat tails", JournalText = "Collect tails.", QuestState = "InProgress", NextStageId = 30,
                 Hints = ["Search the cellar."], Rewards = new() { Gold = 100, Proficiencies = [new() { IndustryTag = "alchemy", ProficiencyXp = 30 }] },
                 ObjectiveGroups = [new()
                 {
@@ -35,7 +35,7 @@ public class QuestControllerTests
                     }]
                 }]
             },
-            new() { StageId = 30, QuestState = "Completed" }
+            new() { StageId = 30, Name = "Return to the innkeeper", QuestState = "Completed" }
         ];
         PersistedQuestDefinition persisted = new()
         {
@@ -53,6 +53,7 @@ public class QuestControllerTests
         QuestDefinitionDto editor = JsonSerializer.Deserialize<QuestDefinitionDto>(JsonSerializer.Serialize(result.Data))!;
         Assert.That(QuestDefinitionValidator.Validate(editor), Is.Empty);
         Assert.That(editor.Stages[0].Hints, Is.EqualTo(stages[0].Hints));
+        Assert.That(editor.Stages.Select(s => s.Name), Is.EqualTo(stages.Select(s => s.Name)));
         string editedJson = JsonSerializer.Serialize(editor.Stages);
         Assert.That(editedJson, Does.Not.Contain("IsEmpty"));
         JsonSerializerOptions runtimeOptions = new()
@@ -61,6 +62,9 @@ public class QuestControllerTests
             Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new ObjectiveIdJsonConverter() }
         };
         List<QuestStage> runtime = JsonSerializer.Deserialize<List<QuestStage>>(editedJson, runtimeOptions)!;
+        Assert.That(runtime.Select(s => s.Name), Is.EqualTo(stages.Select(s => s.Name)));
+        List<QuestStageDto> reloaded = JsonSerializer.Deserialize<List<QuestStageDto>>(JsonSerializer.Serialize(runtime, runtimeOptions))!;
+        Assert.That(reloaded.Select(s => s.Name), Is.EqualTo(stages.Select(s => s.Name)));
         Assert.That(runtime[0].NextStageId, Is.EqualTo(30));
         Assert.That(runtime[1].QuestState, Is.EqualTo(QuestState.Completed));
         Assert.That(runtime[0].Rewards.Gold, Is.EqualTo(100));
