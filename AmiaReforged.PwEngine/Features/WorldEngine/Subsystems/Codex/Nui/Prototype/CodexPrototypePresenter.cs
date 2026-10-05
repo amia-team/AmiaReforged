@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
@@ -8,7 +9,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui.Protot
 public sealed class CodexPrototypePresenter(NwPlayer player) : ScryPresenter<CodexPrototypeView>
 {
     private readonly NuiBind<NuiRect> _geometry = new("cdxp_geometry");
-    private readonly CodexImageInput _imageInput = new();
+    private readonly NuiImageInput _imageInput = new();
     private NuiWindow _window = null!;
     private NuiWindowToken _token;
     private bool _categorySelected = true;
@@ -61,7 +62,7 @@ public sealed class CodexPrototypePresenter(NwPlayer player) : ScryPresenter<Cod
             {
                 try
                 {
-                    button = ev.GetEventPayload<CodexMousePayload>()?.MouseButton;
+                    button = ev.GetEventPayload<NuiMousePayload>()?.MouseButton;
                     payloadStatus = button?.ToString() ?? "missing";
                 }
                 catch (JsonException)

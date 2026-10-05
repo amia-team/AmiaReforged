@@ -45,6 +45,8 @@ public sealed class ConversationPrototypePresenter(NwPlayer player, DeviceProper
 
     public override void UpdateView()
     {
+        _token.SetBindValue(View.ControlsEnabled, true);
+        _token.SetBindValue(View.ChoicesEnabled, true);
         bool longContent = scenario == "long";
         bool single = scenario is "single" or "empty" or "choices";
         int choices = choiceCount ?? (scenario == "empty" ? 0 : scenario == "single" ? 1 : 5);

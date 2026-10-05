@@ -1,10 +1,10 @@
 using Anvil.API;
 using Newtonsoft.Json;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui;
+namespace AmiaReforged.PwEngine.Features.WindowingSystem;
 
 /// <summary>Image actions use a matching left press/release; Click never dispatches image actions.</summary>
-public sealed class CodexImageInput
+public sealed class NuiImageInput
 {
     private string? _pressedId;
 
@@ -30,7 +30,7 @@ public sealed class CodexImageInput
     }
 }
 
-public sealed class CodexMousePayload
+public sealed class NuiMousePayload
 {
     [JsonProperty("mouse_btn")]
     public int? MouseButton { get; init; }

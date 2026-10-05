@@ -1,6 +1,6 @@
 # Step 1 — Build the replacement layout and verify alignment
 
-Status: **Implemented for visual review; client alignment verification pending.**
+Status: **Complete — all Step 1 client checks approved by the user.**
 Implementation date: 2026-10-05.
 Depends on: [Step 0 — Assets](00-assets.md), including asset review and client availability of the required resources.
 Next stage: [Step 2 — Events](02-events.md).
@@ -30,7 +30,7 @@ Reserve the pagination strip, response slots, and footer positions so single-pag
 
 The first "Goodbye" response in the screenshot is sample choice content, separate from the persistent footer action. Both speaker headings use the current speaker name.
 
-Keep names and button labels live and centered within their artwork. Verify the client's supported text rendering: the reference's decorative font is a visual target, not text to bake into assets. Preserve portrait proportions and inspect clipping inside the surround.
+Keep names and button labels live and centered within their artwork. Verify the client's supported text rendering: the reference's decorative font is a visual target, not text to bake into assets. Use the huge portrait's visible region and stretch it to fill the portrait aperture, as requested during client review; inspect clipping beneath the surround.
 
 ## Existing behavior to account for
 
@@ -53,13 +53,13 @@ Inspect frame seams, portrait bounds, text padding, centered labels, pagination 
 ## Completion gate
 
 - [x] Replacement shell implements the supplied region arrangement and approved asset contract.
-- [ ] Native chrome is removed and custom header/frames align correctly.
-- [ ] Portraits retain appropriate proportions and clipping.
-- [ ] Text remains readable and all representative pages can be accessed.
+- [x] Native chrome is removed and custom header/frames align correctly.
+- [x] Huge portraits fill the aperture without texture padding, with accepted stretching and clipping.
+- [x] Text remains readable and all representative pages can be accessed.
 - [x] Variable content and hidden controls use fixed reserved regions; geometry checks pass.
-- [ ] Control artwork, labels, glyphs, and planned input bounds align.
-- [ ] In-game checks cover 100% and higher GUI scales and representative viewport sizes.
-- [ ] Alignment review is complete before Step 2 begins.
+- [x] Control artwork, labels, glyphs, and planned input bounds align.
+- [x] In-game checks cover 100% and higher GUI scales and representative viewport sizes.
+- [x] Alignment review is complete before Step 2 begins.
 
 An offline composition alone cannot verify NUI geometry. Gameplay image actions remain unconnected until this gate passes.
 
@@ -71,22 +71,22 @@ Implemented [ConversationGraphicalView.cs](../../Features/WorldEngine/Subsystems
 with the deployed frame/control resources and the existing conversation bind keys.
 The initial physical shell is 885×762 (75% of source dimensions); geometry and draw
 rectangles are divided by GUI scale. The outer top ornament is rendered separately
-from its rails. Portraits use aspect-preserving `Fit` beneath frame filigree. Only
+from its rails. Portraits crop the huge texture to its top 256×400 pixels and use
+`Stretch` to fill the aperture beneath frame filigree. Only
 the dialogue body has a native Y scrollbar. Choice, pagination and More visibility
 binds apply inside fixed slots so hiding content does not move other regions.
 
 [ConversationView.cs](../../Features/WorldEngine/Subsystems/Dialogue/Nui/ConversationView.cs)
-exposes `GraphicalRootLayout()` for the replacement. Its procedural `RootLayout()`
-and the production conversation presenter remain active until native alignment
-review and Step 2 image routing. This prevents a conversation from opening with
-visual-only controls during Step 1.
+originally exposed `GraphicalRootLayout()` for the replacement. Its procedural `RootLayout()`
+and the production conversation presenter remained active during Step 1. Step 2
+now activates the graphical shell and connects its image controls.
 
 Added the development-only `./dialogueui` command and isolated
 [ConversationPrototypePresenter.cs](../../Features/WorldEngine/Subsystems/Dialogue/Nui/Prototype/ConversationPrototypePresenter.cs).
 It uses the same graphical renderer, never starts a dialogue session, and offers
 standard/long text, zero through five visible choices, first/last pagination,
 speaker-change and corner-position cases. See [the client review guide](01-client-review.md)
-for exact commands and pending native checks.
+for exact commands and the approved native checks.
 
 Local validation passed: 40 focused NUnit cases, including nine new layout cases
 covering physical-size compensation, artwork containment at 100/125/150/200% scale,
@@ -101,6 +101,29 @@ dotnet test AmiaReforged.PwEngine/AmiaReforged.PwEngine.csproj \
 ```
 
 The project compiled successfully. The test runner required local loopback access
-outside the default sandbox. No in-game results, final dimensions, GUI-scale
-approval, native text-centering approval or screenshots are claimed yet. Image
-actions and the production-shell switch remain Step 2 work.
+outside the default sandbox. At initial implementation, native client checks
+were still pending. The user
+subsequently approved all Step 1 checks and supplied the corrected screenshot.
+
+### Portrait correction after client review
+
+The supplied in-game screenshot showed the selected large (`l`) portrait leaving
+unused space and displaying its bottom texture padding. Inspection of
+`/home/zoltan/nwn_dev/amia_haks/src/hak/amia_override/tga/` found 98 huge (`h`)
+portraits and 97 large (`l`) portraits. Every large portrait has a huge counterpart.
+96 huge files are 256×512; two have a one-pixel width/height deviation. 96 large
+files are 128×256; one is 128×255. The standard visible regions are 256×400 for
+huge and 128×200 for large. Stretching the whole texture would retain the padding.
+
+The preview now requests `h` both initially and when changing speakers. Its
+`ImageRegion` selects `(0, 0, 256, 400)` in texture pixels, independent of GUI
+scale, and stretches that cropped content across the existing 311×443 source
+aperture (233.25×332.25 physical pixels). Frame and surrounding layout dimensions
+are unchanged. The user confirmed this correction and all Step 1 checks passed
+before authorizing Step 2. The approved screenshot is
+`/tmp/codex-clipboard-9dda0f01-85ff-434c-9488-93eed4b2dcf8.png`; this temporary
+path is provenance, not durable artwork storage.
+
+Validation after the correction passed all 44 focused tests using the command
+above. Four additional cases verify that the texture crop remains 256×400 at
+100/125/150/200% GUI scale while the stretched destination fills the aperture.

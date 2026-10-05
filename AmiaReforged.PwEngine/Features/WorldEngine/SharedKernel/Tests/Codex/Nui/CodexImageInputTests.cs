@@ -1,4 +1,4 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Nui;
+using AmiaReforged.PwEngine.Features.WindowingSystem;
 using Anvil.API;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -15,7 +15,7 @@ public class CodexImageInputTests
     [TestCase("codex_close")]
     public void ChildPressAndRelease_WithParentMouseEvents_ActivatesExactlyOnce(string actionId)
     {
-        CodexImageInput input = new();
+        NuiImageInput input = new();
         input.Handle(NuiEventType.MouseDown, actionId, 0, true);
         input.Handle(NuiEventType.MouseDown, "codex_shell", null, false, isActionElement: false);
         Assert.That(input.Handle(NuiEventType.MouseUp, actionId, 0, true), Is.True,
@@ -28,7 +28,7 @@ public class CodexImageInputTests
     [Test]
     public void PressClickReleaseClick_ActivatesExactlyOnce()
     {
-        CodexImageInput input = new();
+        NuiImageInput input = new();
         Assert.That(input.Handle(NuiEventType.MouseDown, "entry", 0, true), Is.False);
         Assert.That(input.Handle(NuiEventType.Click, "entry", null, true), Is.False);
         Assert.That(input.Handle(NuiEventType.MouseUp, "entry", 0, true), Is.True);
@@ -41,7 +41,7 @@ public class CodexImageInputTests
     [TestCase(null)]
     public void NonLeftOrMissingButton_DoesNotActivate(int? button)
     {
-        CodexImageInput input = new();
+        NuiImageInput input = new();
         input.Handle(NuiEventType.MouseDown, "entry", button, true);
         Assert.That(input.Handle(NuiEventType.MouseUp, "entry", button, true), Is.False);
     }
@@ -49,7 +49,7 @@ public class CodexImageInputTests
     [Test]
     public void ReleaseWithoutPressOrOnAnotherControl_DoesNotActivate()
     {
-        CodexImageInput input = new();
+        NuiImageInput input = new();
         Assert.That(input.Handle(NuiEventType.MouseUp, "close", 0, true), Is.False);
         input.Handle(NuiEventType.MouseDown, "entry", 0, true);
         Assert.That(input.Handle(NuiEventType.MouseUp, "close", 0, true), Is.False);
@@ -59,7 +59,7 @@ public class CodexImageInputTests
     [Test]
     public void DisabledAtPressOrRelease_DoesNotActivate()
     {
-        CodexImageInput input = new();
+        NuiImageInput input = new();
         input.Handle(NuiEventType.MouseDown, "entry", 0, false);
         Assert.That(input.Handle(NuiEventType.MouseUp, "entry", 0, true), Is.False);
         input.Handle(NuiEventType.MouseDown, "entry", 0, true);
@@ -70,7 +70,7 @@ public class CodexImageInputTests
     [Test]
     public void NonLeftRelease_ClearsPreviousLeftPress()
     {
-        CodexImageInput input = new();
+        NuiImageInput input = new();
         input.Handle(NuiEventType.MouseDown, "entry", 0, true);
         Assert.That(input.Handle(NuiEventType.MouseUp, "entry", 2, true), Is.False);
         Assert.That(input.Handle(NuiEventType.MouseUp, "entry", 0, true), Is.False);
@@ -79,7 +79,7 @@ public class CodexImageInputTests
     [Test]
     public void ReleaseOnNonActionElement_CancelsThePress()
     {
-        CodexImageInput input = new();
+        NuiImageInput input = new();
         input.Handle(NuiEventType.MouseDown, "entry", 0, true);
         input.Handle(NuiEventType.MouseDown, "codex_shell", null, false, isActionElement: false);
         input.Handle(NuiEventType.MouseUp, "body", null, false, isActionElement: false);
@@ -89,7 +89,7 @@ public class CodexImageInputTests
     [Test]
     public void LayoutOrBusyStateChange_CancelsCapturedPress()
     {
-        CodexImageInput input = new();
+        NuiImageInput input = new();
         input.Handle(NuiEventType.MouseDown, "btn_entry_0", 0, true);
         input.Reset();
         Assert.That(input.Handle(NuiEventType.MouseUp, "btn_entry_0", 0, true), Is.False,
@@ -101,7 +101,7 @@ public class CodexImageInputTests
     [Test]
     public void RepeatedValidPressRelease_EachActivatesOnce()
     {
-        CodexImageInput input = new();
+        NuiImageInput input = new();
         for (int i = 0; i < 10; i++)
         {
             input.Handle(NuiEventType.MouseDown, "entry", 0, true);
@@ -116,19 +116,19 @@ public class CodexImageInputTests
     {
         // GetEventPayload<T> uses JsonUtility.FromJson<T> in the installed Anvil version.
         string json = $"{{\"mouse_btn\":{button},\"mouse_pos\":{{\"x\":12,\"y\":34}}}}";
-        Assert.That(JsonUtility.FromJson<CodexMousePayload>(json)!.MouseButton, Is.EqualTo(button));
+        Assert.That(JsonUtility.FromJson<NuiMousePayload>(json)!.MouseButton, Is.EqualTo(button));
     }
 
     [Test]
     public void AnvilPayloadParser_MissingButton_DoesNotDefaultToLeft()
     {
-        Assert.That(JsonUtility.FromJson<CodexMousePayload>("{}")!.MouseButton, Is.Null);
+        Assert.That(JsonUtility.FromJson<NuiMousePayload>("{}")!.MouseButton, Is.Null);
     }
 
     [Test]
     public void AnvilPayloadParser_InvalidButton_RaisesTheCaughtExceptionType()
     {
         Assert.Catch<JsonException>(() =>
-            JsonUtility.FromJson<CodexMousePayload>("{\"mouse_btn\":{}}"));
+            JsonUtility.FromJson<NuiMousePayload>("{\"mouse_btn\":{}}"));
     }
 }

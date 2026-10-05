@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
@@ -27,7 +28,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
-    private readonly CodexImageInput _imageInput = new();
+    private readonly NuiImageInput _imageInput = new();
 
     // Injected services
     [Inject] private Lazy<CodexQueryService>? QueryService { get; init; }
@@ -124,7 +125,7 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             int? button = null;
             if (image)
             {
-                try { button = eventData.GetEventPayload<CodexMousePayload>()?.MouseButton; }
+                try { button = eventData.GetEventPayload<NuiMousePayload>()?.MouseButton; }
                 catch (JsonException) { /* Missing or invalid buttons must not become left clicks. */ }
             }
             if (_imageInput.Handle(eventData.EventType, eventData.ElementId, button,

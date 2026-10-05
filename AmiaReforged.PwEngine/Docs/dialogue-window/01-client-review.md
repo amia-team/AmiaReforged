@@ -1,6 +1,6 @@
 # Step 1 — Client alignment review
 
-Status: **Awaiting in-game results.**
+Status: **Complete — the user confirmed all Step 1 checks green.**
 Parent stage: [Step 1 — Layout](01-layout.md).
 
 The assets have been deployed by the user. Deploy the updated PwEngine build on a
@@ -23,10 +23,15 @@ footer are visible. There should be no native title bar, border or outer scrollb
 The preview uses your character's portrait, not the illustrated reference guard.
 The chat diagnostic reports the scenario, viewport and GUI scale.
 
+After the initial screenshot, the preview was corrected to use the huge (`h`)
+portrait, crop its top 256×400 artwork region, and stretch that content across the
+existing aperture. Check that neither the bottom texture padding nor an empty
+strip beside the portrait is visible. Repeat `./dialogueui speaker` to verify
+the same correction after a speaker change.
+
 Initial physical shell dimensions are **885×762**, based on 75% of the retained
 1180×1016 source geometry. All geometry and draw rectangles use the existing
-dialogue inverse-GUI-scale compensation. These are candidate dimensions, not
-client-approved final dimensions.
+dialogue inverse-GUI-scale compensation. The user approved these dimensions and all Step 1 checks before Step 2.
 
 ## Scenario checks
 
@@ -61,12 +66,17 @@ artwork or passing geometry tests.
 
 | Viewport | GUI scale | Scenario | Observed result |
 | --- | --- | --- | --- |
-| Pending | Pending | Standard | Pending |
-| Pending | Pending | Long text/labels | Pending |
-| Pending | Pending | 0–5 choices | Pending |
-| Pending | Pending | First/last page | Pending |
-| Pending | Pending | Speaker changes | Pending |
+| Not recorded | Not recorded | Standard | User confirmed green |
+| Not recorded | Not recorded | Long text/labels | User confirmed green |
+| Not recorded | Not recorded | 0–5 choices | User confirmed green |
+| Not recorded | Not recorded | First/last page | User confirmed green |
+| Not recorded | Not recorded | Speaker changes | User confirmed green |
 
 Record accepted dimensions, any text/font differences and the final alignment
 review in [Step 1 completion evidence](01-layout.md#completion-evidence). Step 2
 starts only after these native client checks pass.
+
+The final supplied screenshot confirms the portrait fills its frame without the
+bottom texture padding or an empty side strip. Exact viewport/GUI-scale values
+were not supplied; completion is based on the user’s explicit all-checks-green
+report. Step 2 is authorized.

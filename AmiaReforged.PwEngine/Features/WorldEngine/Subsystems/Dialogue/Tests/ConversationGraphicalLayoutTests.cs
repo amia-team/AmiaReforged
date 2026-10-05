@@ -99,6 +99,21 @@ public class ConversationGraphicalLayoutTests
     }
 
     [Test]
+    public void ActionImagesBindTheirEnabledStateToPresenterControls()
+    {
+        ConversationGraphicalView view = new();
+        Dictionary<string, NuiImage> images = Walk(view.RootLayout()).OfType<NuiImage>()
+            .ToDictionary(image => image.Id!);
+        Assert.That(images["conv_close"].Enabled, Is.SameAs(view.ControlsEnabled));
+        Assert.That(images["btn_goodbye"].Enabled, Is.SameAs(view.ControlsEnabled));
+        Assert.That(images["btn_more"].Enabled, Is.SameAs(view.ChoicesEnabled));
+        Assert.That(images["btn_prev_text"].Enabled, Is.SameAs(view.ShowPrevTextPage));
+        Assert.That(images["btn_next_text"].Enabled, Is.SameAs(view.ShowNextTextPage));
+        for (int i = 0; i < ConversationGraphicalView.MaxVisibleChoices; i++)
+            Assert.That(images[$"btn_choice_{i}"].Enabled, Is.SameAs(view.ChoicesEnabled));
+    }
+
+    [Test]
     public void RebuildingRegistersOnlyTheTenActionImagesAndPreservesTopOrnament()
     {
         ConversationGraphicalView view = new();

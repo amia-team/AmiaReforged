@@ -28,6 +28,8 @@ public sealed class ConversationGraphicalView : IScryView
     public readonly NuiBind<string> GoodbyeText = new("conv_goodbye_text");
     public readonly NuiBind<Color> PreviousColor = new("conv_previous_color");
     public readonly NuiBind<Color> NextColor = new("conv_next_color");
+    public readonly NuiBind<bool> ControlsEnabled = new("conv_controls_enabled");
+    public readonly NuiBind<bool> ChoicesEnabled = new("conv_choices_enabled");
     public readonly HashSet<string> ImageActionIds = [];
 
     public ConversationGraphicalView()
@@ -80,7 +82,8 @@ public sealed class ConversationGraphicalView : IScryView
     private NuiRow BuildHeader() => Row(1180, 64,
         Space(235), Divider(70, 14), Space(10),
         Label(SpeakerName, 535, 64), Space(10), Divider(70, 14), Space(173),
-        Image("conv_close", "ui_cdx_close", 58, 64, "Close conversation", aspect: NuiAspect.Fit), Space(19));
+        Image("conv_close", "ui_cdx_close", 58, 64, "Close conversation", enabled: ControlsEnabled,
+            aspect: NuiAspect.Fit), Space(19));
 
     private NuiGroup BuildPortrait() => Group("conv_portrait_frame", 335, 471,
         Inset(new NuiImage(NpcPortrait)
@@ -135,7 +138,7 @@ public sealed class ConversationGraphicalView : IScryView
             children.Add(Row(1180, 56, Space(46),
                 Group($"conv_choice_slot_{i}", 1088, 56,
                     Image($"btn_choice_{i}", "ui_dlg_choice", 1088, 56, ChoiceTexts[i],
-                        label: ChoiceTexts[i], visible: ChoiceVisible[i], labelInset: 36)), Space(46)));
+                        label: ChoiceTexts[i], visible: ChoiceVisible[i], enabled: ChoicesEnabled, labelInset: 36)), Space(46)));
             children.Add(Gap(4));
         }
         return new NuiColumn { Width = S(1180), Height = S(300), Margin = 0, Padding = 0, Children = children };
@@ -143,10 +146,11 @@ public sealed class ConversationGraphicalView : IScryView
 
     private NuiRow BuildFooter() => Row(1180, 60,
         Space(46), Image("btn_goodbye", "ui_dlg_footer", 268, 60, "End conversation",
-            label: GoodbyeText, labelInset: 44), Space(548),
+            label: GoodbyeText, enabled: ControlsEnabled, labelInset: 44), Space(548),
         Group("conv_more_slot", 268, 60,
             Image("btn_more", "ui_dlg_footer", 268, 60, "More responses",
-                label: MoreButtonText, visible: ShowMoreButton, glyph: "ui_cdx_i_next", labelInset: 44)), Space(50));
+                label: MoreButtonText, visible: ShowMoreButton, enabled: ChoicesEnabled,
+                glyph: "ui_cdx_i_next", labelInset: 44)), Space(50));
 
     private NuiImage Image(string id, string texture, float width, float height, NuiProperty<string> tooltip,
         NuiProperty<string>? label = null, NuiProperty<bool>? visible = null, NuiProperty<bool>? enabled = null,

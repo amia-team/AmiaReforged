@@ -1,6 +1,6 @@
 # Custom dialogue window plan
 
-Status: **Step 0 complete; Step 1 implemented for client review; Step 2 remains planned.**
+Status: **Steps 0 and 1 complete; Step 2 implemented, awaiting in-game behavior verification.**
 Created: 2026-10-05.
 
 Replace the procedural custom-dialogue window with the supplied gold-frame, dark-panel design. Follow the Codex's asset preparation, NUI rendering, and image-input patterns while preserving the existing dialogue runtime.
@@ -8,8 +8,10 @@ Replace the procedural custom-dialogue window with the supplied gold-frame, dark
 This document set records the plan and stage completion evidence. Step 0 exported
 42 PNG resources and completed offline asset QA on 2026-10-05. The user then
 deployed the assets. Step 1 adds the graphical renderer and development-only
-`./dialogueui` preview; [client alignment review](01-client-review.md) is pending.
-Production-shell activation and image event wiring remain Step 2 work.
+`./dialogueui` preview; the user approved all [client alignment checks](01-client-review.md).
+Step 2 activates the graphical shell for normal conversations and shares Codex
+image input through the windowing system. [Behavior review](02-client-review.md)
+remains to be performed in-game.
 
 ## Execution order
 
@@ -33,7 +35,7 @@ Treat the image as the visual reference. Speaker names, dialogue, responses, cou
 | --- | --- |
 | [PlayerCodexView.cs](../../Features/WorldEngine/Subsystems/Codex/Nui/Player/PlayerCodexView.cs) | Transparent shell, sliced frames, clickable `NuiImage` controls, and live text overlays. |
 | [PlayerCodexPresenter.cs](../../Features/WorldEngine/Subsystems/Codex/Nui/Player/PlayerCodexPresenter.cs) | Borderless fixed window, registered image-action IDs, mouse payload parsing, and presenter-side activation guards. |
-| [CodexImageInput.cs](../../Features/WorldEngine/Subsystems/Codex/Nui/CodexImageInput.cs) | Matching left-button press/release activates once; decorative parent events do not erase the press. |
+| [NuiImageInput.cs](../../Features/WindowingSystem/NuiImageInput.cs) | Matching left-button press/release activates once; decorative parent events do not erase the press. |
 | [CodexImageInputTests.cs](../../Features/WorldEngine/SharedKernel/Tests/Codex/Nui/CodexImageInputTests.cs) | Input regression coverage for bubbling, duplicate events, disabled controls, cancellation, and payload parsing. |
 | [ConversationView.cs](../../Features/WorldEngine/Subsystems/Dialogue/Nui/ConversationView.cs) | Five response slots, portrait/text layout, text pagination, and Goodbye/More controls. |
 | [ConversationPresenter.cs](../../Features/WorldEngine/Subsystems/Dialogue/Nui/ConversationPresenter.cs) | Current button routing, asynchronous refresh checks, advancement lock, and movement auto-close. |
@@ -46,6 +48,6 @@ The existing asset workflow is documented in `/home/zoltan/nwn_dev/amia_haks/art
 
 - Preserve the existing dialogue runtime and service boundaries.
 - Keep five visible response slots and separate text/choice pagination.
-- Verify live text rendering, portrait proportions, GUI scaling, and alignment in the client.
+- Verify live text rendering, portrait bounds, GUI scaling, and alignment in the client.
 - Preserve existing assets; create new resources only where the supplied design requires them.
 - Record completion evidence in the relevant stage file instead of treating planned checks as completed checks.
