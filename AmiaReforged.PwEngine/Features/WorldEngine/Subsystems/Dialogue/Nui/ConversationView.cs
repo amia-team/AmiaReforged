@@ -42,7 +42,9 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
     private const float BasePagBtnW = 34f;
     private const float BasePagLabelW = 70f;
 
-    public const int MaxVisibleChoices = 5;
+    public const int MaxVisibleChoices = ConversationGraphicalView.MaxVisibleChoices;
+
+    public ConversationGraphicalView Graphical { get; } = new();
 
     // ── Computed scaled sizes (set before RootLayout is called) ──
     private float _sf = 1f; // scale factor
@@ -93,6 +95,16 @@ public sealed class ConversationView : ScryView<ConversationPresenter>
     public void SetScaleFactor(float scaleFactor)
     {
         _sf = scaleFactor > 0f ? scaleFactor : 1f;
+    }
+
+    /// <summary>
+    /// Builds the replacement using the existing bind keys. Keep the procedural
+    /// RootLayout active until client alignment review and Step 2 image routing.
+    /// </summary>
+    public NuiLayout GraphicalRootLayout()
+    {
+        Graphical.SetScaleFactor(_sf);
+        return Graphical.RootLayout();
     }
 
     public override NuiLayout RootLayout()
