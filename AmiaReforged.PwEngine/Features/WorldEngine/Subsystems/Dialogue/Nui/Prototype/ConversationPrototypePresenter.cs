@@ -63,7 +63,7 @@ public sealed class ConversationPrototypePresenter(NwPlayer player, DeviceProper
 
         _token.SetBindValue(View.SpeakerName, name);
         string portrait = (sampleSpeaker ?? player.LoginCreature)?.PortraitResRef ?? "";
-        _token.SetBindValue(View.NpcPortrait, string.IsNullOrEmpty(portrait) ? "" : portrait + "l");
+        _token.SetBindValue(View.NpcPortrait, string.IsNullOrEmpty(portrait) ? "" : portrait + "h");
         _token.SetBindValue(View.NpcText, body);
         _token.SetBindValue(View.TextPageInfo, single ? "" : scenario == "overflow" ? "1/3" : scenario == "last" ? "3/3" : "4/8");
         _token.SetBindValue(View.ShowTextPagination, !single);
@@ -93,7 +93,7 @@ public sealed class ConversationPrototypePresenter(NwPlayer player, DeviceProper
         if (_closed || player.LoginCreature is not { IsValid: true } speaker) return;
         _token.SetBindValue(View.SpeakerName, speaker.Name);
         string portrait = speaker.PortraitResRef;
-        _token.SetBindValue(View.NpcPortrait, string.IsNullOrEmpty(portrait) ? "" : portrait + "l");
+        _token.SetBindValue(View.NpcPortrait, string.IsNullOrEmpty(portrait) ? "" : portrait + "h");
         player.SendServerMessage("Dialogue preview: speaker binds changed in the same window. Check both headings and portrait bounds.", ColorConstants.Cyan);
     }
 

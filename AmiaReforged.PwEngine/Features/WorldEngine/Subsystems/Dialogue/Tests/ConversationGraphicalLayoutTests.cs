@@ -56,6 +56,26 @@ public class ConversationGraphicalLayoutTests
         }
     }
 
+    [TestCase(1f)]
+    [TestCase(1.25f)]
+    [TestCase(1.5f)]
+    [TestCase(2f)]
+    public void PortraitCropsHugeTexturePaddingAndFillsTheFrameAtEveryGuiScale(float scale)
+    {
+        ConversationGraphicalView view = new();
+        view.SetScaleFactor(scale);
+        NuiImage portrait = (NuiImage)Walk(view.RootLayout()).Single(element => element.Id == "conv_portrait_image");
+        NuiRect crop = ((NuiValue<NuiRect>)portrait.ImageRegion!).Value;
+        Assert.That(crop.X, Is.Zero);
+        Assert.That(crop.Y, Is.Zero);
+        Assert.That(crop.Width, Is.EqualTo(256));
+        Assert.That(crop.Height, Is.EqualTo(400));
+        Assert.That(((NuiValue<NuiAspect>)portrait.ImageAspect!).Value, Is.EqualTo(NuiAspect.Stretch));
+        Assert.That(portrait.Width!.Value * scale, Is.EqualTo(311 * 0.75f).Within(0.01));
+        Assert.That(portrait.Height!.Value * scale, Is.EqualTo(443 * 0.75f).Within(0.01));
+        Assert.That(portrait.ResRef, Is.SameAs(view.NpcPortrait));
+    }
+
     [Test]
     public void HidingChoicesPaginationAndMoreNeverHidesTheirReservedSlots()
     {

@@ -86,7 +86,10 @@ public sealed class ConversationGraphicalView : IScryView
         Inset(new NuiImage(NpcPortrait)
         {
             Id = "conv_portrait_image", Width = S(311), Height = S(443),
-            Margin = 0, Padding = 0, ImageAspect = NuiAspect.Fit
+            Margin = 0, Padding = 0, ImageAspect = NuiAspect.Stretch,
+            // Standard huge portraits store 256x400 artwork above padding in a 256x512 texture.
+            // The crop is in texture pixels, independent of window/GUI scaling.
+            ImageRegion = new NuiRect(0, 0, 256, 400)
         }, 335, 471, 12, 14),
         [Picture("ui_cdx_bg", 6, 6, 323, 459), .. Frame(335, 471, "pf", 48, order: NuiDrawListItemOrder.After)]);
 
