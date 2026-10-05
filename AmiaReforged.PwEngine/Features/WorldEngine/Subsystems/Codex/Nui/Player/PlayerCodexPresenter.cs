@@ -129,7 +129,10 @@ public sealed class PlayerCodexPresenter : ScryPresenter<PlayerCodexView>
             }
             if (_imageInput.Handle(eventData.EventType, eventData.ElementId, button,
                     image && IsImageActionEnabled(eventData.ElementId), isActionElement: image))
+            {
+                _player.PlaySound("it_paper");
                 _ = HandleClickAsync(eventData.ElementId);
+            }
             return;
         }
 
