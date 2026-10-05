@@ -70,6 +70,22 @@
                     <input class="form-control" value="@Model.Location" @oninput='e => Change("Location", () => Model.Location = Text(e))' placeholder="Optional location" />
                 </label>
             </div>
+            <label class="we-qe-field">Default stage
+                <select class="form-select" data-default-stage value="@(Model.DefaultStageId?.ToString() ?? "")"
+                        @onchange='e => Change("DefaultStageId", () => Model.DefaultStageId = int.TryParse(Text(e), out int id) ? id : null)'>
+                    <option value="">None — add without a stage</option>
+                    @foreach (QuestStageDto defaultStage in Model.Stages.OrderBy(s => s.StageId))
+                    {
+                        <option value="@defaultStage.StageId">@defaultStage.StageId · @StageLabel(defaultStage)</option>
+                    }
+                    @if (Model.DefaultStageId is { } missingDefault && !Model.Stages.Any(s => s.StageId == missingDefault))
+                    {
+                        <option value="@missingDefault">Unavailable stage: @missingDefault</option>
+                    }
+                </select>
+                <span class="we-qe-help">Initial stage for automatic creation, including always-available quests. A stage supplied by a dialogue or script takes precedence.</span>
+                @FieldErrors("DefaultStageId")
+            </label>
             <details class="we-qe-advanced" open="@(_showAllErrors && _errors.Any(e => e.Field is "QuestId" or "Keywords"))">
                 <summary>Advanced: quest ID & discovery</summary>
                 <label class="we-qe-field">Quest ID

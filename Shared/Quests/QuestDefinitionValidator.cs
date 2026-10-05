@@ -25,6 +25,8 @@ public static class QuestDefinitionValidator
         if (quest.Keywords?.Length > 1000) Add("Keywords", "Keywords must not exceed 1000 characters.");
 
         var stageIds = quest.Stages.Where(s => s != null).Select(s => s.StageId).ToHashSet();
+        if (quest.DefaultStageId is { } defaultStageId && (defaultStageId < 1 || !stageIds.Contains(defaultStageId)))
+            Add("DefaultStageId", "Default stage must refer to an existing positive stage ID.");
         HashSet<int> seenStages = [];
         HashSet<string> objectiveIds = new(StringComparer.Ordinal);
         for (int si = 0; si < quest.Stages.Count; si++)

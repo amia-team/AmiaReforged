@@ -89,7 +89,7 @@ public class CodexQuestAvailabilityTests
     [TestCase(QuestState.Expired)]
     public async Task AlwaysAvailableDefinitionDoesNotDuplicateOrResetRecordedProgress(QuestState state)
     {
-        await AddDefinitionAsync(true);
+        await AddDefinitionAsync(true, defaultStageId: 10);
         DateTime started = _created.AddDays(1);
         DateTime? completed = state is QuestState.Discovered or QuestState.InProgress ? null : started.AddHours(1);
         using (PwEngineContext context = _factory.CreateDbContext())
@@ -115,6 +115,64 @@ public class CodexQuestAvailabilityTests
             Assert.That(quest.CompletionCount, Is.EqualTo(2));
             Assert.That(quest.Stages, Has.Count.EqualTo(1));
         });
+    }
+
+    [TestCase(null, false, QuestState.InProgress)]
+    [TestCase(null, true, QuestState.Completed)]
+    [TestCase("Discovered", false, QuestState.Discovered)]
+    [TestCase("InProgress", false, QuestState.InProgress)]
+    [TestCase("Completed", false, QuestState.Completed)]
+    [TestCase("Failed", false, QuestState.Failed)]
+    [TestCase("Abandoned", false, QuestState.Abandoned)]
+    [TestCase("Expired", false, QuestState.Expired)]
+    public async Task AlwaysAvailableQuestStartsAtDefaultStageWithItsState(
+        string? stageState, bool legacyCompletion, QuestState expectedState)
+    {
+        await AddDefinitionAsync(true, defaultStageId: 10);
+        using (PwEngineContext context = _factory.CreateDbContext())
+        {
+            (await context.CodexQuestDefinitions.SingleAsync()).StagesJson = System.Text.Json.JsonSerializer.Serialize(new[]
+            {
+                new { StageId = 10, JournalText = "Start the tutorial.", QuestState = stageState, IsCompletionStage = legacyCompletion }
+            });
+            await context.SaveChangesAsync();
+        }
+
+        CodexQuestEntry quest = (await _repository.LoadAsync(_characterId))!.Quests.Single();
+        using PwEngineContext persisted = _factory.CreateDbContext();
+        PersistedCodexQuest row = await persisted.CodexQuests.SingleAsync();
+        bool terminal = expectedState is QuestState.Completed or QuestState.Failed or QuestState.Abandoned or QuestState.Expired;
+        Assert.Multiple(() =>
+        {
+            Assert.That(quest.CurrentStageId, Is.EqualTo(10));
+            Assert.That(quest.State, Is.EqualTo(expectedState));
+            Assert.That(quest.EffectiveState, Is.EqualTo(expectedState));
+            Assert.That(row.CurrentStageId, Is.EqualTo(10));
+            Assert.That(row.State, Is.EqualTo((int)expectedState));
+            Assert.That(row.DateCompleted, Is.EqualTo(terminal ? row.DateStarted : (DateTime?)null));
+        });
+    }
+
+    [Test]
+    public async Task ExplicitCreationCanStartBelowDefaultWithoutInstantiatingTheDefaultFirst()
+    {
+        await AddDefinitionAsync(true, defaultStageId: 10);
+        await AddDefinitionAsync(true, "another_quest");
+        QuestId questId = (QuestId)"public_quest";
+        PlayerCodex codex = (await _repository.LoadAsync(_characterId, questId, CancellationToken.None))!;
+        Assert.That(codex.HasQuest(questId), Is.False);
+        Assert.That(codex.HasQuest((QuestId)"another_quest"), Is.True);
+
+        CodexQuestEntry explicitQuest = new()
+        {
+            QuestId = questId, Title = "Explicit quest", Description = "Starts at stage 5.", DateStarted = DateTime.UtcNow
+        };
+        codex.RecordQuestStarted(explicitQuest, explicitQuest.DateStarted);
+        codex.AdvanceQuestStage(questId, 5, explicitQuest.DateStarted);
+        await _repository.SaveAsync(codex);
+
+        CodexQuestEntry reloaded = (await _repository.LoadAsync(_characterId))!.GetQuest(questId)!;
+        Assert.That(reloaded.CurrentStageId, Is.EqualTo(5));
     }
 
     [Test]
@@ -198,13 +256,14 @@ public class CodexQuestAvailabilityTests
         finally { await processor.StopAsync(); }
     }
 
-    private async Task AddDefinitionAsync(bool available, string questId = "public_quest")
+    private async Task AddDefinitionAsync(bool available, string questId = "public_quest", int? defaultStageId = null)
     {
         using PwEngineContext context = _factory.CreateDbContext();
         context.CodexQuestDefinitions.Add(new PersistedQuestDefinition
         {
             QuestId = questId, Title = "Lost Artifact", Description = "Find the artifact.",
             IsAlwaysAvailable = available, CreatedUtc = _created, QuestGiver = "Archivist", Location = "Ruins",
+            DefaultStageId = defaultStageId,
             Keywords = "artifact, ruins", StagesJson = """
                 [{"stageId":10,"journalText":"Search the ruins."}]
                 """

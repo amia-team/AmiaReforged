@@ -49,7 +49,11 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
     /// <summary>
     /// Loads a player's codex, hydrating notes, lore, and quests from the database.
     /// </summary>
-    public async Task<PlayerCodex?> LoadAsync(CharacterId characterId, CancellationToken cancellationToken = default)
+    public Task<PlayerCodex?> LoadAsync(CharacterId characterId, CancellationToken cancellationToken = default)
+        => LoadAsync(characterId, null, cancellationToken);
+
+    public async Task<PlayerCodex?> LoadAsync(
+        CharacterId characterId, QuestId? explicitlyStagedQuestId, CancellationToken cancellationToken)
     {
         try
         {
@@ -82,9 +86,10 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                 .ToListAsync(cancellationToken);
 
             HashSet<string> recordedQuestIds = questRows.Select(q => q.QuestId).ToHashSet();
+            string? explicitlyStagedId = explicitlyStagedQuestId?.Value;
             List<PersistedQuestDefinition> alwaysAvailableQuests = await context.CodexQuestDefinitions
                 .AsNoTracking()
-                .Where(d => d.IsAlwaysAvailable && !recordedQuestIds.Contains(d.QuestId))
+                .Where(d => d.IsAlwaysAvailable && !recordedQuestIds.Contains(d.QuestId) && d.QuestId != explicitlyStagedId)
                 .ToListAsync(cancellationToken);
 
             if (alwaysAvailableQuests.Count > 0)
@@ -466,6 +471,16 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                 StagesJson = definition.StagesJson
             };
 
+            if (definition.DefaultStageId is { } defaultStageId)
+            {
+                QuestStage stage = DeserializeStages(definition.StagesJson).FirstOrDefault(s => s.StageId == defaultStageId)
+                    ?? throw new InvalidOperationException($"Quest '{definition.QuestId}' default stage {defaultStageId} does not exist.");
+                entry.CurrentStageId = defaultStageId;
+                entry.State = (int)(stage.QuestState ?? (stage.IsCompletionStage ? QuestState.Completed : QuestState.InProgress));
+                if ((QuestState)entry.State is QuestState.Completed or QuestState.Failed or QuestState.Abandoned or QuestState.Expired)
+                    entry.DateCompleted = discoveredAt;
+            }
+
             if (context.Database.IsNpgsql())
             {
                 // A concurrent journal query or quest command may already have created the entry.
@@ -473,10 +488,10 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                 await context.Database.ExecuteSqlInterpolatedAsync($"""
                     INSERT INTO codex_quests
                         (character_id, quest_id, title, description, state, current_stage_id,
-                         date_started, quest_giver, location, keywords, stages_json, completion_count)
+                         date_started, date_completed, quest_giver, location, keywords, stages_json, completion_count)
                     VALUES
                         ({entry.CharacterId}, {entry.QuestId}, {entry.Title}, {entry.Description},
-                         {entry.State}, {entry.CurrentStageId}, {entry.DateStarted}, {entry.QuestGiver},
+                         {entry.State}, {entry.CurrentStageId}, {entry.DateStarted}, {entry.DateCompleted}, {entry.QuestGiver},
                          {entry.Location}, {entry.Keywords}, CAST({entry.StagesJson} AS jsonb), {entry.CompletionCount})
                     ON CONFLICT (character_id, quest_id) DO NOTHING
                     """, ct);

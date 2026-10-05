@@ -85,6 +85,7 @@ public sealed class UpdateQuestDefinitionHandler : ICommandHandler<UpdateQuestDe
         existing.Location = command.Definition.Location;
         existing.Keywords = command.Definition.Keywords;
         existing.IsAlwaysAvailable = command.Definition.IsAlwaysAvailable;
+        existing.DefaultStageId = command.Definition.DefaultStageId;
 
         await context.SaveChangesAsync(cancellationToken);
         return CommandResult.Ok();

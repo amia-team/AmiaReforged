@@ -23,6 +23,26 @@ public class QuestDefinitionValidationTests
         Assert.That(QuestDefinitionValidator.Validate(Quest()), Is.Empty);
     }
 
+    [TestCase(null)]
+    [TestCase(10)]
+    [TestCase(30)]
+    public void Default_stage_is_optional_and_can_select_an_existing_stage(int? stageId)
+    {
+        QuestDefinitionDto quest = Quest();
+        quest.DefaultStageId = stageId;
+        Assert.That(QuestDefinitionValidator.Validate(quest), Is.Empty);
+    }
+
+    [TestCase(0)]
+    [TestCase(-10)]
+    [TestCase(999)]
+    public void Invalid_default_stage_is_rejected(int stageId)
+    {
+        QuestDefinitionDto quest = Quest();
+        quest.DefaultStageId = stageId;
+        Assert.That(QuestDefinitionValidator.Validate(quest).Any(e => e.Field == "DefaultStageId"), Is.True);
+    }
+
     [TestCase(10, "higher ID")]
     [TestCase(999, "does not exist")]
     public void Invalid_next_stage_is_rejected(int target, string message)

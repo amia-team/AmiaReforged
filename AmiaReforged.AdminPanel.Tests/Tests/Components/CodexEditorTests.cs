@@ -504,9 +504,13 @@ public class CodexEditorTests : Bunit.TestContext
     [Test]
     public void Quest_ChangingStageId_UpdatesExistingLinksAndDisallowsDuplicateIds()
     {
-        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: ValidQuest());
+        QuestDefinitionDto quest = ValidQuest();
+        quest.DefaultStageId = 30;
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: quest);
         SelectStage(cut, 30);
         cut.Find("[data-stage-id]").Change("40");
+        cut.FindAll(".we-qe-nav-button").Single(b => b.TextContent == "Quest details").Click();
+        cut.Find("[data-default-stage]").GetAttribute("value").Should().Be("40");
         SelectStage(cut, 10);
         cut.Find("[data-next-stage]").GetAttribute("value").Should().Be("40");
         cut.Find("[data-stage-id]").Change("40");
@@ -515,6 +519,39 @@ public class CodexEditorTests : Bunit.TestContext
         cut.Find(".we-qe-validation").TextContent.Should().Contain("positive, unused stage ID");
         cut.Find("[data-stage-id]").GetAttribute("value").Should().Be("40");
         cut.Find("[data-stage-id]").Closest("details")!.HasAttribute("open").Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Quest_DefaultStage_CanBeSelectedReloadedAndCleared()
+    {
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: ValidQuest());
+        cut.FindAll(".we-qe-nav-button").Single(b => b.TextContent == "Quest details").Click();
+        cut.Find("[data-default-stage]").GetAttribute("value").Should().BeEmpty();
+        cut.Find("[data-default-stage]").Change("10");
+        SaveButton(cut).Click();
+        cut.WaitForAssertion(() => cut.Instance.HasUnsavedChanges.Should().BeFalse());
+        SavedQuest().DefaultStageId.Should().Be(10);
+
+        await cut.InvokeAsync(() => cut.Instance.OpenExistingAsync("test_entry", CodexEditor.CodexSubType.Quest));
+        cut.FindAll(".we-qe-nav-button").Single(b => b.TextContent == "Quest details").Click();
+        cut.Find("[data-default-stage]").GetAttribute("value").Should().Be("10");
+        cut.Find("[data-default-stage]").Change("");
+        SaveButton(cut).Click();
+        cut.WaitForAssertion(() => SavedQuest().DefaultStageId.Should().BeNull());
+    }
+
+    [Test]
+    public void Quest_MissingDefaultStage_BlocksSavingUntilItIsCleared()
+    {
+        QuestDefinitionDto quest = ValidQuest();
+        quest.DefaultStageId = 999;
+        IRenderedComponent<CodexEditor> cut = RenderEntry(CodexEditor.CodexSubType.Quest, quest: quest);
+        SaveButton(cut).Click();
+        cut.Find(".we-qe-validation").TextContent.Should().Contain("Default stage must refer");
+        _handler.Requests.Should().NotContain(r => r.Method == HttpMethod.Put);
+        cut.Find("[data-default-stage]").Change("");
+        SaveButton(cut).Click();
+        cut.WaitForAssertion(() => _handler.Requests.Should().Contain(r => r.Method == HttpMethod.Put));
     }
 
     [Test]

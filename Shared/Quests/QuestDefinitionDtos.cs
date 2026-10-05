@@ -159,5 +159,7 @@ public class QuestDefinitionDto
     public string? Location { get; set; }
     public string? Keywords { get; set; }
     public bool IsAlwaysAvailable { get; set; }
+    /// <summary>Initial stage for automatic instantiation; null leaves the quest at stage 0.</summary>
+    public int? DefaultStageId { get; set; }
     public DateTime CreatedUtc { get; set; }
 }

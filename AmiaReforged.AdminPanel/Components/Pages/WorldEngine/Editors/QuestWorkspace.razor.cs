@@ -142,6 +142,7 @@ public partial class QuestWorkspace
         {
             int previous = stage.StageId;
             stage.StageId = id;
+            if (Model.DefaultStageId == previous) Model.DefaultStageId = id;
             _stageIdErrors.Remove(stage);
             _stageIdDrafts.Remove(stage);
             foreach (QuestStageDto other in Model.Stages)

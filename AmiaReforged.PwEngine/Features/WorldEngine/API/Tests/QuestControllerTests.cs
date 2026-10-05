@@ -40,6 +40,7 @@ public class QuestControllerTests
         PersistedQuestDefinition persisted = new()
         {
             QuestId = "rats", Title = "Rats", Description = "Clear the cellar.",
+            DefaultStageId = 10,
             StagesJson = JsonSerializer.Serialize(stages, new JsonSerializerOptions { PropertyNamingPolicy = camelCase ? JsonNamingPolicy.CamelCase : null })
         };
         Mock<IWorldEngineFacade> facade = new();
@@ -52,6 +53,7 @@ public class QuestControllerTests
         Assert.That(result.StatusCode, Is.EqualTo(200));
         QuestDefinitionDto editor = JsonSerializer.Deserialize<QuestDefinitionDto>(JsonSerializer.Serialize(result.Data))!;
         Assert.That(QuestDefinitionValidator.Validate(editor), Is.Empty);
+        Assert.That(editor.DefaultStageId, Is.EqualTo(10));
         Assert.That(editor.Stages[0].Hints, Is.EqualTo(stages[0].Hints));
         Assert.That(editor.Stages.Select(s => s.Name), Is.EqualTo(stages.Select(s => s.Name)));
         string editedJson = JsonSerializer.Serialize(editor.Stages);

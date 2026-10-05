@@ -215,6 +215,7 @@ public class QuestController
             def.Location,
             def.Keywords,
             def.IsAlwaysAvailable,
+            def.DefaultStageId,
             def.CreatedUtc
         };
     }
@@ -231,7 +232,8 @@ public class QuestController
             QuestGiver = string.IsNullOrWhiteSpace(dto.QuestGiver) ? null : dto.QuestGiver.Trim(),
             Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim(),
             Keywords = string.IsNullOrWhiteSpace(dto.Keywords) ? null : dto.Keywords.Trim(),
-            IsAlwaysAvailable = dto.IsAlwaysAvailable
+            IsAlwaysAvailable = dto.IsAlwaysAvailable,
+            DefaultStageId = dto.DefaultStageId
         };
     }
 

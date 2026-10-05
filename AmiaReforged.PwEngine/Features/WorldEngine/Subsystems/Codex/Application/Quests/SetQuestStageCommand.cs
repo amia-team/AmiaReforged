@@ -70,7 +70,7 @@ public sealed class SetQuestStageHandler : ICommandHandler<SetQuestStageCommand>
                 _codexRepository, command.CharacterId, cancellationToken);
 
             // Load the player's codex (or create one if it doesn't exist)
-            PlayerCodex? codex = await _codexRepository.LoadAsync(command.CharacterId, cancellationToken);
+            PlayerCodex? codex = await _codexRepository.LoadAsync(command.CharacterId, qid, cancellationToken);
             codex ??= new PlayerCodex(command.CharacterId, now);
 
             // Track the from-stage so we can grant its rewards after advancing.

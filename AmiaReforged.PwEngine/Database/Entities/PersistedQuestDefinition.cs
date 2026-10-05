@@ -67,6 +67,12 @@ public class PersistedQuestDefinition
     public bool IsAlwaysAvailable { get; set; }
 
     /// <summary>
+    /// Initial stage for automatic instantiation. Null leaves the character entry at stage 0.
+    /// An explicitly supplied initial stage takes precedence.
+    /// </summary>
+    public int? DefaultStageId { get; set; }
+
+    /// <summary>
     /// UTC timestamp when the definition was first persisted.
     /// </summary>
     public DateTime CreatedUtc { get; set; }

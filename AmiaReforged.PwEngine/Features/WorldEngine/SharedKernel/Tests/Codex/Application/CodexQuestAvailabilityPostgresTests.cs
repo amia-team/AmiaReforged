@@ -3,7 +3,10 @@ using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastructure;
+using AmiaReforged.PwEngine.Migrations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using NUnit.Framework;
 using Testcontainers.PostgreSql;
 
@@ -13,7 +16,51 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Codex.Ap
 public class CodexQuestAvailabilityPostgresTests
 {
     [Test]
-    public async Task ConcurrentLoadsPersistMissingInstancesWithoutResettingExistingProgress()
+    public async Task DefaultStageMigrationPreservesExistingDefinitionsAndCharacterProgress()
+    {
+        await using PostgreSqlContainer postgres = new PostgreSqlBuilder().WithImage("postgres:16-alpine").Build();
+        await postgres.StartAsync();
+        TestContextFactory factory = new(postgres.GetConnectionString());
+        using PwEngineContext context = factory.CreateDbContext();
+        await context.Database.EnsureCreatedAsync();
+        Guid characterId = Guid.NewGuid();
+        context.Characters.Add(new PersistedCharacter
+        {
+            Id = characterId, FirstName = "Migration", LastName = "Test", CdKey = "QSTTEST2"
+        });
+        context.CodexQuestDefinitions.Add(new PersistedQuestDefinition
+        {
+            QuestId = "tutorial", Title = "Tutorial", Description = "An existing definition.", IsAlwaysAvailable = true,
+            StagesJson = """[{"stageId":10,"journalText":"First step."}]"""
+        });
+        context.CodexQuests.Add(new PersistedCodexQuest
+        {
+            CharacterId = characterId, QuestId = "tutorial", Title = "Tutorial", Description = "An existing instance.",
+            State = (int)QuestState.InProgress, CurrentStageId = 5, DateStarted = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        AddQuestDefaultStage migration = new();
+        IMigrationsSqlGenerator generator = context.GetService<IMigrationsSqlGenerator>();
+        foreach (MigrationCommand command in generator.Generate(migration.DownOperations, context.Model))
+            await context.Database.ExecuteSqlRawAsync(command.CommandText);
+        foreach (MigrationCommand command in generator.Generate(migration.UpOperations, context.Model))
+            await context.Database.ExecuteSqlRawAsync(command.CommandText);
+
+        PersistedQuestDefinition definition = await context.CodexQuestDefinitions.SingleAsync();
+        Assert.That(definition.DefaultStageId, Is.Null);
+        Assert.That((await context.CodexQuests.SingleAsync()).CurrentStageId, Is.EqualTo(5));
+        definition.DefaultStageId = 10;
+        await context.SaveChangesAsync();
+        var codex = await new EfPlayerCodexRepository(factory).LoadAsync((CharacterId)characterId);
+        Assert.That(codex!.Quests.Single().CurrentStageId, Is.EqualTo(5));
+    }
+
+    [TestCase(null, null)]
+    [TestCase(10, null)]
+    [TestCase(10, "Completed")]
+    public async Task ConcurrentLoadsPersistMissingInstancesWithoutResettingExistingProgress(int? defaultStageId, string? stageState)
     {
         await using PostgreSqlContainer postgres = new PostgreSqlBuilder().WithImage("postgres:16-alpine").Build();
         await postgres.StartAsync();
@@ -33,9 +80,11 @@ public class CodexQuestAvailabilityPostgresTests
                 {
                     QuestId = questId, Title = "Lost Artifact", Description = "Find the artifact.",
                     IsAlwaysAvailable = true, CreatedUtc = started, QuestGiver = "Archivist", Location = "Ruins",
-                    Keywords = "artifact,ruins", StagesJson = """
-                        [{"stageId":10,"journalText":"Search the ruins."}]
-                        """
+                    DefaultStageId = defaultStageId,
+                    Keywords = "artifact,ruins", StagesJson = System.Text.Json.JsonSerializer.Serialize(new[]
+                    {
+                        new { StageId = 10, JournalText = "Search the ruins.", QuestState = stageState }
+                    })
                 });
             }
             context.CodexQuests.Add(new PersistedCodexQuest
@@ -69,8 +118,10 @@ public class CodexQuestAvailabilityPostgresTests
             Assert.Multiple(() =>
             {
                 Assert.That(created.CharacterId, Is.EqualTo(characterId.Value));
-                Assert.That(created.State, Is.EqualTo((int)QuestState.Discovered));
-                Assert.That(created.CurrentStageId, Is.Zero);
+                Assert.That(created.State, Is.EqualTo((int)(stageState == "Completed" ? QuestState.Completed
+                    : defaultStageId.HasValue ? QuestState.InProgress : QuestState.Discovered)));
+                Assert.That(created.CurrentStageId, Is.EqualTo(defaultStageId ?? 0));
+                Assert.That(created.DateCompleted, Is.EqualTo(stageState == "Completed" ? created.DateStarted : (DateTime?)null));
                 Assert.That(created.DateStarted, Is.InRange(beforeLoad, DateTime.UtcNow));
                 Assert.That(created.StagesJson, Does.Contain("Search the ruins."));
                 Assert.That(created.QuestGiver, Is.EqualTo("Archivist"));
