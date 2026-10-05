@@ -14,7 +14,15 @@ public sealed class TraitSelectionView : ScryView<TraitSelectionPresenter>, IToo
 {
     public const float WindowW = 820f;
     public const float WindowH = 620f;
-    public const int EntriesPerPage = 8;
+    public const int EntriesPerPage = TraitSelectionGraphicalView.EntriesPerPage;
+    public TraitSelectionGraphicalView Graphical { get; } = new();
+
+    /// <summary>Replacement shell for Step 1 review; production RootLayout remains procedural until Step 2.</summary>
+    public NuiLayout GraphicalRootLayout(float scaleFactor, bool compact = false, bool removeAction = false)
+    {
+        Graphical.SetScaleFactor(scaleFactor);
+        return Graphical.BuildLayout(compact, removeAction);
+    }
 
     // Category sidebar (swapped via SetGroupLayout)
     public NuiGroup CategoryGroup = null!;
