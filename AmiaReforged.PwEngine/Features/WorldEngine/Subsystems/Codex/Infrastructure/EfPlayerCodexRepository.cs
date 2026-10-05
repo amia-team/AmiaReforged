@@ -81,7 +81,14 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                 .Where(q => q.CharacterId == characterId.Value)
                 .ToListAsync(cancellationToken);
 
-            if (noteRows.Count == 0 && loreRows.Count == 0 && alwaysAvailable.Count == 0 && questRows.Count == 0)
+            HashSet<string> recordedQuestIds = questRows.Select(q => q.QuestId).ToHashSet();
+            List<PersistedQuestDefinition> alwaysAvailableQuests = await context.CodexQuestDefinitions
+                .AsNoTracking()
+                .Where(d => d.IsAlwaysAvailable && !recordedQuestIds.Contains(d.QuestId))
+                .ToListAsync(cancellationToken);
+
+            if (noteRows.Count == 0 && loreRows.Count == 0 && alwaysAvailable.Count == 0 &&
+                questRows.Count == 0 && alwaysAvailableQuests.Count == 0)
                 return null;
 
             // Determine creation date from the earliest persisted record
@@ -167,6 +174,22 @@ public class EfPlayerCodexRepository : IPlayerCodexRepository
                     quest.Stages.Clear();
                     quest.Stages.AddRange(stages);
                 }
+            }
+
+            foreach (PersistedQuestDefinition def in alwaysAvailableQuests)
+            {
+                CodexQuestEntry quest = new()
+                {
+                    QuestId = (QuestId)def.QuestId,
+                    Title = def.Title,
+                    Description = def.Description,
+                    DateStarted = def.CreatedUtc,
+                    QuestGiver = def.QuestGiver,
+                    Location = def.Location,
+                    Keywords = ParseKeywords(def.Keywords),
+                    Stages = DeserializeStages(def.StagesJson)
+                };
+                codex.RecordQuestDiscovered(quest, def.CreatedUtc);
             }
 
             return codex;

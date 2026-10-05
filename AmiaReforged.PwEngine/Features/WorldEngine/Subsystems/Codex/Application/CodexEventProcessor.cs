@@ -138,6 +138,7 @@ public class CodexEventProcessor
         switch (domainEvent)
         {
             case QuestDiscoveredEvent qde:
+                if (codex.HasQuest(qde.QuestId)) break;
                 CodexQuestEntry discoveredQuest = CreateQuestEntry(qde.QuestId, qde.QuestName, qde.Description, qde.OccurredAt);
                 codex.RecordQuestDiscovered(discoveredQuest, qde.OccurredAt);
                 break;

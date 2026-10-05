@@ -92,8 +92,15 @@ public class PlayerCodex
     {
         ArgumentNullException.ThrowIfNull(quest);
 
-        if (_quests.ContainsKey(quest.QuestId))
-            throw new InvalidOperationException($"Quest {quest.QuestId.Value} already exists in codex");
+        if (_quests.TryGetValue(quest.QuestId, out CodexQuestEntry? existing))
+        {
+            if (existing.State != QuestState.Discovered)
+                throw new InvalidOperationException($"Quest {quest.QuestId.Value} already exists in codex");
+
+            existing.State = QuestState.InProgress;
+            LastUpdated = occurredAt;
+            return;
+        }
 
         // Ensure quest is in InProgress state when started
         quest.State = QuestState.InProgress;
