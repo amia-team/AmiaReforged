@@ -5,7 +5,12 @@ namespace AmiaReforged.Core.Services.Sailing;
 
 /// <summary>An immutable display/identity snapshot for one dockyard window token.</summary>
 public sealed record DockyardShipRow(ShipState Ship, string ShipId, string Name, string Vessel,
-    string Status, bool CanRetrieve, bool CanTrade);
+    string Status, bool CanRetrieve, bool CanTrade)
+{
+    public string Hull { get; init; } = "";
+    public string StoredPort { get; init; } = "";
+    public string MarketStatus => CanTrade ? "Cargo / market available" : "Cargo / market unavailable";
+}
 
 public sealed class DockyardShipList
 {
@@ -21,9 +26,9 @@ public sealed class DockyardShipList
     public static DockyardShipList Create(ShipRegistryService registry, ShipStorageService storage, string port,
         Func<ShipState, bool> canRetrieve)
     {
-        // An unleased pool vessel is a rental offer, never a communal retrieval option.
+        // Rental retrieval belongs to the agreement section, never the communal list.
         var rows = storage.GetStoredShips(registry.GetShips(), port)
-            .Where(s => s.RentalPoolId == null || s.Rental != null)
+            .Where(s => s.RentalPoolId == null && s.Rental == null && !CutterRentalFleet.IsCutter(s))
             .OrderBy(s => s.ShipName, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.ShipId, StringComparer.Ordinal)
             .Select(s =>
             {
@@ -33,7 +38,8 @@ public sealed class DockyardShipList
                     CultureInfo.InvariantCulture.TextInfo.ToTitleCase(s.SpritePrefix);
                 string status = !permitted ? "STORED / UNAVAILABLE TO YOU" : s.IsEconomyBusy ? "STORED / BUSY" : AvailableStatus;
                 return new DockyardShipRow(s, s.ShipId, s.ShipName, $"{vessel} / {category}", status,
-                    available, available && !s.IsDisabled);
+                    available, available && !s.IsDisabled)
+                { Hull = $"Hull {s.Hull}/{s.MaximumHull}", StoredPort = $"Stored port: {port}" };
             }).ToArray();
         return new(rows);
     }

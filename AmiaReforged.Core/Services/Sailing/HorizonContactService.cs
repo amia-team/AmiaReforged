@@ -159,12 +159,12 @@ private static float GetDistance(
         deltaX * deltaX +
         deltaY * deltaY);
 }
-public string BuildHorizonString(ShipState ship)
+public string BuildHorizonString(ShipState ship, IReadOnlyList<VisibleShipContact>? visibleShips = null, IReadOnlyList<OceanContact>? visibleOcean = null)
 {
     if (!ship.IsActiveWorld) return "No contacts";
-    var contacts = _oceanContactService.GetVisibleContacts(ship)
+    var contacts = (visibleOcean ?? _oceanContactService.GetVisibleContacts(ship).ToArray())
         .Select(c => (c.Name, c.AreaResRef, c.X, c.Y))
-        .Concat(_visibility.GetVisibleShips(ship, _registry.GetShips())
+        .Concat((visibleShips ?? _visibility.GetVisibleShips(ship, _registry.GetShips()).ToArray())
             .Select(c => (c.Ship.ShipName, c.Ship.AreaResRef, c.Ship.X, c.Ship.Y))).ToArray();
     if (contacts.Length == 0) return "No contacts";
     char[] strip = "─────────".ToCharArray();

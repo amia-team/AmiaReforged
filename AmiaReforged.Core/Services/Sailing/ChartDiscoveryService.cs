@@ -21,6 +21,15 @@ public sealed class ChartDiscoveryService : IDisposable
     // Account-wide charts match the available player-oriented design. Never store the raw CD key.
     private static string Account(NwPlayer player) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(player.CDKey)));
     public long GetRevision(NwPlayer player) => _revisions.GetValueOrDefault(Account(player));
+    /// <summary>Read-only cells for rendering; resolve the native account key once per frame.</summary>
+    public string CaptureCells(NwPlayer player, string area) => CaptureCells(Account(player), area);
+    public string CaptureCells(string account, string area)
+    {
+        var cells = new char[GridSize * GridSize];
+        for (int x = 0; x < GridSize; x++) for (int y = 0; y < GridSize; y++)
+            cells[x * GridSize + y] = IsDiscovered(account, area, x, y) ? '1' : '0';
+        return new(cells);
+    }
     public bool IsDiscovered(NwPlayer player, string area, int x, int y) => IsDiscovered(Account(player), area, x, y);
     public bool IsDiscovered(string account, string area, int x, int y) =>
         x >= 0 && y >= 0 && x < GridSize && y < GridSize && _discovery.TryGetValue(account, out var areas) &&

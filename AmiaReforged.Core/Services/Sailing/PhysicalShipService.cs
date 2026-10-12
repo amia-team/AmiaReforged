@@ -42,6 +42,8 @@ public class PhysicalShipService : IDisposable
     public event Action<string, string>? PlayerDetached;
     public event Func<ShipState, NwPlayer, Task<bool>>? StoredExitRequested;
     public event Func<ShipState, NwPlayer, Task<bool>>? PortDisembarkRequested;
+    public event Action<ShipState, NwPlayer, NwPlaceable>? BoardingTravelRequested;
+    public event Action<ShipState, NwPlayer>? PortTravelRequested;
     private readonly ShipRegistryService _registry;
     private readonly ShipAccessService? _access;
     private readonly Dictionary<string, string> _representationTags = new();
@@ -600,52 +602,81 @@ public class PhysicalShipService : IDisposable
         return true;
     }
 
-    public async Task<bool> TryTransferPlayerAsync(NwPlayer player, string? fromShip, string? toShip,
+    public Task<bool> TryTransferPlayerAsync(NwPlayer player, string? fromShip, string? toShip,
         Location destination, Func<bool>? validateAction = null, System.Action? beforeCommit = null,
-        bool allowStoredTarget = false, Func<Task>? prepareCommit = null, Func<Task>? abortCommit = null)
+        bool allowStoredTarget = false, Func<Task>? prepareCommit = null, Func<Task>? abortCommit = null) =>
+        TryTransferPlayersAsync([player], fromShip, toShip, destination, validateAction, beforeCommit,
+            allowStoredTarget, prepareCommit, abortCommit);
+
+    public async Task<bool> TryTransferPlayersAsync(IReadOnlyList<NwPlayer> players, string? fromShip, string? toShip,
+        Location destination, Func<bool>? validateAction = null, System.Action? beforeCommit = null,
+        bool allowStoredTarget = false, Func<Task>? prepareCommit = null, Func<Task>? abortCommit = null,
+        Func<NwPlayer, bool>? validateDeparture = null)
     {
-        NwCreature? creature = player.ControlledCreature;
         ShipState? sourceShip = fromShip == null ? null : _registry.GetShip(fromShip);
         ShipState? targetShip = toShip == null ? null : _registry.GetShip(toShip);
-        bool TargetEligible() => toShip == null || (HasPhysicalShip(toShip) && _registry.IsCurrent(targetShip) &&
+        bool TargetEligible(NwPlayer player) => toShip == null || (HasPhysicalShip(toShip) && _registry.IsCurrent(targetShip) &&
             (_access == null || _access.CanBoard(targetShip!, player) || allowStoredTarget && _access.CanRetrieve(targetShip!, player, true)) &&
             (targetShip!.IsActiveWorld || (allowStoredTarget && targetShip.IsStored && targetShip.IsDocking && !targetShip.IsInitializing)));
-        if (_disposed || !player.IsValid || creature is not { IsValid: true } || destination.Area is not { IsValid: true } ||
-            GetShipForPlayer(player.PlayerName) != fromShip ||
-            (fromShip != null && (!IsPlayerPresent(fromShip, player) || sourceShip is not { IsActiveWorld: true })) ||
-            !TargetEligible() || validateAction?.Invoke() == false) return false;
+        if (_disposed || players.Count == 0 || destination.Area is not { IsValid: true } || validateAction?.Invoke() == false) return false;
         if (toShip != null && GetPhysicalShip(toShip) is { } target &&
             !string.Equals(destination.Area.ResRef, target.DeckAreaResRef, StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(destination.Area.ResRef, target.CabinAreaResRef, StringComparison.OrdinalIgnoreCase)) return false;
-        Location? previous = creature.Location;
-        if (previous == null) return false;
-        using IDisposable? reservation = _transfers.TryReserve([player.PlayerName]);
+        var participants = new List<(NwPlayer Player, NwCreature Creature, Location Previous)>();
+        foreach (var player in players)
+        {
+            if (!player.IsValid || player.ControlledCreature is not { IsValid: true } creature || creature.Location is not { } previous ||
+                GetShipForPlayer(player.PlayerName) != fromShip ||
+                fromShip != null && (!IsPlayerPresent(fromShip, player) || sourceShip is not { IsActiveWorld: true }) ||
+                !TargetEligible(player) || validateDeparture?.Invoke(player) == false) return false;
+            participants.Add((player, creature, previous));
+        }
+        using IDisposable? reservation = _transfers.TryReserve(participants.Select(p => p.Player.PlayerName).ToArray());
         if (reservation == null) return false;
+        HashSet<NwCreature> moving = [];
         bool committed = false;
         try
         {
-            void Validate()
+            void ValidateAll()
             {
-                ValidateParticipant(player, creature);
-                if (GetShipForPlayer(player.PlayerName) != fromShip ||
-                    (fromShip != null && (!_registry.IsCurrent(sourceShip) || !sourceShip!.IsActiveWorld)) ||
-                    !TargetEligible() || validateAction?.Invoke() == false)
+                if (fromShip != null && (!_registry.IsCurrent(sourceShip) || !sourceShip!.IsActiveWorld) || validateAction?.Invoke() == false)
                     throw new InvalidOperationException("Ship or membership changed during transfer.");
+                foreach (var entry in participants)
+                {
+                    ValidateParticipant(entry.Player, entry.Creature);
+                    if (GetShipForPlayer(entry.Player.PlayerName) != fromShip || !TargetEligible(entry.Player) ||
+                        !moving.Contains(entry.Creature) && (validateDeparture?.Invoke(entry.Player) == false ||
+                            fromShip != null && !IsPlayerPresent(fromShip, entry.Player)))
+                        throw new InvalidOperationException("A participant's consent, access or departure changed during transfer.");
+                }
             }
-            committed = await ShipTransferTransaction.ExecuteAsync([
-                (() => MoveCreatureAsync(player, creature, destination, Validate, false),
-                 () => MoveCreatureAsync(player, creature, previous, () => ValidateRollback(player, creature), true),
-                 () => { Validate(); RequireArrival(creature, destination); })],
-                () => { beforeCommit?.Invoke(); CommitTransfer(player, fromShip, toShip); },
-                ex => Log.Warn(ex, "Ship transfer failed; rollback attempted: player={0}, from={1}, to={2}.",
-                    player.PlayerName, fromShip, toShip), prepareCommit, abortCommit);
-            Log.Info("Ship transfer transaction {0}: player={1}, from={2}, to={3}.",
-                committed ? "COMMIT" : "ROLLBACK ATTEMPTED", player.PlayerName, fromShip, toShip);
+            var moves = participants.Select(entry => (
+                (Func<Task>)(async () => { ValidateAll(); moving.Add(entry.Creature);
+                    await MoveCreatureAsync(entry.Player, entry.Creature, destination, ValidateAll, false, () =>
+                    {
+                        if (validateDeparture?.Invoke(entry.Player) == false || fromShip != null && !IsPlayerPresent(fromShip, entry.Player))
+                            throw new InvalidOperationException("Participant left the departure interaction before the jump was queued.");
+                    }); }),
+                (Func<Task>)(() => MoveCreatureAsync(entry.Player, entry.Creature, entry.Previous,
+                    () => ValidateRollback(entry.Player, entry.Creature), true)),
+                (System.Action)(() => { ValidateAll(); RequireArrival(entry.Creature, destination); }))).ToArray();
+            committed = await ShipTransferTransaction.ExecuteAsync(moves,
+                () => { beforeCommit?.Invoke(); CommitTransfers(players, fromShip, toShip); },
+                ex => Log.Warn(ex, "Ship group transfer failed; rollback attempted: from={0}, to={1}.", fromShip, toShip),
+                prepareCommit, abortCommit);
+            Log.Info("Ship transfer transaction {0}: players={1}, from={2}, to={3}.",
+                committed ? "COMMIT" : "ROLLBACK ATTEMPTED", string.Join(",", participants.Select(p => p.Player.PlayerName)), fromShip, toShip);
             return committed;
         }
         finally
         {
-            if (!committed && !_disposed && fromShip != null) RemoveStrandedMembership(fromShip, player);
+            if (!committed && !_disposed)
+                foreach (var entry in participants)
+                {
+                    if (fromShip != null) RemoveStrandedMembership(fromShip, entry.Player);
+                    if (entry.Player.IsValid && entry.Creature.IsValid && !HasArrived(entry.Creature, entry.Previous))
+                        entry.Player.SendServerMessage("Your transfer failed and return to the original position could not be confirmed. Sailing membership was not committed; ask an administrator to review the transfer log.");
+                }
         }
     }
 
@@ -664,12 +695,16 @@ public class PhysicalShipService : IDisposable
 
     private static void RequireArrival(NwCreature creature, Location destination)
     {
-        if (!creature.IsValid || destination.Area is not { IsValid: true } || creature.Area != destination.Area)
+        if (!HasArrived(creature, destination))
             throw new InvalidOperationException("Transfer did not reach its destination area.");
     }
 
+    private static bool HasArrived(NwCreature creature, Location destination) => creature.IsValid &&
+        destination.Area is { IsValid: true } && creature.Area == destination.Area &&
+        System.Numerics.Vector3.Distance(creature.Position, destination.Position) <= 3f;
+
     private async Task MoveCreatureAsync(NwPlayer player, NwCreature creature, Location destination,
-        System.Action validate, bool rollback)
+        System.Action validate, bool rollback, System.Action? validateDeparture = null)
     {
         await NwTask.SwitchToMainThread();
         validate();
@@ -683,6 +718,7 @@ public class PhysicalShipService : IDisposable
         // of the creature's queue; it still needs a server frame to execute.
         await creature.WaitForObjectContext();
         validate();
+        validateDeparture?.Invoke();
         ValidateDestination(destination);
         if (rollback) NWScript.ClearAllActions(0); // Cancel any unexecuted original jump before returning.
         NWScript.JumpToLocation(destination);
@@ -694,7 +730,7 @@ public class PhysicalShipService : IDisposable
             {
                 await NwTask.NextFrame();
                 await NwTask.SwitchToMainThread();
-            }, () => destination.Area is { IsValid: true } && creature.Area == destination.Area, () =>
+            }, () => HasArrived(creature, destination), () =>
             {
                 validate();
                 ValidateDestination(destination);
@@ -726,16 +762,20 @@ public class PhysicalShipService : IDisposable
     }
 
     private void CommitTransfer(NwPlayer player, string? fromShip, string? toShip)
+        => CommitTransfers([player], fromShip, toShip);
+
+    private void CommitTransfers(IReadOnlyList<NwPlayer> players, string? fromShip, string? toShip)
     {
-        string name = player.PlayerName;
         if (fromShip == toShip) return;
-        // Mutate both associations before invoking subscribers. A transfer cannot fail between
-        // removing the old association and creating the new association.
-        ShipCrewLifecycle.TransferMembership(_aboardPlayers, fromShip, toShip, name);
-        StampRentalVisit(player, toShip == null ? null : _registry.GetShip(toShip));
-        if (fromShip != null)
-        { Notify(PlayerDetached, fromShip, name); Notify(PlayerLeft, fromShip, player); }
-        if (toShip != null) Notify(PlayerBoarded, toShip, player);
+        // Publish the entire successful group's associations before invoking any subscriber.
+        foreach (var player in players) ShipCrewLifecycle.TransferMembership(_aboardPlayers, fromShip, toShip, player.PlayerName);
+        foreach (var player in players)
+        {
+            StampRentalVisit(player, toShip == null ? null : _registry.GetShip(toShip));
+            if (fromShip != null)
+            { Notify(PlayerDetached, fromShip, player.PlayerName); Notify(PlayerLeft, fromShip, player); }
+            if (toShip != null) Notify(PlayerBoarded, toShip, player);
+        }
     }
 
     public void CleanupPlayers()
@@ -919,7 +959,8 @@ public class PhysicalShipService : IDisposable
             _registry.GetShip(physicalShip.ShipName) is not { IsActiveWorld: true } clickedShip ||
             !string.Equals(placeable.Area?.ResRef, clickedShip.AreaResRef, StringComparison.OrdinalIgnoreCase))
         { player.SendServerMessage("This ship representation is unavailable here."); return; }
-        ObserveInteraction(BoardShipAsync(physicalShip.ShipName, player));
+        if (BoardingTravelRequested != null) BoardingTravelRequested(clickedShip, player, placeable);
+        else ObserveInteraction(BoardShipAsync(physicalShip.ShipName, player));
     }
 
     private void HandleShipExitClick(
@@ -955,7 +996,8 @@ public class PhysicalShipService : IDisposable
                 placeable.Area?.ResRef, physicalShip.DeckAreaResRef, physicalShip.CabinAreaResRef))
         { player.SendServerMessage("This exit does not belong to the ship you are aboard."); return; }
 
-        ObserveInteraction(LeaveShipAsync(physicalShip.ShipName, player), player, reportRejected: false);
+        if (PortTravelRequested != null) PortTravelRequested(_registry.GetShip(physicalShip.ShipName)!, player);
+        else ObserveInteraction(LeaveShipAsync(physicalShip.ShipName, player), player, reportRejected: false);
     }
     private static async void ObserveInteraction(Task<bool> interaction, NwPlayer? exitPlayer = null, bool reportRejected = true)
     {

@@ -30,6 +30,8 @@ public sealed class MaritimeOptions
     public List<RentalVesselOption> RentalVessels { get; set; } = CutterRentalFleet.DefaultSlots();
     public int MarketAdjustmentSeconds { get; set; } = 300;
     public int MaximumQuantity { get; set; } = 1000;
+    public float PartyBoardingRadius { get; set; } = 12;
+    public int PartyConfirmationSeconds { get; set; } = 60;
     public int MerchantGoldLimit { get; set; } = 100000;
     public int MerchantPurchaseQuantity { get; set; } = 50;
     public List<MaritimeMarket> Markets { get; set; } = Defaults();
@@ -57,7 +59,8 @@ public sealed class MaritimeOptions
     }
     public void Validate()
     {
-        if (MarketAdjustmentSeconds < 60 || MaximumQuantity is < 1 or > 10000 || MerchantGoldLimit < 1 ||
+        if (!float.IsFinite(PartyBoardingRadius) || PartyBoardingRadius is < 1 or > 50 || PartyConfirmationSeconds is < 15 or > 180 ||
+            MarketAdjustmentSeconds < 60 || MaximumQuantity is < 1 or > 10000 || MerchantGoldLimit < 1 ||
             MerchantPurchaseQuantity is < 1 or > 1000 || RentalVessels == null || Markets == null ||
             RentalVessels.Any(v => v == null) || RentalVessels.GroupBy(v => v.ShipId, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() != 1) ||
             RentalVessels.GroupBy(v => v.ShipName, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() != 1)) throw new ArgumentException("Invalid maritime configuration.");

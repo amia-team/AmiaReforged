@@ -83,12 +83,13 @@ public sealed class ShipRentalService(ShipRegistryService registry, ShipPortServ
     private bool AtPort(NwPlayer player, string portId) => player.IsValid && player.LoginCreature == player.ControlledCreature &&
         player.ControlledCreature is { IsValid: true, Area: { } area } &&
         islands.GetIslands().Any(i => i.Id == portId && string.Equals(i.LandingArea, area.ResRef, StringComparison.OrdinalIgnoreCase));
-    public async Task<MaritimeResult> CheckoutAsync(NwPlayer player, string shipId, string port)
+    public async Task<MaritimeResult> CheckoutAsync(NwPlayer player, string shipId, string port,
+        Func<bool>? validateTravel = null, Func<NwPlayer, bool>? validateDeparture = null)
     {
         if (!Enabled) return MaritimeResult.Fail("Ship rentals are disabled or awaiting persistence/resource validation.");
         var definition = options.RentalVessels.SingleOrDefault(v => v.ShipId == shipId && v.PortId == port);
         var ship = registry.GetShip(shipId);
-        if (definition == null || ship == null || !AtPort(player, port) || !Available(ship, port) || !ResourcesAvailable(ship) || physical.HasDeckOccupants(ship) ||
+        if (validateTravel?.Invoke() == false || definition == null || ship == null || !AtPort(player, port) || !Available(ship, port) || !ResourcesAvailable(ship) || physical.HasDeckOccupants(ship) ||
             physical.GetShipForPlayer(player.PlayerName) != null || physical.IsTransferPending(player.PlayerName))
             return MaritimeResult.Fail("This vessel is unavailable. Its existing deck and ocean representation must be present.");
         var wallet = new MaritimeWallet(player);
@@ -101,7 +102,7 @@ public sealed class ShipRentalService(ShipRegistryService registry, ShipPortServ
         try
         {
             var reserve = await ledger.ExecuteAsync([ship], state => ShipRentalRules.Reserve(state, ship, record),
-                () => registry.IsCurrent(ship) && AtPort(player, port) && Available(ship, port) && ResourcesAvailable(ship) && !physical.HasDeckOccupants(ship),
+                () => validateTravel?.Invoke() != false && registry.IsCurrent(ship) && AtPort(player, port) && Available(ship, port) && ResourcesAvailable(ship) && !physical.HasDeckOccupants(ship),
                 kind: "rental-reserve", waitForGate: true);
             if (!reserve.Success) return reserve;
             bool retrieved = await ports.RetrieveAsync(ship, port, player, rentalCheckout: true,
@@ -124,7 +125,7 @@ public sealed class ShipRentalService(ShipRegistryService registry, ShipPortServ
                         throw new InvalidOperationException(undo.Message);
                     }
                     charged = false;
-                });
+                }, validateParty: validateTravel, validateDeparture: validateDeparture);
             if (!retrieved)
             {
                 // Invalid preflight can return before the transaction starts.

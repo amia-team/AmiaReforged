@@ -7,6 +7,7 @@ namespace AmiaReforged.Core.Services.Sailing;
 public sealed class MerchantTradeService(MaritimeLedgerService ledger, MaritimeOptions options,
     ShipRegistryService registry, PhysicalShipService physical, ShipAccessService access, IslandService islands, ShipCrewService crew)
 {
+    public int MaximumQuantity => options.MaximumQuantity;
     public MaritimeEconomyState State => ledger.Snapshot();
     public IReadOnlyList<MerchantTradeOffer> GetPlayerOffers(string portId)
     {
@@ -37,9 +38,10 @@ public sealed class MerchantTradeService(MaritimeLedgerService ledger, MaritimeO
             source.AreaResRef == island.OceanArea && MathF.Sqrt(MathF.Pow(source.X - island.OceanX, 2) + MathF.Pow(source.Y - island.OceanY, 2)) <= island.DockRadius;
     }
     public bool WithMerchant(ShipState source, ShipState merchant, string port, NwPlayer player) =>
+        player.IsValid && player.LoginCreature is { IsValid: true, IsLoginPlayerCharacter: true } && player.LoginCreature == player.ControlledCreature &&
         registry.IsCurrent(source) && registry.IsCurrent(merchant) && ShipActionRules.CanTrade(source, merchant, port) &&
         source.HelmsmanPCKey == player.PlayerName && physical.IsPlayerPresent(source.ShipName, player) &&
-        crew.GetRole(source.ShipName, player.PlayerName) == ShipCrewRole.Captain && access.CanCommand(source, player);
+        crew.GetRole(source.ShipName, player.PlayerName) == ShipCrewRole.Captain && access.CanCommand(source, player) && State.Markets.ContainsKey(port);
     public async Task<MaritimeResult> PlayerTradeAsync(NwPlayer player, ShipState source, ShipState? merchant,
         string port, string item, int quantity, bool buys)
     {
@@ -70,8 +72,10 @@ public sealed class MerchantTradeService(MaritimeLedgerService ledger, MaritimeO
         var supplier = buys ? merchant : player;
         var receiver = buys ? player : merchant;
         int capacity = buys ? playerCapacity : merchantCapacity;
-        if (quantity > MaritimeMarketEngine.Cargo(supplier, item) || receiver.Cargo.Sum(c => (long)c.Quantity) + quantity > capacity)
-            throw new InvalidOperationException("Insufficient cargo stock or receiving ship capacity.");
+        if (quantity > MaritimeMarketEngine.Cargo(supplier, item))
+            throw new InvalidOperationException(buys ? "Insufficient merchant stock for this quantity." : "Insufficient cargo aboard for this quantity.");
+        if (receiver.Cargo.Sum(c => (long)c.Quantity) + quantity > capacity)
+            throw new InvalidOperationException(buys ? "Your ship's cargo hold is full for this quantity." : "The merchant's cargo hold is full for this quantity.");
         if (total > int.MaxValue || total <= 0 || buys && (gold < total || merchant.MerchantGold + total > goldLimit) ||
             !buys && (merchant.MerchantGold < total || gold + total > uint.MaxValue))
             throw new InvalidOperationException("Insufficient gold or merchant treasury limit.");

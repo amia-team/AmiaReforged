@@ -4,6 +4,8 @@ using AmiaReforged.Core.Services.Sailing;
 
 static class CutterActivationChecks
 {
+    private static string FixtureDirectory([System.Runtime.CompilerServices.CallerFilePath] string source = "") =>
+        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(source)!, "..", "Toolset"));
     public static void Run(Action<bool, string> check)
     {
         string? original = Environment.GetEnvironmentVariable("AMIA_SAILING_MARITIME_CONFIG");
@@ -14,7 +16,7 @@ static class CutterActivationChecks
             Environment.SetEnvironmentVariable("AMIA_SAILING_MARITIME_CONFIG", null);
             Environment.SetEnvironmentVariable("AMIA_SAILING_RENTALS_ENABLED", null);
             defaults = new();
-            string docs = Path.Combine(Directory.GetCurrentDirectory(), "docs", "sailing-toolset-integration");
+            string docs = FixtureDirectory();
             Environment.SetEnvironmentVariable("AMIA_SAILING_MARITIME_CONFIG", Path.Combine(docs, "MARITIME_CONFIGURATION.example.json"));
             var example = new MaritimeOptions();
             check(!example.RentalsEnabled && example.RentalVessels.All(v => v.IsConfigured),

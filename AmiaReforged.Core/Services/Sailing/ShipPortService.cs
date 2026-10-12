@@ -37,29 +37,43 @@ public sealed class ShipPortService : IDisposable
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public async Task<bool> DisembarkAsync(ShipState ship, NwPlayer player)
+    public Task<bool> DisembarkAsync(ShipState ship, NwPlayer player) => DisembarkPartyAsync(ship, [player]);
+
+    public bool TryPlanDisembark(ShipState ship, out ShipLandfall? landfall)
+    {
+        landfall = ShipDisembarkRules.Resolve(ship, islands.GetIslands(), sailingAreas.ContainsArea);
+        return landfall != null && TryGetLandfallLocation(ship, landfall, out _);
+    }
+
+    public async Task<bool> DisembarkPartyAsync(ShipState ship, IReadOnlyList<NwPlayer> players,
+        ShipLandfall? capturedLandfall = null, Func<bool>? validateParty = null, Func<NwPlayer, bool>? validateDeparture = null)
     {
         await NwTask.SwitchToMainThread();
-        if (!registry.IsCurrent(ship) || !player.IsValid || !physical.IsPlayerPresent(ship.ShipName, player) ||
-            physical.GetShipForPlayer(player.PlayerName) != ship.ShipName || physical.IsTransferPending(player.PlayerName))
+        if (players.Count == 0) return false;
+        NwPlayer player = players[0];
+        if (!registry.IsCurrent(ship) || players.Any(p => !p.IsValid || !physical.IsPlayerPresent(ship.ShipName, p) ||
+            physical.GetShipForPlayer(p.PlayerName) != ship.ShipName || physical.IsTransferPending(p.PlayerName)))
         {
             if (player.IsValid) player.SendServerMessage("You are no longer aboard this ship, or a transfer is already in progress.");
             return false;
         }
-        ShipLandfall? landfall = ShipDisembarkRules.Resolve(ship, islands.GetIslands(), sailingAreas.ContainsArea);
+        ShipLandfall? landfall = capturedLandfall ?? ShipDisembarkRules.Resolve(ship, islands.GetIslands(), sailingAreas.ContainsArea);
         if (landfall == null)
         { player.SendServerMessage(ShipDisembarkRules.UnavailableMessage); return false; }
         if (!TryGetLandfallLocation(ship, landfall, out Location? destination))
         { player.SendServerMessage($"The configured landfall at {landfall.PortName} is unavailable. You remain aboard."); return false; }
         bool Valid() => registry.IsCurrent(ship) &&
+            validateParty?.Invoke() != false &&
             ShipDisembarkRules.StillEligible(ship, landfall, islands.GetIslands(), sailingAreas.ContainsArea) &&
             destination!.Area.IsValid && destination.IsWalkable && !IsShipInterior(landfall.AreaResRef);
-        // Individual transfer: no IsDocking reservation, storage, navigation or rental mutation.
+        // Selected-player transfer: no IsDocking reservation, storage, navigation or rental mutation.
         // The shared transfer owns the player reservation and commits detach callbacks only after arrival.
-        bool transferred = await physical.TryTransferPlayerAsync(player, ship.ShipName, null, destination!, Valid);
+        bool transferred = await physical.TryTransferPlayersAsync(players, ship.ShipName, null, destination!, Valid,
+            validateDeparture: validateDeparture);
         await NwTask.SwitchToMainThread();
-        if (player.IsValid) player.SendServerMessage(transferred ? $"You disembark from the {ship.ShipName} at {landfall.PortName}." :
-            "Disembarking failed. The ship or destination is no longer available.");
+        foreach (var participant in players.Where(p => p.IsValid))
+            participant.SendServerMessage(transferred ? $"You disembark from the {ship.ShipName} at {landfall.PortName}." :
+                "Disembarking failed. Return to your original position was attempted; the ship or destination changed.");
         return transferred;
     }
 
@@ -152,11 +166,13 @@ public sealed class ShipPortService : IDisposable
     }
 
     public async Task<bool> RetrieveAsync(ShipState ship, string portId, NwPlayer player, bool rentalCheckout = false,
-        Func<Task>? prepareCommit = null, Func<Task>? abortCommit = null)
+        Func<Task>? prepareCommit = null, Func<Task>? abortCommit = null, IReadOnlyList<NwPlayer>? party = null,
+        Func<bool>? validateParty = null, Func<NwPlayer, bool>? validateDeparture = null)
     {
         IslandLocation? port = islands.GetIslands().FirstOrDefault(i => i.Id == portId);
         if (rentalCheckout && (prepareCommit == null || abortCommit == null || ship.Rental?.Status != ShipRentalStatus.CheckoutPending)) return false;
-        if ((access != null && !access.CanRetrieve(ship, player, rentalCheckout)) || !registry.IsCurrent(ship) || !storage.IsStoredAtPort(ship, portId) || port == null || ship.IsInitializing || ship.IsDocking || ship.IsEconomyBusy ||
+        if (validateParty?.Invoke() == false || (party != null && (party.Count == 0 || party[0] != player)) ||
+            (access != null && !access.CanRetrieve(ship, player, rentalCheckout)) || !registry.IsCurrent(ship) || !storage.IsStoredAtPort(ship, portId) || port == null || ship.IsInitializing || ship.IsDocking || ship.IsEconomyBusy ||
             !player.IsValid || player.ControlledCreature is not { IsValid: true } creature ||
             !string.Equals(creature.Area?.ResRef, port.LandingArea, StringComparison.OrdinalIgnoreCase) ||
             physical.GetShipForPlayer(player.PlayerName) != null || physical.IsTransferPending(player.PlayerName) ||
@@ -167,8 +183,8 @@ public sealed class ShipPortService : IDisposable
         try
         {
             // Keep the original stored record authoritative until the engine confirms arrival.
-            transferred = await physical.TryTransferPlayerAsync(player, null, ship.ShipName, spawn,
-                validateAction: () => registry.IsCurrent(ship) && ship.IsDocking && storage.IsStoredAtPort(ship, portId),
+            transferred = await physical.TryTransferPlayersAsync(party ?? [player], null, ship.ShipName, spawn,
+                validateAction: () => validateParty?.Invoke() != false && registry.IsCurrent(ship) && ship.IsDocking && storage.IsStoredAtPort(ship, portId),
                 beforeCommit: () =>
                 {
                     if (rentalCheckout && (ship.Rental?.Status != ShipRentalStatus.Active ||
@@ -176,7 +192,7 @@ public sealed class ShipPortService : IDisposable
                         throw new InvalidOperationException("Rental payment was not activated before retrieval commit.");
                     if (!storage.RetrieveShip(ship, portId)) throw new InvalidOperationException("Ship retrieval commit failed.");
                     ship.IsDocking = false; // PlayerBoarded subscribers must see an active, retrieved ship.
-                }, allowStoredTarget: true, prepareCommit: prepareCommit, abortCommit: abortCommit);
+                }, allowStoredTarget: true, prepareCommit: prepareCommit, abortCommit: abortCommit, validateDeparture: validateDeparture);
             if (!transferred) return false;
             try { physical.Synchronize(ship); }
             catch (Exception ex) { Log.Warn(ex, "Retrieved {0}; representation refresh failed.", ship.ShipName); }

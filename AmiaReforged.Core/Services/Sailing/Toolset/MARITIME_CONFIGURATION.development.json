@@ -1,0 +1,23 @@
+{
+  "RentalsEnabled": true,
+  "PartyBoardingRadius": 12,
+  "PartyConfirmationSeconds": 60,
+  "RentalVessels": [
+    {
+      "ShipId": "southport-rental-cutter-01",
+      "ShipName": "Southport Cutter 01",
+      "DeckAreaResRef": "sp_cutter_01",
+      "HelmTag": "sp_cutter_01_helm",
+      "ExitTag": "sp_cutter_01_exit",
+      "PlaceableTag": "sp_cutter_01_ship"
+    },
+    {
+      "ShipId": "southport-rental-cutter-02",
+      "ShipName": "Southport Cutter 02",
+      "DeckAreaResRef": "sp_cutter_02",
+      "HelmTag": "sp_cutter_02_helm",
+      "ExitTag": "sp_cutter_02_exit",
+      "PlaceableTag": "sp_cutter_02_ship"
+    }
+  ]
+}

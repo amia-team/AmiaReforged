@@ -18,6 +18,19 @@ static class Regression
 
     public static async Task Main()
     {
+        try { await RunAsync(); }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"FAIL after {_checks} regression assertions.");
+            Console.Error.WriteLine($"Exception type: {ex.GetType().FullName}\nMessage: {ex.Message}");
+            Console.Error.WriteLine($"Inner exception: {ex.InnerException?.ToString() ?? "(none)"}\n{ex}");
+            Environment.ExitCode = 1;
+        }
+    }
+
+    private static async Task RunAsync()
+    {
+        Console.WriteLine($"Runtime: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}; target: net8.0.");
         if (Environment.GetCommandLineArgs().Contains("--api"))
         {
             foreach (Type type in typeof(Anvil.API.NwPlayer).Assembly.GetTypes().Where(t => t.Name == "OnSpellCast" || t.Name == "MemorizedSpellSlot"))
@@ -464,6 +477,10 @@ static class Regression
         CutterActivationChecks.Run(Check);
         await CutterRentalChecks.Run(Check);
         DockyardNuiChecks.Run(Check);
+        DockyardLayoutRecoveryChecks.Run(Check);
+        await PartyAndTradeChecks.Run(Check);
+        NauticalChartChecks.Run(Check);
+        NauticalChartRecoveryChecks.Run(Check);
         StartupChecks.Verify(Check);
         await CompletionChecks.Run(Check);
         await SeaSpriteStorageChecks.Run(Check);

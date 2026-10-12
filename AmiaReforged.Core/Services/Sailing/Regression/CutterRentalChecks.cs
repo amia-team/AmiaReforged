@@ -221,8 +221,9 @@ static class CutterRentalChecks
             { await final.Initialize(); check(final.Ledger.Ready && final.Cutters[0].Rental?.RentalId == la.RentalId && final.Cutters[1].Rental == null &&
                 final.Cutters[1].IsStored && ShipRentalService.Available(final.Cutters[1], "southport"), "Restart retains the first rental and the released second slot after failed checkout."); }
             var list = DockyardShipList.Create(fleet.Registry, fleet.Storage, "southport", s => ShipAccessService.MayCommand(s, wa.Account));
-            check(list.Rows.Any(r => r.ShipId == "Sea Sprite" && r.Vessel == "Sloop / Communal") && list.Rows.All(r => r.ShipId != b.ShipId) &&
-                list.Rows.Single(r => r.ShipId == a.ShipId).Vessel == "Cutter / Your rental", "Working dockyard keeps Sea Sprite communal, active stored cutters retrievable and free cutter offers separate.");
+            var activeRow = DockyardRentalAgreement.Create(a.Rental!, a, ShipAccessService.MayCommand(a, wa.Account), false);
+            check(list.Rows.Any(r => r.ShipId == "Sea Sprite" && r.Vessel == "Sloop / Communal") && list.Rows.All(r => r.ShipId != b.ShipId && r.ShipId != a.ShipId) &&
+                activeRow.CanRetrieve && activeRow.Name.Contains("Cutter"), "Working dockyard keeps communal ships, existing rental retrieval and free rental offers in independent sections.");
             var returnLease = Lease(b, wb); await fleet.Reserve(b, returnLease); await fleet.Activate(b, returnLease, wb);
             long beforeReturn = wb.Gold; int writes = 0;
             fleet.Ledger.SaveOverride = async st => { if (++writes == 2) throw new IOException("Injected settlement checkpoint failure."); await fleet.Files.SaveEconomy(st); };

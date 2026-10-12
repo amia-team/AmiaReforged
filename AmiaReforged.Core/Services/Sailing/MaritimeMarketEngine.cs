@@ -108,8 +108,9 @@ public static class MaritimeMarketEngine
     {
         if (quantity <= 0 || !state.Markets.TryGetValue(portId, out var port) || !port.Goods.TryGetValue(item, out var good))
             throw new InvalidOperationException("Unknown market/good or invalid quantity.");
-        if (buys && (quantity > good.Stock || ship.Cargo.Sum(c => (long)c.Quantity) + quantity > capacity))
-            throw new InvalidOperationException("Insufficient stock or ship cargo capacity.");
+        if (buys && quantity > good.Stock) throw new InvalidOperationException("Insufficient market stock for this quantity.");
+        if (buys && ship.Cargo.Sum(c => (long)c.Quantity) + quantity > capacity)
+            throw new InvalidOperationException("Your ship's cargo hold is full for this quantity.");
         if (!buys && (quantity > Cargo(ship, item) || good.Stock + (long)quantity > good.MaximumStock))
             throw new InvalidOperationException("Insufficient cargo or port storage capacity.");
         long total = 0;

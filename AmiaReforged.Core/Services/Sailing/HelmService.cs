@@ -35,6 +35,7 @@ public class HelmService : IDisposable
     private readonly ShipMovementService _movement;
     private readonly ShipPortService _ports;
     private readonly ShipRetrievalNuiService _retrieval;
+    private readonly ShipPartyTransitionService _partyTravel;
     private IReadOnlyCollection<ShipState> Ships => _registry.GetShips();
     private readonly ShipSpellEffectStateService _shipSpellEffectStateService;
     private readonly Dictionary<string, string> _playerShips = new();
@@ -111,12 +112,13 @@ public class HelmService : IDisposable
         ShipTradeNuiService tradeNui,
         ShipSpellEffectStateService shipSpellEffectStateService,
         ShipStorageService shipStorageService,
-        SailingAreaService sailingAreaService)
+        SailingAreaService sailingAreaService, ShipPartyTransitionService partyTravel)
     {
         _registry = registry;
         _movement = movement;
         _ports = ports;
         _retrieval = retrieval;
+        _partyTravel = partyTravel;
         _shipRoutePlannerService =
         shipRoutePlannerService;
 
@@ -396,14 +398,14 @@ public class HelmService : IDisposable
         }
     }
 
-    private void HandleBoardTestClick(PlaceableEvents.OnLeftClick evt) => ObserveTransfer(_physicalShipService.BoardShipAsync("Sea Sprite", evt.ClickedBy));
+    private void HandleBoardTestClick(PlaceableEvents.OnLeftClick evt)
+    { if (GetShip("Sea Sprite") is { } ship) _partyTravel.OpenBoarding(evt.ClickedBy, ship, evt.Placeable); }
     private void HandleBoardingPointClick(PlaceableEvents.OnLeftClick evt)
     {
         NwPlayer player = evt.ClickedBy;
         string? shipName = player.LoginCreature?.GetObjectVariable<LocalVariableString>("SAILING_DOCKED_SHIP").Value;
         if (shipName == null || GetShip(shipName) is not { } ship) return;
-        if (ship.IsStored && ship.StoredPortId != null) ObserveTransfer(_ports.RetrieveAsync(ship, ship.StoredPortId, player));
-        else ObserveTransfer(_physicalShipService.BoardShipAsync(shipName, player));
+        _partyTravel.OpenBoarding(player, ship, evt.Placeable);
     }
 
     private static void NotifyHelmsman(
