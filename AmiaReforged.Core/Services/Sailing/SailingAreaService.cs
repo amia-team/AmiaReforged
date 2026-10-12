@@ -55,12 +55,12 @@ public class SailingAreaService
             NorthEntry = CreateLocation(
                 "ocean_01",
                 80.0f,
-                5.0f),
+                635.0f),
 
             SouthEntry = CreateLocation(
                 "ocean_01",
                 80.0f,
-                155.0f),
+                5.0f),
 
             EastEntry = CreateLocation(
             "ocean_01",

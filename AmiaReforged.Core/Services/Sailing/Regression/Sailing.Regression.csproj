@@ -1,0 +1,20 @@
+<Project>
+  <PropertyGroup>
+    <ArtifactsPath Condition="'$(ArtifactsPath)' == ''">$([System.IO.Path]::Combine($([System.IO.Path]::GetTempPath()), 'amia-sailing-regression'))</ArtifactsPath>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion><UseAppHost>false</UseAppHost>
+    <DefineConstants>$(DefineConstants);SAILING_REGRESSION</DefineConstants>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../AmiaReforged.Core.csproj" AdditionalProperties="ArtifactsPath=$(ArtifactsPath);UseArtifactsOutput=true" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.11" />
+    <Compile Include="Regression.cs" /><Compile Include="RepositoryIntegration.cs" /><Compile Include="CompletionChecks.cs" /><Compile Include="StartupChecks.cs" /><Compile Include="SeaSpriteStorageChecks.cs" /><Compile Include="DeferredTransferChecks.cs" /><Compile Include="MaritimeChecks.cs" /><Compile Include="DockyardNuiChecks.cs" /><Compile Include="CutterRentalChecks.cs" /><Compile Include="CutterActivationChecks.cs" /><Compile Include="ShipExitChecks.cs" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

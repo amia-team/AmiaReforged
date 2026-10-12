@@ -10,6 +10,22 @@ public sealed class ShipStorageService
     private static readonly Logger Log =
         LogManager.GetCurrentClassLogger();
 
+    /// <summary>
+    /// Seeds a configured new ship at its port. An existing record, even an
+    /// invalid one, must be restored or repaired rather than replaced by defaults.
+    /// </summary>
+    public bool InitializeDefaultStorage(ShipState ship, SavedShipState? saved, IslandLocation? port)
+    {
+        if (saved != null || port == null || !StoreShip(ship, port.Id)) return false;
+        ship.AreaResRef = port.OceanArea;
+        ship.X = port.OceanX;
+        ship.Y = port.OceanY;
+        ship.HelmsmanPCKey = null;
+        ship.CanDock = false;
+        ship.NearbyIslandId = null;
+        return true;
+    }
+
     public bool StoreShip(
         ShipState ship,
         string portId)
@@ -97,7 +113,7 @@ public IEnumerable<ShipState> GetStoredShips(
 
     return ships.Where(
         ship =>
-            ship.IsStored &&
+            ship.IsStored && !ship.IsInitializing && !ship.IsDocking &&
             string.Equals(
                 ship.StoredPortId,
                 portId,

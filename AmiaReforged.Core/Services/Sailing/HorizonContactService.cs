@@ -13,15 +13,9 @@ public sealed class HorizonContactService
         LogManager.GetCurrentClassLogger();
 
    
-    private const string MerchantAreaResRef =
-    "ocean_01";
-
-private const float MerchantX =
-    120.0f;
-
-private const float MerchantY =
-    100.0f;
 private readonly OceanContactService _oceanContactService;
+private readonly ShipRegistryService _registry;
+private readonly ShipVisibilityService _visibility;
 
     public sealed class SailingEncounter
 {
@@ -36,10 +30,12 @@ private readonly OceanContactService _oceanContactService;
 }  
 
    public HorizonContactService(
-    OceanContactService oceanContactService)
+    OceanContactService oceanContactService, ShipRegistryService registry, ShipVisibilityService visibility)
 {
     _oceanContactService =
         oceanContactService;
+    _registry = registry;
+    _visibility = visibility;
 
     //Log.Info(
         //"Horizon Contact Service initialized.");
@@ -163,36 +159,21 @@ private static float GetDistance(
         deltaX * deltaX +
         deltaY * deltaY);
 }
-public string BuildHorizonString(
-    ShipState ship)
+public string BuildHorizonString(ShipState ship)
 {
-    if (!string.Equals(
-            ship.AreaResRef,
-            MerchantAreaResRef,
-            StringComparison.OrdinalIgnoreCase))
+    if (!ship.IsActiveWorld) return "No contacts";
+    var contacts = _oceanContactService.GetVisibleContacts(ship)
+        .Select(c => (c.Name, c.AreaResRef, c.X, c.Y))
+        .Concat(_visibility.GetVisibleShips(ship, _registry.GetShips())
+            .Select(c => (c.Ship.ShipName, c.Ship.AreaResRef, c.Ship.X, c.Ship.Y))).ToArray();
+    if (contacts.Length == 0) return "No contacts";
+    char[] strip = "─────────".ToCharArray();
+    foreach (var contact in contacts)
     {
-        return "No contacts";
+        float x = GetHorizonX(ship, contact.Item2, contact.Item3, contact.Item4);
+        int slot = Math.Clamp((int)Math.Round((x - 2f) / 2f), 0, 8);
+        strip[slot] = '▲';
     }
-
-    float x =
-        GetHorizonX(
-            ship,
-            MerchantAreaResRef,
-            MerchantX,
-            MerchantY);
-
-    int slot =
-        Math.Clamp(
-            (int)Math.Round((x - 2f) / 2f),
-            0,
-            8);
-
-    char[] strip =
-        "─────────".ToCharArray();
-
-    strip[slot] = '▲';
-
-    return $"Port {new string(strip)} Starboard";
+    return $"Port {new string(strip)} Starboard\n" + string.Join(", ", contacts.Select(c => c.Item1));
 }
-
 }

@@ -6,7 +6,7 @@ using NLog;
 namespace AmiaReforged.Core.Services.Sailing;
 
 [ServiceBinding(typeof(SailingNuiService))]
-public class SailingNuiService
+public class SailingNuiService : IDisposable
 {
     private const string WindowId = "sailing";
     private const float MapWorldSize =
@@ -21,7 +21,22 @@ public class SailingNuiService
     private readonly Dictionary<string, NuiWindowToken> _tokens =
         new();
 
-    private NuiGroup? _mapGroup;
+    private readonly Dictionary<string, NuiGroup> _mapGroups = new();
+    private readonly ShipTargetSelection _selection = new();
+    private readonly ShipRegistryService _registry;
+    private readonly Dictionary<string, SailingMapView> _mapViews = new();
+    private readonly NuiBind<string> _targetNames = new("sailing_target_names");
+    private readonly NuiBind<bool> _targetEnabled = new("sailing_target_enabled");
+    private readonly NuiBind<int> _targetCount = new("sailing_target_count");
+
+    public bool OwnsEvent(Anvil.API.Events.ModuleEvents.OnNuiEvent evt) =>
+        _tokens.TryGetValue(evt.Player.PlayerName, out NuiWindowToken token) && token.Token == evt.Token.Token;
+
+    public ShipState? GetSelectedSailingTarget(NwPlayer player, ShipState source) =>
+        _selection.GetSelected(player.PlayerName, source, _shipEncounterService.GetNearbyShips(source));
+
+    public void SelectTarget(NwPlayer player, ShipState source, int row) =>
+        _selection.Select(player.PlayerName, source, row, _shipEncounterService.GetNearbyShips(source));
 
     // ---------------------------------------------------------------------
     // Binds
@@ -67,27 +82,8 @@ public class SailingNuiService
 
     private readonly NuiBind<string> _horizonBind =
         new("ship_horizon");
-    private readonly NuiBind<string>
-        _tradePlayerGoldBind =
-            new("trade_player_gold");
-
-    private readonly NuiBind<string>
-        _tradePlayerCargoBind =
-            new("trade_player_cargo");
-
-    private readonly NuiBind<string>
-        _tradeMerchantGoldBind =
-            new("trade_merchant_gold");
-
-    private readonly NuiBind<string>
-        _tradeMerchantCargoBind =
-            new("trade_merchant_cargo");
     private readonly NuiBind<bool> _dockEnabledBind =
         new("dock_enabled");
-
-    private readonly Dictionary<string, string>
-    _activeTradeMerchants =
-        new(StringComparer.Ordinal);
 
     //private readonly OceanContactService
     //    _oceanContactService;
@@ -131,6 +127,7 @@ public class SailingNuiService
     // ---------------------------------------------------------------------
 
     public SailingNuiService(
+    ShipRegistryService registry,
     ShipEncounterService shipEncounterService,
     ShipBoardingService shipBoardingService,
     ShipCombatService shipCombatService,
@@ -144,6 +141,7 @@ public class SailingNuiService
     //HelmService helmService,
     ShipNavigationService shipNavigationService)
     {
+        _registry = registry;
         _shipEncounterService =
             shipEncounterService;
 
@@ -348,7 +346,7 @@ public class SailingNuiService
             new NuiRect(0f, 0f, 800f, 800f))
             ]
         };
-        _mapGroup = new NuiGroup
+        NuiGroup mapGroup = new NuiGroup
         {
             Id = "sailing_map_group",
             Width = 800f,
@@ -420,6 +418,7 @@ Button(
         movementRowThree.Children.Add(
             dockButton);
         // -----------------------------------------------------------------
+
         // Horizon
         // -----------------------------------------------------------------
 
@@ -591,6 +590,7 @@ Button(
 
         actionRow.Children.Add(
             tradeButton);
+        actionRow.Children.Add(Button("PORT MARKET", "port_market_button"));
 
         actionRow.Children.Add(
             attackButton);
@@ -645,6 +645,12 @@ Button(
         column.Children.Add(
             Spacer());
 
+        column.Children.Add(new NuiList(
+            [new NuiListTemplateCell(new NuiLabel(_targetNames)) { Width = 200f },
+             new NuiListTemplateCell(new NuiButton("SELECT") { Id = "sailing_target_select", Enabled = _targetEnabled }) { Width = 90f }],
+            _targetCount)
+        { Height = 100f });
+
         // Navigation
         column.Children.Add(
             navigationHeader);
@@ -658,7 +664,7 @@ Button(
         column.Children.Add(
             heading);
 
-        column.Children.Add(_mapGroup);
+        column.Children.Add(mapGroup);
 
         column.Children.Add(
             movementRowOne);
@@ -675,6 +681,7 @@ Button(
         column.Children.Add(
             Spacer(12.0f));
 
+        column.Children.Add(Button("HAIL CONTACT", "hail_contact_button"));
         // Horizon
         column.Children.Add(
         horizonHeader);
@@ -799,14 +806,15 @@ Button(
 
         _tokens[player.PlayerName] =
             token;
+        _mapGroups[player.PlayerName] = mapGroup;
 
         Update(
             player,
             ship);
 
         //Log.Info(
-            //$"Sailing NUI opened for player " +
-            //$"{player.PlayerName}.");
+        //$"Sailing NUI opened for player " +
+        //$"{player.PlayerName}.");
 
 
     }
@@ -820,7 +828,7 @@ Button(
         ShipState ship,
         IReadOnlyCollection<ShipState>? ships = null)
     {
-        ships ??= Array.Empty<ShipState>();
+        ships ??= _registry.GetShips();
 
         if (!_tokens.TryGetValue(
                 player.PlayerName,
@@ -835,13 +843,13 @@ Button(
         }
 
         //Log.Info(
-            //$"Sailing NUI updating: " +
-            //$"Player={player.PlayerName}, " +
-            //$"Ship={ship.ShipName}, " +
-            //$"Area={ship.AreaResRef}, " +
-            //$"X={ship.X:0.00}, " +
-            //$"Y={ship.Y:0.00}, " +
-            //$"Heading={ship.Heading}");
+        //$"Sailing NUI updating: " +
+        //$"Player={player.PlayerName}, " +
+        //$"Ship={ship.ShipName}, " +
+        //$"Area={ship.AreaResRef}, " +
+        //$"X={ship.X:0.00}, " +
+        //$"Y={ship.Y:0.00}, " +
+        //$"Heading={ship.Heading}");
 
         // -----------------------------------------------------------------
         // Navigation
@@ -864,11 +872,15 @@ Button(
         // Sailing Map
         // -----------------------------------------------------------------
 
-        if (_mapGroup != null)
+        SailingMapView view = new(ship.ShipId, ship.AreaResRef, ship.X, ship.Y, ship.Heading, ship.SpritePrefix,
+            _chartDiscoveryService.GetRevision(player), _shipVisibilityService.GetVisibleShips(ship, ships)
+                .Select(c => new SailingMapContact(c.Ship.ShipId, c.Ship.X, c.Ship.Y, c.Ship.Heading, c.Ship.SpritePrefix))
+                .OrderBy(c => c.ShipId, StringComparer.Ordinal).ToArray());
+        if ((!_mapViews.TryGetValue(player.PlayerName, out SailingMapView? previous) || !previous.Matches(view)) &&
+            _mapGroups.TryGetValue(player.PlayerName, out NuiGroup? mapGroup))
         {
-            token.SetGroupLayout(
-                _mapGroup,
-                BuildMapCanvas(player, ship, ships));
+            token.SetGroupLayout(mapGroup, BuildMapCanvas(player, ship, ships));
+            _mapViews[player.PlayerName] = view;
         }
 
         // -----------------------------------------------------------------
@@ -881,9 +893,7 @@ Button(
 
 
 
-        token.SetBindValue(
-            _horizonBind,
-            _horizonContactService.BuildHorizonString(ship));
+
 
         // -----------------------------------------------------------------
         // Hull
@@ -891,7 +901,7 @@ Button(
 
         token.SetBindValue(
             _hullBind,
-            $"Hull Integrity: {ship.Hull}%");
+            $"Hull Integrity: {ship.Hull}/{ship.MaximumHull}");
 
         // -----------------------------------------------------------------
         // Weapon
@@ -899,7 +909,7 @@ Button(
 
         ShipWeapon weapon =
             _shipCombatService.GetWeapon(
-                ship.WeaponResRef);
+                ship);
 
         token.SetBindValue(
             _weaponBind,
@@ -927,158 +937,26 @@ Button(
         {
             token.SetBindValue(
                 _weaponStatusBind,
-                "Weapon Status: READY");
+                ship.AllowsWeapons && ship.WeaponResRef != "" ? "Weapon Status: READY" : "Weapon Status: UNARMED");
         }
 
-        // -----------------------------------------------------------------
-        // Encounter
-        // -----------------------------------------------------------------
-
-        if (ship.Hull <= 0)
-        {
-            token.SetBindValue(_statusBind, "Status: DISABLED");
-            token.SetBindValue(
-                _encounterBind,
-                "Target: NONE");
-
-            token.SetBindValue(
-                _encounterDistanceBind,
-                "Distance: --");
-        }
-        else
-        {
-            OceanContact? nearestContact = _oceanContactService.GetClosestContact(ship);
-            if (nearestContact != null)
-            {
-                float distance =
-                    MathF.Sqrt(
-                        MathF.Pow(nearestContact.X - ship.X, 2) +
-                        MathF.Pow(nearestContact.Y - ship.Y, 2));
-
-                token.SetBindValue(
-                    _statusBind,
-                    "Status: CONTACT");
-
-                token.SetBindValue(
-                    _encounterBind,
-                    $"Target: {nearestContact.Name}");
-
-                token.SetBindValue(
-                    _encounterDistanceBind,
-                    $"Distance: {distance:0.0}m");
-            }
-            else
-            {
-                List<ShipState> nearbyShips =
-                    _shipEncounterService
-                        .GetNearbyShips(ship)
-                        .ToList();
-
-                if (nearbyShips.Count > 0)
-                {
-                    token.SetBindValue(
-                        _statusBind,
-                        "Status: ENCOUNTER");
-
-                    token.SetBindValue(
-                        _encounterBind,
-                        $"Ships Nearby: {nearbyShips.Count}");
-
-                    token.SetBindValue(
-                        _encounterDistanceBind,
-                        string.Join(
-                            "\n",
-                            nearbyShips.Select(
-                                nearby =>
-                                    nearby.ShipName)));
-
-                    token.SetBindValue(
-                        _dockEnabledBind,
-                        ship.CanDock);
-                }
-                else
-                {
-                    token.SetBindValue(
-                        _statusBind,
-                        ship.Underway
-                            ? "Status: UNDERWAY"
-                            : "Status: STOPPED");
-
-                    token.SetBindValue(
-                        _encounterBind,
-                        "Target: NONE");
-
-                    token.SetBindValue(
-                        _encounterDistanceBind,
-                        "Distance: --");
-                }
-            }
-            // -----------------------------------------------------------------
-            // Merchant Trade
-            // -----------------------------------------------------------------
-
-            if (_shipEncounterService.TryGetTarget(
-                    ship,
-                    out ShipState? tradeTarget,
-                    out ShipEncounter? tradeEncounter) &&
-                tradeTarget != null &&
-                tradeEncounter != null &&
-                tradeTarget.ShipType == ShipType.Merchant)
-            {
-
-                string cargoText;
-
-                if (tradeTarget.Cargo.Count == 0)
-                {
-                    cargoText =
-                        "Cargo: Empty";
-                }
-                else
-                {
-                    cargoText =
-                        "Cargo: " +
-                        string.Join(
-                            ", ",
-                            tradeTarget.Cargo.Select(
-                                cargo =>
-                                    $"{cargo.ItemId}={cargo.Quantity}"));
-                }
-
-
-                // -----------------------------------------------------------------
-                // Boarding
-                // -----------------------------------------------------------------
-
-                if (_shipBoardingService
-                    .TryGetRequestForPlayer(
-                        player.PlayerName,
-                        out ShipBoardingRequest?
-                            incomingRequest) &&
-                incomingRequest != null)
-                {
-                    token.SetBindValue(
-                        _boardingBind,
-                        $"BOARDING REQUEST: " +
-                        $"{incomingRequest.RequestingShip.ShipName}");
-                }
-                else if (_shipBoardingService
-                             .HasRequestFromPlayer(
-                                 player.PlayerName))
-                {
-                    token.SetBindValue(
-                        _boardingBind,
-                        "BOARDING REQUEST SENT");
-                }
-                else
-                {
-                    token.SetBindValue(
-                        _boardingBind,
-                        "Boarding: NONE");
-                }
-            }
-        }
+        token.SetBindValue(_dockEnabledBind, ship.IsActiveWorld && !ship.IsDisabled && ship.CanDock);
+        List<ShipState> nearby = _shipEncounterService.GetNearbyShips(ship).ToList();
+        _selection.Refresh(player.PlayerName, ship, nearby);
+        token.SetBindValues(_targetNames, _selection.Rows(player.PlayerName).Select(s => nearby.Contains(s) ? s.ShipName : $"{s.ShipName} (departed)").ToList());
+        token.SetBindValues(_targetEnabled, _selection.Rows(player.PlayerName).Select(nearby.Contains));
+        token.SetBindValue(_targetCount, _selection.Rows(player.PlayerName).Count);
+        ShipState? selected = GetSelectedSailingTarget(player, ship);
+        token.SetBindValue(_statusBind, ship.IsDisabled ? "Status: DISABLED" :
+            nearby.Count > 0 ? "Status: ENCOUNTER" : ship.Underway ? "Status: UNDERWAY" : "Status: STOPPED");
+        token.SetBindValue(_encounterBind, selected == null ? "Target: NONE" : $"Target: {selected.ShipName}");
+        token.SetBindValue(_encounterDistanceBind, selected == null ? "Distance: --" :
+            $"Distance: {ShipActionRules.Distance(ship, selected):0.0}m");
+        if (_shipBoardingService.TryGetRequestForPlayer(player.PlayerName, out ShipBoardingRequest? incoming) && incoming != null)
+            token.SetBindValue(_boardingBind, $"BOARDING REQUEST: {incoming.RequestingShip.ShipName}");
+        else token.SetBindValue(_boardingBind, _shipBoardingService.HasRequestFromPlayer(player.PlayerName) ?
+            "BOARDING REQUEST SENT" : "Boarding: NONE");
     }
-
 
     // ---------------------------------------------------------------------
     // Live Sailing Map
@@ -1089,9 +967,9 @@ Button(
         ShipState ship,
         IReadOnlyCollection<ShipState>? ships = null)
     {
-        ships ??= Array.Empty<ShipState>();
+        ships ??= _registry.GetShips();
         //Log.Info(
-            //$"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
+        //$"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
         float playerDrawX =
             (ship.X / MapWorldSize) * 800.0f;
 
@@ -1110,74 +988,15 @@ Button(
                 800.0f))
         ];
 
-        // -------------------------------------------------------------
-        // Draw islands.
-        // -------------------------------------------------------------
-        /*  foreach (ChartLandmark landmark in
-                   _chartLandmarkService.GetLandmarks(ship.AreaResRef))
-          {
-              float drawX =
-                  (landmark.X / MapWorldSize) * 800f;
+        foreach (ChartLandmark landmark in _chartLandmarkService.GetLandmarks(ship.AreaResRef))
+        {
+            if (string.IsNullOrWhiteSpace(landmark.Sprite) || !float.IsFinite(landmark.X) || !float.IsFinite(landmark.Y)) continue;
+            drawList.Add(new NuiDrawListImage(landmark.Sprite, new NuiRect(
+                landmark.X / MapWorldSize * 800f - landmark.Width / 2,
+                800f - landmark.Y / MapWorldSize * 800f - landmark.Height / 2, landmark.Width, landmark.Height)));
+        }
+        // Fog is drawn above landmarks so undiscovered parts remain covered.
 
-              float drawY =
-                  800f -
-                  ((landmark.Y / MapWorldSize) * 800f);
-
-              drawList.Add(
-                  new NuiDrawListImage(
-                      landmark.Sprite,
-                      new NuiRect(
-                          drawX - 64f,
-                          drawY - 64f,
-                          128f,
-                          128f)));
-          }
-
-                  // -------------------------------------------------------------
-                  // Draw discovered islands.
-                  // -------------------------------------------------------------
-                  foreach (SailingObstacle obstacle in
-                   _shipObstacleService.GetObstacles(ship.AreaResRef))
-          {
-              int gridX =
-                  Math.Clamp((int)(obstacle.MinX / 10f), 0, 15);
-
-             int gridY =
-              15 -
-              Math.Clamp((int)(obstacle.MinY / 10f), 0, 15);
-
-              if (!_chartDiscoveryService.IsDiscovered(
-                      player,
-                      ship.AreaResRef,
-                      gridX,
-                      gridY))
-              {
-                  continue;
-              }
-
-              float drawX =
-                  (obstacle.MinX / MapWorldSize) * 800f;
-
-              float drawY =
-                  800f -
-                  ((obstacle.MaxY / MapWorldSize) * 800f);
-
-              float width =
-                  ((obstacle.MaxX - obstacle.MinX) / MapWorldSize) * 800f;
-
-              float height =
-                  ((obstacle.MaxY - obstacle.MinY) / MapWorldSize) * 800f;
-
-              drawList.Add(
-                  new NuiDrawListImage(
-                      "chart_island",
-                      new NuiRect(
-                          drawX,
-                          drawY,
-                          width,
-                          height)));
-          }
-   */
         // -------------------------------------------------------------
         // Debug fog-of-war overlay.
         // -------------------------------------------------------------
@@ -1211,32 +1030,13 @@ Button(
         // -------------------------------------------------------------
         // Draw permanent chart markers.
         // -------------------------------------------------------------
-        /*foreach (ChartMarker marker in
-                 _chartMarkerService.GetMarkers(ship.AreaResRef))
+        foreach (ChartMarker marker in _chartMarkerService.GetMarkers(ship.AreaResRef))
         {
-            float drawX =
-                (marker.X / MapWorldSize) * 800f;
-
-            float drawY =
-                800f -
-                ((marker.Y / MapWorldSize) * 800f);
-
-            const float markerSize = 28f;
-
-            drawList.Add(
-                new NuiDrawListImage(
-                    "chart_dock",
-                    new NuiRect(
-                        drawX,
-                        drawY,
-                        markerSize,
-                        markerSize)));
-        }*/     // -------------------------------------------------------------
-                // Draw other visible ships first.
-                // -------------------------------------------------------------
-                // -------------------------------------------------------------
-                // Draw other visible ships first.
-                // -------------------------------------------------------------
+            int gx = Math.Clamp((int)(marker.X / 40f), 0, 15), gy = 15 - Math.Clamp((int)(marker.Y / 40f), 0, 15);
+            if (!_chartDiscoveryService.IsDiscovered(player, ship.AreaResRef, gx, gy) || string.IsNullOrWhiteSpace(marker.Sprite)) continue;
+            drawList.Add(new NuiDrawListImage(marker.Sprite, new NuiRect(marker.X / MapWorldSize * 800f,
+                800f - marker.Y / MapWorldSize * 800f, marker.Size, marker.Size)));
+        }
 
         //Log.Info($"BuildMapCanvas: Viewer={ship.ShipName}, ShipCount={ships.Count}");
 
@@ -1516,19 +1316,16 @@ Button(
     // Close
     // ---------------------------------------------------------------------
 
-    public void Close(
-        NwPlayer player)
+    public void Close(NwPlayer player)
     {
-        if (!_tokens.TryGetValue(
-                player.PlayerName,
-                out NuiWindowToken token))
-        {
-            return;
-        }
-
-        token.Close();
-
-        _tokens.Remove(
-            player.PlayerName);
+        _selection.Clear(player.PlayerName);
+        _mapGroups.Remove(player.PlayerName);
+        _mapViews.Remove(player.PlayerName);
+        if (_tokens.Remove(player.PlayerName, out NuiWindowToken token)) SailingWindowLifecycle.Close(token);
+    }
+    public void Dispose()
+    {
+        foreach (NwPlayer player in _tokens.Values.Select(t => t.Player).ToArray()) Close(player);
+        _tokens.Clear(); _mapGroups.Clear(); _mapViews.Clear();
     }
 }

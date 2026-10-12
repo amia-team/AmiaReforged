@@ -6,7 +6,7 @@ using NLog;
 namespace AmiaReforged.Core.Services.Sailing;
 
 [ServiceBinding(typeof(ShipCrewService))]
-public class ShipCrewService
+public class ShipCrewService : IDisposable
 {
     private static readonly Logger Log =
         LogManager.GetCurrentClassLogger();
@@ -25,14 +25,11 @@ public class ShipCrewService
         _physicalShipService =
             physicalShipService;
 
-     //   _physicalShipService.PlayerBoarded +=
-      //      HandlePlayerBoarded;
-//handle this later
-      //  _physicalShipService.PlayerLeft +=
-       //     HandlePlayerLeft;
+        _physicalShipService.PlayerBoarded += HandlePlayerBoarded;
+        _physicalShipService.PlayerDetached += HandlePlayerDetached;
 
         //Log.Info(
-            //"Ship Crew Service initialized.");
+        //"Ship Crew Service initialized.");
     }
 
     // -----------------------------------------------------------------
@@ -44,9 +41,9 @@ public class ShipCrewService
         NwPlayer player)
     {
         //Log.Info(
-            //$"Ship crew received boarding event: " +
-            //$"Ship={shipName}, " +
-            //$"Player={player.PlayerName}");
+        //$"Ship crew received boarding event: " +
+        //$"Ship={shipName}, " +
+        //$"Player={player.PlayerName}");
 
         AddPassenger(
             shipName,
@@ -58,9 +55,9 @@ public class ShipCrewService
         NwPlayer player)
     {
         //Log.Info(
-            //$"Ship crew received departure event: " +
-            //$"Ship={shipName}, " +
-            //$"Player={player.PlayerName}");
+        //$"Ship crew received departure event: " +
+        //$"Ship={shipName}, " +
+        //$"Player={player.PlayerName}");
 
         RemoveMember(
             shipName,
@@ -71,57 +68,60 @@ public class ShipCrewService
     // Add Passenger
     // -----------------------------------------------------------------
 
+    public bool IsPlayerAboard(string shipName, string playerName) =>
+        _physicalShipService.IsPlayerAboard(shipName, playerName);
+
     public bool AddPassenger(
     string shipName,
     NwPlayer player)
-{
-    if (!_physicalShipService.IsPlayerAboard(
-            shipName,
-            player.PlayerName))
     {
-        Log.Warn(
-            $"Cannot add passenger " +
-            $"'{player.PlayerName}' to '{shipName}': " +
-            "player is not aboard the ship.");
-
-        return false;
-    }
-
-    ShipCrewMember? existingMember =
-        GetCrewMember(
-            shipName,
-            player.PlayerName);
-
-    if (existingMember != null)
-    {
-        if (existingMember.Role ==
-            ShipCrewRole.Captain)
+        if (!_physicalShipService.IsPlayerAboard(
+                shipName,
+                player.PlayerName))
         {
-            //Log.Info(
+            Log.Warn(
+                $"Cannot add passenger " +
+                $"'{player.PlayerName}' to '{shipName}': " +
+                "player is not aboard the ship.");
+
+            return false;
+        }
+
+        ShipCrewMember? existingMember =
+            GetCrewMember(
+                shipName,
+                player.PlayerName);
+
+        if (existingMember != null)
+        {
+            if (existingMember.Role ==
+                ShipCrewRole.Captain)
+            {
+                //Log.Info(
                 //$"Player '{player.PlayerName}' " +
                 //$"is already captain of '{shipName}'. " +
                 //"Preserving captain role.");
 
-            return true;
-        }
+                return true;
+            }
 
-        if (existingMember.Role ==
-            ShipCrewRole.Crew)
-        {
-            //Log.Info(
+            if (existingMember.Role ==
+                ShipCrewRole.Crew)
+            {
+                //Log.Info(
                 //$"Player '{player.PlayerName}' " +
                 //$"is already crew of '{shipName}'. " +
                 //"Preserving crew role.");
 
-            return true;
+                return true;
+            }
         }
-    }
 
-    return SetRole(
-        shipName,
-        player.PlayerName,
-        ShipCrewRole.Passenger);
-}
+        return SetRole(
+            shipName,
+            player.PlayerName,
+            ShipCrewRole.Passenger);
+    }
     // -----------------------------------------------------------------
     // Set Crew
     // -----------------------------------------------------------------
@@ -183,9 +183,9 @@ public class ShipCrewService
                     ShipCrewRole.Crew;
 
                 //Log.Info(
-                    //$"Previous captain changed to crew: " +
-                    //$"Ship={shipName}, " +
-                    //$"Player={member.PlayerName}");
+                //$"Previous captain changed to crew: " +
+                //$"Ship={shipName}, " +
+                //$"Player={member.PlayerName}");
             }
         }
 
@@ -233,10 +233,10 @@ public class ShipCrewService
         }
 
         //Log.Info(
-            //$"Ship crew role assigned: " +
-            //$"Ship={shipName}, " +
-            //$"Player={playerName}, " +
-            //$"Role={role}");
+        //$"Ship crew role assigned: " +
+        //$"Ship={shipName}, " +
+        //$"Player={playerName}, " +
+        //$"Role={role}");
 
         return true;
     }
@@ -264,9 +264,9 @@ public class ShipCrewService
         if (removed)
         {
             //Log.Info(
-                //$"Ship crew member removed: " +
-                //$"Ship={shipName}, " +
-                //$"Player={playerName}");
+            //$"Ship crew member removed: " +
+            //$"Ship={shipName}, " +
+            //$"Player={playerName}");
 
             if (crew.Count == 0)
             {
@@ -323,7 +323,7 @@ public class ShipCrewService
             return Array.Empty<ShipCrewMember>();
         }
 
-        return crew.Values;
+        return crew.Values.ToArray();
     }
 
     public ShipCrewMember? GetCaptain(
@@ -366,5 +366,16 @@ public class ShipCrewService
         }
 
         return crew;
+    }
+    private void HandlePlayerDetached(string ship, string player) => RemoveMember(ship, player);
+
+    public bool IsPlayerPresent(string shipName, NwPlayer player) =>
+        _physicalShipService.IsPlayerPresent(shipName, player);
+
+    public void Dispose()
+    {
+        _physicalShipService.PlayerBoarded -= HandlePlayerBoarded;
+        _physicalShipService.PlayerDetached -= HandlePlayerDetached;
+        _crewByShip.Clear();
     }
 }

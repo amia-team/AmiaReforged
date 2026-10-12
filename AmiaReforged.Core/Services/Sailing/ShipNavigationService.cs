@@ -24,12 +24,12 @@ public class ShipNavigationService
     // -----------------------------------------------------------------
     private readonly SailingAreaService _sailingAreaService;
     private readonly Dictionary<
-    string,
+    ShipState,
     ShipNavigationRoute>
     _routes = new();
 
     private readonly Dictionary<
-        string,
+        ShipState,
         Heading>
         _avoidanceHeadings =
             new();
@@ -50,7 +50,7 @@ public class ShipNavigationService
         ShipState ship,
         ShipNavigationRoute route)
     {
-        _routes[ship.ShipName] = route;
+        _routes[ship] = route;
 
         ShipNavigationWaypoint? waypoint =
             route.CurrentWaypoint;
@@ -66,20 +66,34 @@ public class ShipNavigationService
         }
 
         //Log.Info(
-            //$"Navigation route set: " +
-            //$"Ship={ship.ShipName}, " +
-            //$"Waypoints={route.Waypoints.Count}");
+        //$"Navigation route set: " +
+        //$"Ship={ship}, " +
+        //$"Waypoints={route.Waypoints.Count}");
+    }
+
+    public void PruneRemovedShips(IEnumerable<ShipState> fleet)
+    {
+        HashSet<ShipState> current = fleet.ToHashSet();
+        foreach (ShipState ship in _routes.Keys.Where(s => !current.Contains(s)).ToArray()) _routes.Remove(ship);
+        foreach (ShipState ship in _avoidanceHeadings.Keys.Where(s => !current.Contains(s)).ToArray()) _avoidanceHeadings.Remove(ship);
+    }
+
+    public void CancelNavigation(ShipState ship)
+    {
+        ClearRoute(ship);
+        ClearDestination(ship);
+        ship.Underway = false;
     }
 
     public void ClearRoute(
         ShipState ship)
     {
         if (_routes.Remove(
-                ship.ShipName))
+                ship))
         {
             //Log.Info(
-                //$"Navigation route cleared: " +
-                //$"Ship={ship.ShipName}");
+            //$"Navigation route cleared: " +
+            //$"Ship={ship}");
         }
     }
 
@@ -88,7 +102,7 @@ public class ShipNavigationService
         ShipState ship)
     {
         if (_routes.TryGetValue(
-                ship.ShipName,
+                ship,
                 out ShipNavigationRoute? route))
         {
             return route;
@@ -115,21 +129,18 @@ public class ShipNavigationService
             return false;
         }
 
-        if (route.IsComplete)
-        {
-            return false;
-        }
+        if (route.IsComplete) return true;
 
         ShipNavigationWaypoint? waypoint =
             route.CurrentWaypoint;
 
         //Log.Info(
-            //$"Navigation waypoint reached: " +
-            //$"Ship={ship.ShipName}, " +
-            //$"Waypoint={route.CurrentWaypointIndex}, " +
-            //$"Area={waypoint?.AreaResRef}, " +
-            //$"X={waypoint?.X:0.00}, " +
-            //$"Y={waypoint?.Y:0.00}");
+        //$"Navigation waypoint reached: " +
+        //$"Ship={ship}, " +
+        //$"Waypoint={route.CurrentWaypointIndex}, " +
+        //$"Area={waypoint?.AreaResRef}, " +
+        //$"X={waypoint?.X:0.00}, " +
+        //$"Y={waypoint?.Y:0.00}");
 
         route.CurrentWaypointIndex++;
 
@@ -143,8 +154,8 @@ public class ShipNavigationService
             route.CurrentWaypointIndex = 0;
 
             //Log.Info(
-                //$"Navigation route looping: " +
-                //$"Ship={ship.ShipName}");
+            //$"Navigation route looping: " +
+            //$"Ship={ship}");
         }
 
         // -------------------------------------------------------------
@@ -154,22 +165,22 @@ public class ShipNavigationService
         if (route.IsComplete)
         {
             //Log.Info(
-                //$"Navigation route complete: " +
-                //$"Ship={ship.ShipName}");
+            //$"Navigation route complete: " +
+            //$"Ship={ship}");
 
             return true;
         }
 
-        ShipNavigationWaypoint next =
-            route.CurrentWaypoint!;
+        ShipNavigationWaypoint next = route.CurrentWaypoint!;
+        SetDestination(ship, next.AreaResRef, next.X, next.Y, next.Z);
 
         //Log.Info(
-            //$"Navigation advancing to waypoint: " +
-            //$"Ship={ship.ShipName}, " +
-            //$"Waypoint={route.CurrentWaypointIndex}, " +
-            //$"Area={next.AreaResRef}, " +
-            //$"X={next.X:0.00}, " +
-            //$"Y={next.Y:0.00}");
+        //$"Navigation advancing to waypoint: " +
+        //$"Ship={ship}, " +
+        //$"Waypoint={route.CurrentWaypointIndex}, " +
+        //$"Area={next.AreaResRef}, " +
+        //$"X={next.X:0.00}, " +
+        //$"Y={next.Y:0.00}");
 
         return false;
     }    // -----------------------------------------------------------------
@@ -183,12 +194,12 @@ public class ShipNavigationService
         float destinationY,
         float destinationZ)
     {
-        if (string.IsNullOrWhiteSpace(
+        if (ship.IsStored || ship.IsDisabled || !float.IsFinite(destinationX) || !float.IsFinite(destinationY) || !float.IsFinite(destinationZ) || string.IsNullOrWhiteSpace(
                 destinationAreaResRef))
         {
             Log.Warn(
                 $"Cannot set navigation destination for " +
-                $"'{ship.ShipName}': destination area is empty.");
+                $"'{ship}': destination area is empty.");
 
             return false;
         }
@@ -211,16 +222,16 @@ public class ShipNavigationService
         ship.DestinationZ =
             destinationZ;
 
-        ship.IsNavigating =
-            true;
+        ship.IsNavigating = true;
+        ship.Underway = true;
 
         //Log.Info(
-            //$"Navigation destination set: " +
-            //$"Ship={ship.ShipName}, " +
-            //$"Area={ship.DestinationAreaResRef}, " +
-            //$"X={ship.DestinationX:0.00}, " +
-            //$"Y={ship.DestinationY:0.00}, " +
-            //$"Z={ship.DestinationZ:0.00}");
+        //$"Navigation destination set: " +
+        //$"Ship={ship}, " +
+        //$"Area={ship.DestinationAreaResRef}, " +
+        //$"X={ship.DestinationX:0.00}, " +
+        //$"Y={ship.DestinationY:0.00}, " +
+        //$"Z={ship.DestinationZ:0.00}");
 
         return true;
     }
@@ -247,14 +258,14 @@ public class ShipNavigationService
             false;
 
         //Log.Info(
-            //$"Navigation destination cleared: " +
-            //$"Ship={ship.ShipName}");
+        //$"Navigation destination cleared: " +
+        //$"Ship={ship}");
     }
 
     public bool IsNavigating(
         ShipState ship)
     {
-        return ship.IsNavigating &&
+        return ship.IsActiveWorld && !ship.IsDisabled && ship.IsNavigating &&
                !string.IsNullOrWhiteSpace(
                    ship.DestinationAreaResRef);
     }
@@ -274,19 +285,20 @@ public class ShipNavigationService
         // head toward the boundary that connects to it.
         // -------------------------------------------------------------
 
-        if (waypoint != null &&
+        string? targetArea = waypoint?.AreaResRef ?? ship.DestinationAreaResRef;
+        if (!string.IsNullOrEmpty(targetArea) &&
             !string.Equals(
-                waypoint.AreaResRef,
+                targetArea,
                 ship.AreaResRef,
                 StringComparison.OrdinalIgnoreCase))
         {
             if (_sailingAreaService.TryGetArea(
                     ship.AreaResRef,
-                    out SailingArea? area))
+                    out SailingArea? area) && area != null)
             {
                 if (string.Equals(
                         area.EastAreaResRef,
-                        waypoint.AreaResRef,
+                        targetArea,
                         StringComparison.OrdinalIgnoreCase))
                 {
                     return Heading.East;
@@ -294,7 +306,7 @@ public class ShipNavigationService
 
                 if (string.Equals(
                         area.WestAreaResRef,
-                        waypoint.AreaResRef,
+                        targetArea,
                         StringComparison.OrdinalIgnoreCase))
                 {
                     return Heading.West;
@@ -302,7 +314,7 @@ public class ShipNavigationService
 
                 if (string.Equals(
                         area.NorthAreaResRef,
-                        waypoint.AreaResRef,
+                        targetArea,
                         StringComparison.OrdinalIgnoreCase))
                 {
                     return Heading.North;
@@ -310,7 +322,7 @@ public class ShipNavigationService
 
                 if (string.Equals(
                         area.SouthAreaResRef,
-                        waypoint.AreaResRef,
+                        targetArea,
                         StringComparison.OrdinalIgnoreCase))
                 {
                     return Heading.South;
@@ -348,6 +360,15 @@ public class ShipNavigationService
         bool south =
             deltaY < -DestinationThreshold;
 
+        // Axis tolerances must agree with the radial arrival test. A target offset
+        // by (0.8, 0.8) is outside radius 1, even though both axes are within 1.
+        if (!east && !west && !north && !south &&
+            deltaX * deltaX + deltaY * deltaY > DestinationThreshold * DestinationThreshold)
+        {
+            east = deltaX > 0; west = deltaX < 0;
+            north = deltaY > 0; south = deltaY < 0;
+        }
+
         if (north && east) return Heading.NorthEast;
         if (north && west) return Heading.NorthWest;
         if (south && east) return Heading.SouthEast;
@@ -358,6 +379,23 @@ public class ShipNavigationService
         if (west) return Heading.West;
 
         return ship.Heading;
+    }
+
+    public float GetMovementDistance(ShipState ship, Heading heading, float maximumDistance)
+    {
+        ShipNavigationWaypoint? waypoint = GetCurrentWaypoint(ship);
+        string? area = waypoint?.AreaResRef ?? ship.DestinationAreaResRef;
+        if (!string.Equals(area, ship.AreaResRef, StringComparison.OrdinalIgnoreCase) || GetDesiredHeading(ship) != heading)
+            return maximumDistance; // Boundary travel and obstacle detours retain their configured speed.
+        float dx = MathF.Abs((waypoint?.X ?? ship.DestinationX) - ship.X);
+        float dy = MathF.Abs((waypoint?.Y ?? ship.DestinationY) - ship.Y);
+        float remaining = heading switch
+        {
+            Heading.North or Heading.South => dy,
+            Heading.East or Heading.West => dx,
+            _ => MathF.Min(dx, dy)
+        };
+        return MathF.Min(maximumDistance, remaining);
     }
 
     public bool IsWaitingForAreaTransition(
@@ -455,10 +493,10 @@ public class ShipNavigationService
                     out Heading previousAvoidance))
             {
                 //Log.Info(
-                    //$"Navigation obstacle cleared: " +
-                    //$"Ship={ship.ShipName}, " +
-                    //$"Avoidance={previousAvoidance}, " +
-                    //$"Resuming={desiredHeading}");
+                //$"Navigation obstacle cleared: " +
+                //$"Ship={ship}, " +
+                //$"Avoidance={previousAvoidance}, " +
+                //$"Resuming={desiredHeading}");
 
                 ClearAvoidanceHeading(
                     ship);
@@ -472,11 +510,11 @@ public class ShipNavigationService
         // -------------------------------------------------------------
 
         //Log.Info(
-            //$"Navigation obstacle detected for " +
-            //$"'{ship.ShipName}': " +
-            //$"desired heading={desiredHeading}, " +
-            //$"position=({ship.X:0.00}, " +
-            //$"{ship.Y:0.00}).");
+        //$"Navigation obstacle detected for " +
+        //$"'{ship}': " +
+        //$"desired heading={desiredHeading}, " +
+        //$"position=({ship.X:0.00}, " +
+        //$"{ship.Y:0.00}).");
 
         // -------------------------------------------------------------
         // Continue an existing avoidance route if possible.
@@ -492,18 +530,18 @@ public class ShipNavigationService
                     lookAheadDistance))
             {
                 //Log.Info(
-                    //$"Navigation continuing obstacle " +
-                    //$"avoidance: " +
-                    //$"Ship={ship.ShipName}, " +
-                    //$"Heading={avoidanceHeading}");
+                //$"Navigation continuing obstacle " +
+                //$"avoidance: " +
+                //$"Ship={ship}, " +
+                //$"Heading={avoidanceHeading}");
 
                 return avoidanceHeading;
             }
 
             //Log.Info(
-                //$"Navigation avoidance heading blocked: " +
-                //$"Ship={ship.ShipName}, " +
-                //$"Heading={avoidanceHeading}");
+            //$"Navigation avoidance heading blocked: " +
+            //$"Ship={ship}, " +
+            //$"Heading={avoidanceHeading}");
 
             ClearAvoidanceHeading(
                 ship);
@@ -521,8 +559,8 @@ public class ShipNavigationService
             ship.Heading;
 
 
-        bool foundClearHeading =
-            false;
+        bool foundClearHeading = false;
+        float bestDistance = float.MaxValue;
 
         foreach (Heading candidate
             in candidates)
@@ -555,7 +593,7 @@ public class ShipNavigationService
                     StringComparison.OrdinalIgnoreCase) &&
                 _sailingAreaService.TryGetArea(
                     ship.AreaResRef,
-                    out SailingArea? area))
+                    out SailingArea? area) && area != null)
             {
                 targetX = newX;
                 targetY = newY;
@@ -606,10 +644,13 @@ public class ShipNavigationService
             float deltaY =
                 targetY - newY;
 
-            float distance =
-                MathF.Sqrt(
-                    deltaX * deltaX +
-                    deltaY * deltaY);
+            float distance = MathF.Sqrt(deltaX * deltaX + deltaY * deltaY);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestHeading = candidate;
+                foundClearHeading = true;
+            }
         }
         // -------------------------------------------------------------
         // Store selected avoidance heading.
@@ -625,10 +666,10 @@ public class ShipNavigationService
                     bestHeading);
 
                 //Log.Info(
-                    //$"Navigation avoiding obstacle: " +
-                    //$"Ship={ship.ShipName}, " +
-                    //$"Desired={desiredHeading}, " +
-                    //$"Selected={bestHeading}");
+                //$"Navigation avoiding obstacle: " +
+                //$"Ship={ship}, " +
+                //$"Desired={desiredHeading}, " +
+                //$"Selected={bestHeading}");
             }
 
             return bestHeading;
@@ -655,7 +696,7 @@ public class ShipNavigationService
         Heading heading)
     {
         _avoidanceHeadings[
-            ship.ShipName] =
+            ship] =
             heading;
     }
 
@@ -663,7 +704,7 @@ public class ShipNavigationService
         ShipState ship)
     {
         _avoidanceHeadings.Remove(
-            ship.ShipName);
+            ship);
     }
 
     private bool TryGetAvoidanceHeading(
@@ -671,7 +712,7 @@ public class ShipNavigationService
         out Heading heading)
     {
         return _avoidanceHeadings.TryGetValue(
-            ship.ShipName,
+            ship,
             out heading);
     }
 
@@ -965,11 +1006,11 @@ public class ShipNavigationService
         }
 
         //Log.Info(
-            //$"Navigation destination reached: " +
-            //$"Ship={ship.ShipName}, " +
-            //$"Area={ship.AreaResRef}, " +
-            //$"X={ship.X:0.00}, " +
-            //$"Y={ship.Y:0.00}");
+        //$"Navigation destination reached: " +
+        //$"Ship={ship}, " +
+        //$"Area={ship.AreaResRef}, " +
+        //$"X={ship.X:0.00}, " +
+        //$"Y={ship.Y:0.00}");
 
         ClearDestination(
             ship);
@@ -978,7 +1019,7 @@ public class ShipNavigationService
     ShipState ship)
     {
         if (!_routes.TryGetValue(
-                ship.ShipName,
+                ship,
                 out ShipNavigationRoute? route))
         {
             return false;

@@ -8,7 +8,7 @@ namespace AmiaReforged.Core.Services.Sailing;
 public class ShipObstacleService
 {
     private readonly Dictionary<string, List<SailingObstacle>>
-        _obstaclesByArea = new();
+        _obstaclesByArea = new(StringComparer.OrdinalIgnoreCase);
 
     private static readonly Logger Log =
         LogManager.GetCurrentClassLogger();
@@ -186,16 +186,21 @@ private void RegisterObstacles()
     {
         Name = "North-east Isle",
         AreaResRef = "ocean_01",
-        MinX = 120f,
-        MaxX = 90f,
+        MinX = 90f,
+        MaxX = 120f,
         MinY = 18f,
         MaxY = 36f
     });
 }
  
-    private void RegisterObstacle(
+    public void RegisterObstacle(
         SailingObstacle obstacle)
     {
+        if (string.IsNullOrWhiteSpace(obstacle.AreaResRef) ||
+            !float.IsFinite(obstacle.MinX) || !float.IsFinite(obstacle.MaxX) ||
+            !float.IsFinite(obstacle.MinY) || !float.IsFinite(obstacle.MaxY) ||
+            obstacle.MinX > obstacle.MaxX || obstacle.MinY > obstacle.MaxY)
+            throw new ArgumentException("Invalid obstacle rectangle.", nameof(obstacle));
         if (!_obstaclesByArea.TryGetValue(
                 obstacle.AreaResRef,
                 out List<SailingObstacle>? obstacles))

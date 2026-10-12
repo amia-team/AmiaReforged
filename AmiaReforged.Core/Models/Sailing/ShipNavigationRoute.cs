@@ -13,15 +13,14 @@ public class ShipNavigationRoute
 public bool Loop { get; set; }
     
    public bool IsComplete =>
-    !Loop &&
-    CurrentWaypointIndex >= Waypoints.Count;
+    Waypoints.Count == 0 || (!Loop && CurrentWaypointIndex >= Waypoints.Count);
 
     public ShipNavigationWaypoint?
         CurrentWaypoint
     {
         get
         {
-            if (IsComplete)
+            if (IsComplete || CurrentWaypointIndex < 0 || CurrentWaypointIndex >= Waypoints.Count)
             {
                 return null;
             }

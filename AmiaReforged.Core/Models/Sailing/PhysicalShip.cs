@@ -6,6 +6,8 @@ public class PhysicalShip
 
     public required string PlaceableTag { get; set; }
 
+    public string? HelmPlaceableTag { get; set; }
+
     public string? PlaceableResRef { get; set; }
 
     public required string ExitPlaceableTag { get; set; }

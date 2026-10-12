@@ -22,7 +22,7 @@ public sealed class ShipSpellEffectStateService
         ShipState ship)
     {
         if (!_activeEffects.TryGetValue(
-                ship.ShipName,
+                ship.ShipId,
                 out List<ShipSpellEffectInstance>? effects))
         {
             return 1.0f;
@@ -37,7 +37,7 @@ public sealed class ShipSpellEffectStateService
         if (effects.Count == 0)
         {
             _activeEffects.Remove(
-                ship.ShipName);
+                ship.ShipId);
 
             return 1.0f;
         }
@@ -60,13 +60,13 @@ public sealed class ShipSpellEffectStateService
         TimeSpan duration)
     {
         if (!_activeEffects.TryGetValue(
-                ship.ShipName,
+                ship.ShipId,
                 out List<ShipSpellEffectInstance>? effects))
         {
             effects =
                 new List<ShipSpellEffectInstance>();
 
-            _activeEffects[ship.ShipName] =
+            _activeEffects[ship.ShipId] =
                 effects;
         }
 
@@ -89,7 +89,7 @@ public sealed class ShipSpellEffectStateService
 
         //Log.Info(
             //$"Ship spell speed boost applied: " +
-            //$"Ship={ship.ShipName}, " +
+            //$"Ship={ship.ShipId}, " +
             //$"Spell={spellName}, " +
             //$"Bonus={bonusPercent:0}%, " +
             //$"Duration={duration.TotalSeconds:0.0}s.");

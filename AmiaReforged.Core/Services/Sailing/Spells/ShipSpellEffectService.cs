@@ -16,84 +16,101 @@ public sealed class ShipSpellEffectService
     // Temporary Fireball damage
     // -------------------------------------------------------------
 
-   // private const int definition.HullDamage = 10;
+    // private const int definition.HullDamage = 10;
 
     // -------------------------------------------------------------
     // Services
     // -------------------------------------------------------------
 
     private readonly PhysicalShipService _physicalShipService;
-    private readonly HelmService _helmService;
+    private readonly ShipRegistryService _registry;
     private readonly ShipEncounterService _shipEncounterService;
 
-private readonly ShipSpellVfxService _shipSpellVfxService;
+    private readonly ShipSpellVfxService _shipSpellVfxService;
     private readonly ShipStatePersistenceService _shipStatePersistenceService;
     private readonly ShipSpellEffectStateService _shipSpellEffectStateService;
     private readonly SailingNuiService _sailingNuiService;
-   // private readonly ShipCombatNuiService _shipCombatNuiService;
+    // private readonly ShipCombatNuiService _shipCombatNuiService;
     public ShipSpellEffectService(
     PhysicalShipService physicalShipService,
-    HelmService helmService,
+    ShipRegistryService registry,
     ShipEncounterService shipEncounterService,
     ShipStatePersistenceService shipStatePersistenceService,
     ShipSpellEffectStateService shipSpellEffectStateService,
     //ShipCombatNuiService shipCombatNuiService,
     ShipSpellVfxService shipSpellVfxService,
     SailingNuiService sailingNuiService)
-{
-    _physicalShipService =
-        physicalShipService;
+    {
+        _physicalShipService =
+            physicalShipService;
 
-    //_shipCombatNuiService =
-     //   shipCombatNuiService;
+        //_shipCombatNuiService =
+        //   shipCombatNuiService;
 
-    _helmService =
-        helmService;
+        _registry = registry;
 
-    _shipEncounterService =
-        shipEncounterService;
+        _shipEncounterService =
+            shipEncounterService;
 
-    _shipStatePersistenceService =
-        shipStatePersistenceService;
+        _shipStatePersistenceService =
+            shipStatePersistenceService;
 
-    _shipSpellEffectStateService =
-        shipSpellEffectStateService;
+        _shipSpellEffectStateService =
+            shipSpellEffectStateService;
 
-    _sailingNuiService =
-        sailingNuiService;
-        
-    _shipSpellVfxService =
-    shipSpellVfxService;
+        _sailingNuiService =
+            sailingNuiService;
+
+        _shipSpellVfxService =
+        shipSpellVfxService;
 
         //Log.Info(
         //"Ship Spell Effect Service initialized.");
-}
-    
-    //process spell
-  public bool ProcessSpell(
-    NwPlayer player,
-    NwCreature caster,
-    NwSpell spell,
-    ShipState? selectedTarget)
-{
-    if (!TryGetDefinition(
-            spell,
-            out ShipSpellEffectDefinition? definition) ||
-        definition == null)
-    {
-        Log.Debug(
-            $"No sailing spell definition found: " +
-            $"Spell={spell.Name}, " +
-            $"SpellId={spell.Id}.");
-
-        return false;
     }
 
-    _shipSpellVfxService.PlayCasterSpellVfx(
-        caster,
-        spell);
+    //process spell
+    public bool CanProcessSpell(NwPlayer player, NwCreature caster, NwSpell spell, ShipState? selectedTarget)
+    {
+        if (!TryGetDefinition(spell, out ShipSpellEffectDefinition? definition) || definition == null) return false;
+        string? sourceName = _physicalShipService.GetShipForPlayer(player.PlayerName);
+        ShipState? source = sourceName == null ? null : _registry.GetShip(sourceName);
+        if (!_registry.IsCurrent(source) || !ShipActionRules.IsActive(source) || source!.IsDisabled ||
+            !_physicalShipService.IsPlayerPresent(source.ShipName, player) || !caster.IsValid ||
+            !ReferenceEquals(player.ControlledCreature, caster)) return false;
+        if (!caster.IsDMAvatar && caster.Area?.GetObjectVariable<LocalVariableInt>("NoCasting").Value == 1) return false;
+        if (definition.RequiresEnemyTarget || definition.RequiresEncounter)
+        {
+            if (!_registry.IsCurrent(selectedTarget) || !ShipActionRules.CanInteract(source, selectedTarget) ||
+                selectedTarget!.IsDisabled || !_shipEncounterService.IsInEncounter(source, selectedTarget)) return false;
+            if (definition.MaxRange > 0 && ShipActionRules.Distance(source, selectedTarget) > definition.MaxRange) return false;
+        }
+        return true;
+    }
 
-    //Log.Info(
+    public bool ProcessSpell(
+      NwPlayer player,
+      NwCreature caster,
+      NwSpell spell,
+      ShipState? selectedTarget,
+      bool playCasterAnimation = true)
+    {
+        if (!TryGetDefinition(
+                spell,
+                out ShipSpellEffectDefinition? definition) ||
+            definition == null)
+        {
+            Log.Debug(
+                $"No sailing spell definition found: " +
+                $"Spell={spell.Name}, " +
+                $"SpellId={spell.Id}.");
+
+            return false;
+        }
+
+        if (!CanProcessSpell(player, caster, spell, selectedTarget)) return false;
+        if (playCasterAnimation) _shipSpellVfxService.PlayCasterSpellVfx(caster, spell);
+
+        //Log.Info(
         //$"Processing sailing spell definition: " +
         //$"Spell={definition.DisplayName}, " +
         //$"Type={definition.EffectType}.");
@@ -102,212 +119,209 @@ private readonly ShipSpellVfxService _shipSpellVfxService;
         {
             case ShipSpellEffectType.Offensive:
 
-            if (spell.Id == (int)Spell.Fireball)
-            {
- return ProcessFireball(
-    player,
-    caster,
-    definition,
-    selectedTarget);
-            }
+                if (spell.Id == (int)Spell.Fireball)
+                {
+                    return ProcessFireball(
+                       player,
+                       caster,
+                       definition,
+                       selectedTarget);
+                }
 
-            if (spell.Id == (int)Spell.LightningBolt)
-            {
-   return ProcessLightningBolt(
-    player,
-    caster,
-    definition,
-    selectedTarget);
-            }
+                if (spell.Id == (int)Spell.LightningBolt)
+                {
+                    return ProcessLightningBolt(
+                     player,
+                     caster,
+                     definition,
+                     selectedTarget);
+                }
 
-            return false;
+                return false;
 
-        case ShipSpellEffectType.Movement:
+            case ShipSpellEffectType.Movement:
 
-            if (spell.Id == (int)Spell.GustOfWind)
-            {
-                return ProcessGustOfWind(
-                    player,
-                    caster);
-            }
+                if (spell.Id == (int)Spell.GustOfWind)
+                {
+                    return ProcessGustOfWind(
+                        player,
+                        caster);
+                }
 
-            return false;
+                return false;
 
-        case ShipSpellEffectType.Defensive:
-        case ShipSpellEffectType.Control:
+            case ShipSpellEffectType.Defensive:
+            case ShipSpellEffectType.Control:
 
-            Log.Debug(
-                $"Sailing spell type " +
-                $"'{definition.EffectType}' " +
-                $"has no processor yet.");
+                Log.Debug(
+                    $"Sailing spell type " +
+                    $"'{definition.EffectType}' " +
+                    $"has no processor yet.");
 
-            return false;
+                return false;
 
-        default:
+            default:
 
-            return false;
+                return false;
+        }
     }
-}
     // -------------------------------------------------------------
     // Fireball
     // -------------------------------------------------------------
 
-  public bool ProcessFireball(
-    NwPlayer player,
-    NwCreature caster,
-    ShipSpellEffectDefinition definition,
-    ShipState? selectedTarget)
-{
-    
-    string? shipName =
-        _physicalShipService.GetShipForPlayer(
-            player.PlayerName);
-
-    // rest of existing code...
-
-    if (shipName == null)
+    public bool ProcessFireball(
+      NwPlayer player,
+      NwCreature caster,
+      ShipSpellEffectDefinition definition,
+      ShipState? selectedTarget)
     {
-        Log.Debug(
-            $"Fireball ignored: " +
-            $"Player={player.PlayerName} is not aboard a ship.");
 
-        return false;
-    }
+        string? shipName =
+            _physicalShipService.GetShipForPlayer(
+                player.PlayerName);
 
-    ShipState? attackingShip =
-        _helmService.GetShip(shipName);
+        // rest of existing code...
 
-    if (attackingShip == null)
-    {
-        Log.Warn(
-            $"Fireball failed: " +
-            $"Could not resolve ShipState for '{shipName}'.");
+        if (shipName == null)
+        {
+            Log.Debug(
+                $"Fireball ignored: " +
+                $"Player={player.PlayerName} is not aboard a ship.");
 
-        return false;
+            return false;
         }
-       
-       ShipState? targetShip = null;
-ShipEncounter? encounter = null;
 
-if (definition.RequiresEncounter)
-{
-    targetShip = selectedTarget;
+        ShipState? attackingShip =
+            _registry.GetShip(shipName);
 
-    if (targetShip == null ||
-        !_shipEncounterService.TryGetEncounter(
-            attackingShip,
-            targetShip,
-            out encounter) ||
-        encounter == null)
-    {
-            player.SendServerMessage(
-                "There is no enemy ship in range.");
+        if (attackingShip == null)
+        {
+            Log.Warn(
+                $"Fireball failed: " +
+                $"Could not resolve ShipState for '{shipName}'.");
 
-            //Log.Info(
+            return false;
+        }
+
+        ShipState? targetShip = null;
+        ShipEncounter? encounter = null;
+
+        if (definition.RequiresEncounter)
+        {
+            targetShip = selectedTarget;
+
+            if (targetShip == null ||
+                !_shipEncounterService.TryGetEncounter(
+                    attackingShip,
+                    targetShip,
+                    out encounter) ||
+                encounter == null)
+            {
+                player.SendServerMessage(
+                    "There is no enemy ship in range.");
+
+                //Log.Info(
                 //$"Fireball failed: " +
                 //$"Ship={attackingShip.ShipName} " +
                 //$"requires an encounter target.");
 
+                return false;
+            }
+        }
+
+        if (targetShip == null)
+        {
+            Log.Warn(
+                $"Fireball failed: " +
+                $"No target ship was resolved.");
+
             return false;
         }
-    }
 
-    if (targetShip == null)
-    {
-        Log.Warn(
-            $"Fireball failed: " +
-            $"No target ship was resolved.");
+        if (!string.Equals(
+                attackingShip.AreaResRef,
+                targetShip.AreaResRef,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            Log.Warn(
+                $"Fireball rejected: " +
+                $"Ships are no longer in the same area. " +
+                $"Attacker={attackingShip.AreaResRef}, " +
+                $"Target={targetShip.AreaResRef}.");
 
-        return false;
-    }
+            return false;
+        }
+        if (definition.MaxRange > 0.0f &&
+            ShipActionRules.Distance(attackingShip, targetShip) > definition.MaxRange)
+        {
+            player.SendServerMessage(
+                $"{definition.DisplayName} is out of range. " +
+                $"Range: {definition.MaxRange:0.0}, " +
+                $"Distance: {ShipActionRules.Distance(attackingShip, targetShip):0.0}.");
 
-    if (!string.Equals(
-            attackingShip.AreaResRef,
-            targetShip.AreaResRef,
-            StringComparison.OrdinalIgnoreCase))
-    {
-        Log.Warn(
-            $"Fireball rejected: " +
-            $"Ships are no longer in the same area. " +
-            $"Attacker={attackingShip.AreaResRef}, " +
-            $"Target={targetShip.AreaResRef}.");
+            //Log.Info(
+            //$"{definition.DisplayName} rejected: " +
+            //$"Ship={attackingShip.ShipName}, " +
+            //$"Target={targetShip.ShipName}, " +
+            //$"Distance={encounter.Distance:0.00}, " +
+            //$"MaxRange={definition.MaxRange:0.00}.");
 
-        return false;
-    }
-if (definition.MaxRange > 0.0f &&
-    encounter.Distance > definition.MaxRange)
-{
-    player.SendServerMessage(
-        $"{definition.DisplayName} is out of range. " +
-        $"Range: {definition.MaxRange:0.0}, " +
-        $"Distance: {encounter.Distance:0.0}.");
-
-    //Log.Info(
-        //$"{definition.DisplayName} rejected: " +
-        //$"Ship={attackingShip.ShipName}, " +
-        //$"Target={targetShip.ShipName}, " +
-        //$"Distance={encounter.Distance:0.00}, " +
-        //$"MaxRange={definition.MaxRange:0.00}.");
-
-    return false;
-}
+            return false;
+        }
 
         int previousHull =
         targetShip.Hull;
 
-    targetShip.Hull =
-        Math.Max(
-            0,
-            targetShip.Hull - definition.HullDamage);
-            _shipSpellVfxService.PlayFireball(
-             targetShip);
-    if (targetShip.Hull <= 0)
-    {
-        targetShip.Hull = 0;
-        targetShip.Underway = false;
-    }
+        int actualDamage = targetShip.ApplyHullDamage(definition.HullDamage);
+        _shipSpellVfxService.PlayFireball(
+         targetShip);
+        if (targetShip.Hull <= 0)
+        {
+            targetShip.Hull = 0;
+            targetShip.Underway = false;
+        }
 
-    _ = _shipStatePersistenceService.SaveState(
-        targetShip);
+        _ = _shipStatePersistenceService.SaveState(
+            targetShip);
 
-    player.SendServerMessage(
-        $"Your Fireball strikes the {targetShip.ShipName} " +
-        $"for {definition.HullDamage} hull damage.");
-
-    _sailingNuiService.ShowCombatMessage(
-        player,
-        $"🔥 FIREBALL\n" +
-        $"{targetShip.ShipName}\n" +
-        $"Hull: {previousHull}% → {targetShip.Hull}%");
-
-    foreach (
-        string playerName
-        in _physicalShipService.GetPlayersAboard(
-            targetShip.ShipName))
-    {
-        NwPlayer? targetPlayer =
-            NwModule.Instance.Players.FirstOrDefault(
-                p =>
-                    string.Equals(
-                        p.PlayerName,
-                        playerName,
-                        StringComparison.Ordinal));
-
-        if (targetPlayer == null)
-            continue;
-
-        targetPlayer.SendServerMessage(
-            $"The {targetShip.ShipName} is struck by a Fireball " +
-            $"for {definition.HullDamage} hull damage.");
+        player.SendServerMessage(
+            $"Your Fireball strikes the {targetShip.ShipName} " +
+            $"for {actualDamage} hull damage.");
 
         _sailingNuiService.ShowCombatMessage(
-            targetPlayer,
-            $"🔥 FIREBALL IMPACT\n" +
+            player,
+            $"🔥 FIREBALL\n" +
             $"{targetShip.ShipName}\n" +
-            $"Hull: {previousHull}% → {targetShip.Hull}%");
-    }
+            $"Hull: {previousHull}/{targetShip.MaximumHull} → {targetShip.Hull}/{targetShip.MaximumHull}");
 
-    //Log.Info(
+        foreach (
+            string playerName
+            in _physicalShipService.GetPlayersAboard(
+                targetShip.ShipName))
+        {
+            NwPlayer? targetPlayer =
+                NwModule.Instance.Players.FirstOrDefault(
+                    p =>
+                        string.Equals(
+                            p.PlayerName,
+                            playerName,
+                            StringComparison.Ordinal));
+
+            if (targetPlayer == null)
+                continue;
+
+            targetPlayer.SendServerMessage(
+                $"The {targetShip.ShipName} is struck by a Fireball " +
+                $"for {actualDamage} hull damage.");
+
+            _sailingNuiService.ShowCombatMessage(
+                targetPlayer,
+                $"🔥 FIREBALL IMPACT\n" +
+                $"{targetShip.ShipName}\n" +
+                $"Hull: {previousHull}/{targetShip.MaximumHull} → {targetShip.Hull}/{targetShip.MaximumHull}");
+        }
+
+        //Log.Info(
         //$"Ship Fireball hit: " +
         //$"Attacker={attackingShip.ShipName}, " +
         //$"Target={targetShip.ShipName}, " +
@@ -323,140 +337,137 @@ if (definition.MaxRange > 0.0f &&
     NwCreature caster,
     ShipSpellEffectDefinition definition,
     ShipState? selectedTarget)
-{
-    string? shipName =
-        _physicalShipService.GetShipForPlayer(
-            player.PlayerName);
-
-    if (shipName == null)
     {
-        Log.Debug(
-            $"Lightning Bolt ignored: " +
-            $"Player={player.PlayerName} is not aboard a ship.");
+        string? shipName =
+            _physicalShipService.GetShipForPlayer(
+                player.PlayerName);
 
-        return false;
-    }
+        if (shipName == null)
+        {
+            Log.Debug(
+                $"Lightning Bolt ignored: " +
+                $"Player={player.PlayerName} is not aboard a ship.");
 
-    ShipState? attackingShip =
-        _helmService.GetShip(shipName);
+            return false;
+        }
 
-    if (attackingShip == null)
-    {
-        Log.Warn(
-            $"Lightning Bolt failed: " +
-            $"Could not resolve ShipState for '{shipName}'.");
+        ShipState? attackingShip =
+            _registry.GetShip(shipName);
 
-        return false;
-    }
+        if (attackingShip == null)
+        {
+            Log.Warn(
+                $"Lightning Bolt failed: " +
+                $"Could not resolve ShipState for '{shipName}'.");
 
-    ShipState? targetShip = selectedTarget;
+            return false;
+        }
 
-if (targetShip == null ||
-    !_shipEncounterService.TryGetEncounter(
-        attackingShip,
-        targetShip,
-        out ShipEncounter? encounter) ||
-    encounter == null)
-{
-        player.SendServerMessage(
-            "There is no enemy ship in range.");
+        ShipState? targetShip = selectedTarget;
 
-        //Log.Info(
+        if (targetShip == null ||
+            !_shipEncounterService.TryGetEncounter(
+                attackingShip,
+                targetShip,
+                out ShipEncounter? encounter) ||
+            encounter == null)
+        {
+            player.SendServerMessage(
+                "There is no enemy ship in range.");
+
+            //Log.Info(
             //$"Lightning Bolt failed: " +
             //$"Ship={attackingShip.ShipName} has no encounter target.");
 
-        return false;
-    }
+            return false;
+        }
 
-    if (!string.Equals(
-            attackingShip.AreaResRef,
-            targetShip.AreaResRef,
-            StringComparison.OrdinalIgnoreCase))
-    {
-        Log.Warn(
-            $"Lightning Bolt rejected: " +
-            $"Ships are no longer in the same area. " +
-            $"Attacker={attackingShip.AreaResRef}, " +
-            $"Target={targetShip.AreaResRef}.");
+        if (!string.Equals(
+                attackingShip.AreaResRef,
+                targetShip.AreaResRef,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            Log.Warn(
+                $"Lightning Bolt rejected: " +
+                $"Ships are no longer in the same area. " +
+                $"Attacker={attackingShip.AreaResRef}, " +
+                $"Target={targetShip.AreaResRef}.");
 
-        return false;
-    }
-if (definition.MaxRange > 0.0f &&
-    encounter.Distance > definition.MaxRange)
-{
-    player.SendServerMessage(
-        $"{definition.DisplayName} is out of range. " +
-        $"Range: {definition.MaxRange:0.0}, " +
-        $"Distance: {encounter.Distance:0.0}.");
+            return false;
+        }
+        if (definition.MaxRange > 0.0f &&
+            ShipActionRules.Distance(attackingShip, targetShip) > definition.MaxRange)
+        {
+            player.SendServerMessage(
+                $"{definition.DisplayName} is out of range. " +
+                $"Range: {definition.MaxRange:0.0}, " +
+                $"Distance: {ShipActionRules.Distance(attackingShip, targetShip):0.0}.");
 
-    //Log.Info(
-        //$"{definition.DisplayName} rejected: " +
-        //$"Ship={attackingShip.ShipName}, " +
-        //$"Target={targetShip.ShipName}, " +
-        //$"Distance={encounter.Distance:0.00}, " +
-        //$"MaxRange={definition.MaxRange:0.00}.");
+            //Log.Info(
+            //$"{definition.DisplayName} rejected: " +
+            //$"Ship={attackingShip.ShipName}, " +
+            //$"Target={targetShip.ShipName}, " +
+            //$"Distance={encounter.Distance:0.00}, " +
+            //$"MaxRange={definition.MaxRange:0.00}.");
 
-    return false;
-}
-    int damage =
-    definition.HullDamage;
+            return false;
+        }
+        int damage =
+        definition.HullDamage;
 
-    int previousHull =
-        targetShip.Hull;
+        int previousHull =
+            targetShip.Hull;
 
-    targetShip.Hull =
-        Math.Max(
-            0,
-            targetShip.Hull - damage);
-    _shipSpellVfxService.PlayLightningBolt(
-    targetShip);
-    if (targetShip.Hull <= 0)
-    {
-        targetShip.Hull = 0;
-        targetShip.Underway = false;
-    }
-
-    _ = _shipStatePersistenceService.SaveState(
+        damage = targetShip.ApplyHullDamage(damage);
+        _shipSpellVfxService.PlayLightningBolt(
         targetShip);
+        if (targetShip.Hull <= 0)
+        {
+            targetShip.Hull = 0;
+            targetShip.Underway = false;
+        }
 
-    player.SendServerMessage(
-        $"Your Lightning Bolt strikes the " +
-        $"{targetShip.ShipName} for {damage} hull damage.");
+        _ = _shipStatePersistenceService.SaveState(
+            targetShip);
 
-    _sailingNuiService.ShowCombatMessage(
-        player,
-        $"⚡ LIGHTNING BOLT\n" +
-        $"{targetShip.ShipName}\n" +
-        $"Hull: {previousHull}% → {targetShip.Hull}%");
-
-    foreach (
-        string playerName
-        in _physicalShipService.GetPlayersAboard(
-            targetShip.ShipName))
-    {
-        NwPlayer? targetPlayer =
-            NwModule.Instance.Players.FirstOrDefault(
-                p =>
-                    string.Equals(
-                        p.PlayerName,
-                        playerName,
-                        StringComparison.Ordinal));
-
-        if (targetPlayer == null)
-            continue;
-
-        targetPlayer.SendServerMessage(
-            $"The {targetShip.ShipName} is struck by " +
-            $"a Lightning Bolt for {damage} hull damage.");
+        player.SendServerMessage(
+            $"Your Lightning Bolt strikes the " +
+            $"{targetShip.ShipName} for {damage} hull damage.");
 
         _sailingNuiService.ShowCombatMessage(
-            targetPlayer,
-            $"⚡ LIGHTNING BOLT IMPACT\n" +
+            player,
+            $"⚡ LIGHTNING BOLT\n" +
             $"{targetShip.ShipName}\n" +
-            $"Hull: {previousHull}% → {targetShip.Hull}%");
-    }
+            $"Hull: {previousHull}/{targetShip.MaximumHull} → {targetShip.Hull}/{targetShip.MaximumHull}");
 
-    //Log.Info(
+        foreach (
+            string playerName
+            in _physicalShipService.GetPlayersAboard(
+                targetShip.ShipName))
+        {
+            NwPlayer? targetPlayer =
+                NwModule.Instance.Players.FirstOrDefault(
+                    p =>
+                        string.Equals(
+                            p.PlayerName,
+                            playerName,
+                            StringComparison.Ordinal));
+
+            if (targetPlayer == null)
+                continue;
+
+            targetPlayer.SendServerMessage(
+                $"The {targetShip.ShipName} is struck by " +
+                $"a Lightning Bolt for {damage} hull damage.");
+
+            _sailingNuiService.ShowCombatMessage(
+                targetPlayer,
+                $"⚡ LIGHTNING BOLT IMPACT\n" +
+                $"{targetShip.ShipName}\n" +
+                $"Hull: {previousHull}/{targetShip.MaximumHull} → {targetShip.Hull}/{targetShip.MaximumHull}");
+        }
+
+        //Log.Info(
         //$"Ship Lightning Bolt hit: " +
         //$"Attacker={attackingShip.ShipName}, " +
         //$"Target={targetShip.ShipName}, " +
@@ -488,7 +499,7 @@ if (definition.MaxRange > 0.0f &&
         }
 
         ShipState? ship =
-            _helmService.GetShip(shipName);
+            _registry.GetShip(shipName);
 
         if (ship == null)
         {
@@ -515,28 +526,28 @@ if (definition.MaxRange > 0.0f &&
             "Movement Speed: 2x\n" +
             "Duration: 60 seconds");
 
-     
+
 
         //Log.Info(
-            //$"Ship Gust of Wind applied: " +
-            //$"Ship={ship.ShipName}, " +
-            //$"Caster={player.PlayerName}, " +
-            //$"Multiplier=2.0x, " +
-            //$"Duration=60s.");
+        //$"Ship Gust of Wind applied: " +
+        //$"Ship={ship.ShipName}, " +
+        //$"Caster={player.PlayerName}, " +
+        //$"Multiplier=2.0x, " +
+        //$"Duration=60s.");
 
-            return true;
+        return true;
     }
-   public static bool TryGetDefinition(
-    NwSpell spell,
-    out ShipSpellEffectDefinition? definition)
-{
-    return ShipSpellDefinitions.All.TryGetValue(
-        spell.Id,
-        out definition);
-}
-public static IReadOnlyCollection<ShipSpellEffectDefinition>
-GetDefinitions()
-{
-    return ShipSpellDefinitions.All.Values;
-}
+    public static bool TryGetDefinition(
+     NwSpell spell,
+     out ShipSpellEffectDefinition? definition)
+    {
+        return ShipSpellDefinitions.All.TryGetValue(
+            spell.Id,
+            out definition);
+    }
+    public static IReadOnlyCollection<ShipSpellEffectDefinition>
+    GetDefinitions()
+    {
+        return ShipSpellDefinitions.All.Values;
+    }
 }

@@ -7,290 +7,117 @@ namespace AmiaReforged.Core.Services.Sailing;
 [ServiceBinding(typeof(ShipEncounterService))]
 public class ShipEncounterService
 {
-    private const float EncounterDistance = 35.0f;
-
-    private readonly Dictionary<string, ShipEncounter>
-        _activeEncounters = new();
-
-    private static readonly Logger Log =
-        LogManager.GetCurrentClassLogger();
-
-    // -------------------------------------------------------------
-    // Encounter events
-    // -------------------------------------------------------------
-
+    public const float EncounterDistance = 35f;
+    private readonly Dictionary<(string, string), ShipEncounter> _activeEncounters = new();
+    private readonly Dictionary<ShipState, HashSet<ShipState>> _neighbors = new();
+    private readonly HashSet<ShipState> _current = new();
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public event Action<ShipEncounter>? EncounterStarted;
-
     public event Action<ShipEncounter>? EncounterEnded;
 
-    public ShipEncounterService()
+    public void CheckEncounters(IReadOnlyCollection<ShipState> ships)
     {
-        //Log.Info(
-            //$"Ship Encounter Service initialized. " +
-            //$"Encounter distance={EncounterDistance}.");
-    }
+        ShipState[] active = ships.Where(ShipActionRules.IsActive).ToArray();
+        _current.Clear();
+        _current.UnionWith(active);
+        foreach (ShipEncounter encounter in _activeEncounters.Values.ToArray())
+            if (!_current.Contains(encounter.ShipA) || !_current.Contains(encounter.ShipB) ||
+                !IsEligiblePair(encounter.ShipA, encounter.ShipB)) Remove(encounter);
 
-    public void CheckEncounters(
-        IReadOnlyCollection<ShipState> ships)
-    {
-        List<ShipState> shipList =
-            ships.ToList();
-
-        for (int i = 0; i < shipList.Count; i++)
+        for (int i = 0; i < active.Length; i++)
+        for (int j = i + 1; j < active.Length; j++)
         {
-            ShipState shipA =
-                shipList[i];
-
-            for (int j = i + 1; j < shipList.Count; j++)
+            ShipState a = active[i], b = active[j];
+            if (!IsEligiblePair(a, b)) continue;
+            var key = Key(a, b);
+            if (_activeEncounters.TryGetValue(key, out ShipEncounter? existing))
             {
-                ShipState shipB =
-                    shipList[j];
-
-                CheckPair(
-                    shipA,
-                    shipB);
+                if (!ReferenceEquals(existing.ShipA, a) && !ReferenceEquals(existing.ShipB, a))
+                {
+                    Remove(existing);
+                }
+                else
+                {
+                    existing.Distance = ShipActionRules.Distance(a, b);
+                    existing.AreaResRef = a.AreaResRef;
+                    continue;
+                }
             }
+            ShipEncounter encounter = new() { ShipA = a, ShipB = b, AreaResRef = a.AreaResRef,
+                Distance = ShipActionRules.Distance(a, b) };
+            _activeEncounters[key] = encounter;
+            AddNeighbor(a, b);
+            AddNeighbor(b, a);
+            Notify(EncounterStarted, encounter);
         }
     }
 
-    public bool IsInEncounter(
-        ShipState shipA,
-        ShipState shipB)
+    private static bool IsEligiblePair(ShipState a, ShipState b) =>
+        ShipActionRules.CanInteract(a, b) && ShipActionRules.Distance(a, b) <= EncounterDistance;
+
+    public bool IsInEncounter(ShipState a, ShipState b) => TryGetEncounter(a, b, out _);
+    public IReadOnlyCollection<ShipEncounter> GetActiveEncounters() => _activeEncounters.Values
+        .Where(e => _current.Contains(e.ShipA) && _current.Contains(e.ShipB) && IsEligiblePair(e.ShipA, e.ShipB)).ToArray();
+
+    public IEnumerable<ShipState> GetNearbyShips(ShipState source) =>
+        _neighbors.TryGetValue(source, out HashSet<ShipState>? neighbors) ?
+        neighbors.Where(target => _current.Contains(source) && _current.Contains(target) &&
+            IsEligiblePair(source, target)).OrderBy(s => s.ShipId, StringComparer.Ordinal).ToArray() : [];
+
+    public bool TryGetEncounter(ShipState a, ShipState b, out ShipEncounter? encounter)
     {
-        return _activeEncounters.ContainsKey(
-            CreateEncounterKey(
-                shipA,
-                shipB));
-    }
-
-    public IReadOnlyCollection<ShipEncounter>
-        GetActiveEncounters()
-    {
-        return _activeEncounters.Values;
-    }
-
-    public IEnumerable<ShipState> GetNearbyShips(
-        ShipState ship)
-    {
-        foreach (ShipEncounter encounter
-            in _activeEncounters.Values)
-        {
-            if (ReferenceEquals(
-                    encounter.ShipA,
-                    ship))
-            {
-                yield return encounter.ShipB;
-            }
-            else if (ReferenceEquals(
-                         encounter.ShipB,
-                         ship))
-            {
-                yield return encounter.ShipA;
-            }
-        }
-    }
-
-    public bool TryGetEncounter(
-        ShipState shipA,
-        ShipState shipB,
-        out ShipEncounter? encounter)
-    {
-        string encounterKey =
-            CreateEncounterKey(
-                shipA,
-                shipB);
-
-        return _activeEncounters.TryGetValue(
-            encounterKey,
-            out encounter);
-    }
-
-    public bool TryGetEncounter(
-        ShipState ship,
-        out ShipEncounter? encounter)
-    {
-        foreach (ShipEncounter activeEncounter
-            in _activeEncounters.Values)
-        {
-            if (ReferenceEquals(
-                    activeEncounter.ShipA,
-                    ship) ||
-                ReferenceEquals(
-                    activeEncounter.ShipB,
-                    ship) ||
-                string.Equals(
-                    activeEncounter.ShipA.ShipName,
-                    ship.ShipName,
-                    StringComparison.Ordinal) ||
-                string.Equals(
-                    activeEncounter.ShipB.ShipName,
-                    ship.ShipName,
-                    StringComparison.Ordinal))
-            {
-                encounter =
-                    activeEncounter;
-
-                return true;
-            }
-        }
-
+        if (_current.Contains(a) && _current.Contains(b) && IsEligiblePair(a, b) &&
+            _activeEncounters.TryGetValue(Key(a, b), out encounter) &&
+            ((ReferenceEquals(encounter.ShipA, a) && ReferenceEquals(encounter.ShipB, b)) ||
+             (ReferenceEquals(encounter.ShipA, b) && ReferenceEquals(encounter.ShipB, a)))) return true;
         encounter = null;
-
         return false;
     }
 
-    public bool TryGetTarget(
-        ShipState ship,
-        out ShipState? targetShip,
-        out ShipEncounter? encounter)
+    // Automatic discovery/proximity queries only. Player actions supply their own target.
+    public bool TryGetEncounter(ShipState ship, out ShipEncounter? encounter)
     {
-        if (!TryGetEncounter(
-                ship,
-                out encounter) ||
-            encounter == null)
-        {
-            targetShip = null;
-
-            return false;
-        }
-
-        if (ReferenceEquals(
-                encounter.ShipA,
-                ship))
-        {
-            targetShip =
-                encounter.ShipB;
-        }
-        else
-        {
-            targetShip =
-                encounter.ShipA;
-        }
-
-        return true;
+        ShipState? nearest = GetNearbyShips(ship).OrderBy(s => ShipActionRules.Distance(ship, s)).FirstOrDefault();
+        encounter = null;
+        return nearest != null && TryGetEncounter(ship, nearest, out encounter);
     }
 
-    private void CheckPair(
-        ShipState shipA,
-        ShipState shipB)
+    public bool TryGetTarget(ShipState ship, out ShipState? target, out ShipEncounter? encounter)
     {
-        string encounterKey =
-            CreateEncounterKey(
-                shipA,
-                shipB);
-
-        if (!string.Equals(
-                shipA.AreaResRef,
-                shipB.AreaResRef,
-                StringComparison.OrdinalIgnoreCase))
+        if (TryGetEncounter(ship, out encounter) && encounter != null)
         {
-            RemoveEncounter(
-                shipA,
-                shipB);
-
-            return;
+            target = ReferenceEquals(encounter.ShipA, ship) ? encounter.ShipB : encounter.ShipA;
+            return true;
         }
+        target = null;
+        return false;
+    }
 
-        float distanceX =
-            shipA.X - shipB.X;
+    private void AddNeighbor(ShipState a, ShipState b)
+    {
+        if (!_neighbors.TryGetValue(a, out HashSet<ShipState>? set)) _neighbors[a] = set = new();
+        set.Add(b);
+    }
 
-        float distanceY =
-            shipA.Y - shipB.Y;
-
-        float distance =
-            MathF.Sqrt(
-                distanceX * distanceX +
-                distanceY * distanceY);
-
-        if (distance <= EncounterDistance)
-        {
-            if (_activeEncounters.TryGetValue(
-                    encounterKey,
-                    out ShipEncounter? existingEncounter))
+    private void Remove(ShipEncounter encounter)
+    {
+        _activeEncounters.Remove(Key(encounter.ShipA, encounter.ShipB));
+        foreach (var pair in new[] { (encounter.ShipA, encounter.ShipB), (encounter.ShipB, encounter.ShipA) })
+            if (_neighbors.TryGetValue(pair.Item1, out var set))
             {
-                existingEncounter.Distance =
-                    distance;
-
-                existingEncounter.AreaResRef =
-                    shipA.AreaResRef;
-
-                return;
+                set.Remove(pair.Item2);
+                if (set.Count == 0) _neighbors.Remove(pair.Item1);
             }
-
-            ShipEncounter encounter = new()
-            {
-                ShipA = shipA,
-                ShipB = shipB,
-                AreaResRef = shipA.AreaResRef,
-                Distance = distance
-            };
-
-            _activeEncounters[encounterKey] =
-                encounter;
-
-            // -----------------------------------------------------
-            // Notify subscribers that a new encounter exists.
-            // -----------------------------------------------------
-
-            EncounterStarted?.Invoke(
-                encounter);
-
-            //Log.Info(
-                //$"Ship encounter started: " +
-                //$"{shipA.ShipName} <-> " +
-                //$"{shipB.ShipName}, " +
-                //$"Area={shipA.AreaResRef}, " +
-                //$"Distance={distance:0.00}, " +
-                //$"A=({shipA.X:0.00}, {shipA.Y:0.00}), " +
-                //$"B=({shipB.X:0.00}, {shipB.Y:0.00})");
-        }
-        else
-        {
-            RemoveEncounter(
-                shipA,
-                shipB);
-        }
+        Notify(EncounterEnded, encounter);
     }
 
-    private void RemoveEncounter(
-        ShipState shipA,
-        ShipState shipB)
+    private static (string, string) Key(ShipState a, ShipState b) =>
+        string.CompareOrdinal(a.ShipId, b.ShipId) < 0 ? (a.ShipId, b.ShipId) : (b.ShipId, a.ShipId);
+
+    private static void Notify(Action<ShipEncounter>? callbacks, ShipEncounter encounter)
     {
-        string encounterKey =
-            CreateEncounterKey(
-                shipA,
-                shipB);
-
-        if (_activeEncounters.Remove(
-                encounterKey,
-                out ShipEncounter? encounter))
-        {
-            // -----------------------------------------------------
-            // Notify subscribers that the encounter has ended.
-            // -----------------------------------------------------
-
-            EncounterEnded?.Invoke(
-                encounter);
-
-            //Log.Info(
-                //$"Ship encounter ended: " +
-                //$"{encounter.ShipA.ShipName} <-> " +
-                //$"{encounter.ShipB.ShipName}");
-        }
-    }
-
-    private string CreateEncounterKey(
-        ShipState shipA,
-        ShipState shipB)
-    {
-        if (string.Compare(
-                shipA.ShipName,
-                shipB.ShipName,
-                StringComparison.Ordinal) < 0)
-        {
-            return $"{shipA.ShipName}|{shipB.ShipName}";
-        }
-
-        return $"{shipB.ShipName}|{shipA.ShipName}";
+        if (callbacks == null) return;
+        foreach (Action<ShipEncounter> callback in callbacks.GetInvocationList())
+            try { callback(encounter); } catch (Exception ex) { Log.Error(ex, "Encounter subscriber failed."); }
     }
 }

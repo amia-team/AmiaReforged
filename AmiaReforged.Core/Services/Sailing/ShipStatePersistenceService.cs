@@ -1,5 +1,4 @@
 using AmiaReforged.Core.Models.Sailing;
-using AmiaReforged.Core.Services;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -7,206 +6,109 @@ using NLog;
 namespace AmiaReforged.Core.Services.Sailing;
 
 [ServiceBinding(typeof(ShipStatePersistenceService))]
-public class ShipStatePersistenceService
+public class ShipStatePersistenceService : IDisposable
 {
-    private readonly DatabaseContextFactory
-        _ctxFactory;
-
-    private static readonly Logger Log =
-        LogManager.GetCurrentClassLogger();
-
-    private const bool PersistShips = false;
-        
-    public ShipStatePersistenceService(
-        DatabaseContextFactory ctxFactory)
+    private readonly SailingPersistenceContextFactory _factory;
+    private readonly ShipNavigationService? _navigation;
+    private readonly SailingPersistenceBackend _backend;
+    private readonly SailingFileStore? _files;
+    private readonly CoalescingSaveQueue<string, SavedShipState> _saves = new();
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    public bool IsEnabled { get; }
+    public ShipStatePersistenceService(SailingPersistenceContextFactory ctxFactory,
+        ShipNavigationService? navigation = null, ShipPersistenceOptions? options = null, SailingFileStore? files = null)
     {
-        _ctxFactory = ctxFactory;
+        _factory = ctxFactory; _navigation = navigation;
+        _backend = options?.Backend ?? SailingPersistenceBackend.Disabled;
+        IsEnabled = options?.Enabled == true && _backend != SailingPersistenceBackend.Disabled;
+        _files = files ?? (IsEnabled && _backend == SailingPersistenceBackend.Files ? new SailingFileStore(options!) : null);
     }
 
-    /// <summary>
-    /// Loads the saved state for a ship.
-    /// Returns null if the ship has never been saved.
-    /// </summary>
-    public async Task<SavedShipState?> LoadState(
-        string shipName)
+    public async Task<IReadOnlyCollection<SavedShipState>> LoadFleet()
     {
-        if (!PersistShips)
-        {
-        return null;
-        }
-        await using AmiaDbContext context =
-            _ctxFactory.CreateDbContext();
+        if (!IsEnabled) return [];
+        if (_backend == SailingPersistenceBackend.Files) return await _files!.LoadShips().ConfigureAwait(false);
+        await using SailingPersistenceDbContext context = _factory.CreateDbContext();
+        return await context.SavedShipStates.AsNoTracking().ToListAsync().ConfigureAwait(false);
+    }
 
+    public async Task<SavedShipState?> LoadState(string shipId, string? legacyName = null)
+    {
+        if (!IsEnabled) return null;
         try
         {
-            SavedShipState? state =
-                await context.SavedShipStates
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(
-                        x =>
-                            x.ShipName == shipName);
-
-            if (state != null)
-            {
-                //Log.Info(
-                    //"Loaded saved ship state: " +
-                    //"Ship={ShipName}, Area={Area}, " +
-                    //"X={X}, Y={Y}, Z={Z}, " +
-                    //"Heading={Heading}, Underway={Underway}, " +
-                    //"Hull={Hull}, Weapon={Weapon}",
-                    //state.ShipName,
-                    //state.AreaResRef,
-                    //state.X,
-                    //state.Y,
-                    //state.Z,
-                    //state.Heading,
-                    //state.Underway,
-                    //state.Hull,
-                    //state.WeaponResRef);
-            }
-            else
-            {
-                //Log.Info(
-                    //"No saved ship state found for '{ShipName}'.",
-                    //shipName);
-            }
-
-            return state;
+            if (_backend == SailingPersistenceBackend.Files) return await _files!.LoadShip(shipId).ConfigureAwait(false);
+            await using SailingPersistenceDbContext context = _factory.CreateDbContext();
+            SavedShipState? current = await context.SavedShipStates.AsNoTracking().FirstOrDefaultAsync(s => s.ShipId == shipId).ConfigureAwait(false);
+            return current ?? await context.SavedShipStates.AsNoTracking().FirstOrDefaultAsync(s =>
+                s.ShipId == null && s.ShipName == (legacyName ?? shipId)).ConfigureAwait(false);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Log.Error(
-                e,
-                "Error loading saved ship state for '{ShipName}'.",
-                shipName);
-
-            return null;
+            Log.Error(ex, "Ship restoration failed for {0}; do not overwrite with startup defaults.", shipId);
+            throw;
         }
     }
 
-    /// <summary>
-    /// Saves the current state of a ship.
-    /// Creates the database record if it does not exist.
-    /// </summary>
-    public async Task SaveState(
-        ShipState shipState)
-    {
-        if (!PersistShips)
-        {
-        return;
-        }
-        await using AmiaDbContext context =
-            _ctxFactory.CreateDbContext();
+    public Task SaveState(ShipState ship) => TrySaveState(ship);
 
+    /// <summary>
+    /// Commits a new ship's default while its initialization gate still excludes
+    /// retrieval and world actions. Existing or unreadable records are never seeded.
+    /// </summary>
+    public async Task<bool> TrySaveInitialState(ShipState ship)
+    {
+        if (!IsEnabled || !ship.IsInitializing) return false;
+        SavedShipState snapshot = ShipSnapshotCodec.Capture(ship, _navigation?.GetRoute(ship));
         try
         {
-            SavedShipState? existingState =
-                await context.SavedShipStates
-                    .FirstOrDefaultAsync(
-                        x =>
-                            x.ShipName ==
-                            shipState.ShipName);
+            if (await LoadState(snapshot.ShipId!, snapshot.ShipName).ConfigureAwait(false) != null) return false;
+            return await _saves.Enqueue(snapshot.ShipId!, snapshot, WriteSnapshot).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Initial ship snapshot was not saved for {0}; existing data was left untouched.", snapshot.ShipId);
+            return false;
+        }
+    }
 
-            if (existingState == null)
-            {
-                existingState = new SavedShipState
-                {
-                    ShipName =
-                        shipState.ShipName,
+    public Task<bool> TrySaveState(ShipState ship)
+    {
+        if (!IsEnabled || ship.IsInitializing || ship.IsDocking || ship.IsEconomyBusy) return Task.FromResult(false);
+        SavedShipState snapshot = ShipSnapshotCodec.Capture(ship, _navigation?.GetRoute(ship));
+        return _saves.Enqueue(ship.ShipId, snapshot, WriteSnapshot);
+    }
 
-                    AreaResRef =
-                        shipState.AreaResRef,
-
-                    X =
-                        shipState.X,
-
-                    Y =
-                        shipState.Y,
-
-                    Z =
-                        shipState.Z,
-
-                    Heading =
-                        shipState.Heading,
-
-                    Underway =
-                        shipState.Underway,
-
-                    Hull =
-                        shipState.Hull,
-
-                    WeaponResRef =
-                        string.IsNullOrWhiteSpace(
-                            shipState.WeaponResRef)
-                            ? "ship_cannon"
-                            : shipState.WeaponResRef
-                };
-
-                await context.SavedShipStates
-                    .AddAsync(existingState);
-
-                //Log.Info(
-                    //"Creating saved ship state for '{ShipName}'.",
-                    //shipState.ShipName);
-            }
+    private async Task<bool> WriteSnapshot(SavedShipState snapshot)
+    {
+        try
+        {
+            if (_backend == SailingPersistenceBackend.Files)
+            { await _files!.SaveShip(snapshot).ConfigureAwait(false); return true; }
+            await using SailingPersistenceDbContext context = _factory.CreateDbContext();
+            SavedShipState? existing = await context.SavedShipStates.FirstOrDefaultAsync(s => s.ShipId == snapshot.ShipId).ConfigureAwait(false);
+            existing ??= await context.SavedShipStates.FirstOrDefaultAsync(s => s.ShipId == null && s.ShipName == snapshot.ShipName).ConfigureAwait(false);
+            if (existing == null) context.SavedShipStates.Add(snapshot);
             else
             {
-                existingState.AreaResRef =
-                    shipState.AreaResRef;
-
-                existingState.X =
-                    shipState.X;
-
-                existingState.Y =
-                    shipState.Y;
-
-                existingState.Z =
-                    shipState.Z;
-
-                existingState.Heading =
-                    shipState.Heading;
-
-                existingState.Underway =
-                    shipState.Underway;
-
-                existingState.Hull =
-                    shipState.Hull;
-
-                existingState.WeaponResRef =
-                    string.IsNullOrWhiteSpace(
-                        shipState.WeaponResRef)
-                        ? "ship_cannon"
-                        : shipState.WeaponResRef;
-
-                //Log.Info(
-                    //"Updating saved ship state for '{ShipName}'.",
-                    //shipState.ShipName);
+                existing.ShipId = snapshot.ShipId; existing.ShipName = snapshot.ShipName;
+                existing.AreaResRef = snapshot.AreaResRef; existing.X = snapshot.X; existing.Y = snapshot.Y; existing.Z = snapshot.Z;
+                existing.Heading = snapshot.Heading; existing.Hull = snapshot.Hull; existing.Underway = snapshot.Underway;
+                existing.WeaponResRef = snapshot.WeaponResRef; existing.SnapshotJson = snapshot.SnapshotJson;
             }
-
-            await context.SaveChangesAsync();
-
-            //Log.Info(
-                //"Saved ship state: " +
-                //"Ship={ShipName}, Area={Area}, " +
-                //"X={X}, Y={Y}, Z={Z}, " +
-                //"Heading={Heading}, Underway={Underway}, " +
-                //"Hull={Hull}, Weapon={Weapon}",
-                //shipState.ShipName,
-                //shipState.AreaResRef,
-                //shipState.X,
-                //shipState.Y,
-                //shipState.Z,
-                //shipState.Heading,
-                //shipState.Underway,
-                //shipState.Hull,
-                //shipState.WeaponResRef);
+            await context.SaveChangesAsync().ConfigureAwait(false);
+            return true;
         }
-        catch (Exception e)
+        catch (Exception ex) { Log.Error(ex, "Ship snapshot save failed for {0}.", snapshot.ShipId); return false; }
+    }
+
+    public Task<bool> FlushAsync(CancellationToken cancellation = default) => _saves.FlushAsync(cancellation);
+    public void Dispose()
+    {
+        try
         {
-            Log.Error(
-                e,
-                "Error saving ship state for '{ShipName}'.",
-                shipState.ShipName);
+            if (!FlushAsync().Wait(TimeSpan.FromSeconds(10))) Log.Error("Timed out flushing sailing ship saves during shutdown.");
         }
+        catch (Exception ex) { Log.Error(ex, "Sailing ship shutdown flush failed."); }
     }
 }

@@ -13,14 +13,15 @@ public sealed class ShipVisibilityService
         ShipState viewer,
         IReadOnlyCollection<ShipState> ships)
     {
+        if (!ShipActionRules.IsActive(viewer)) yield break;
         foreach (ShipState ship in ships)
         {
-            if (ReferenceEquals(ship, viewer))
+            if (!ShipActionRules.IsActive(ship) || ReferenceEquals(ship, viewer))
             {
                 continue;
             }
 
-            if (ship.AreaResRef != viewer.AreaResRef)
+            if (!string.Equals(ship.AreaResRef, viewer.AreaResRef, StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }

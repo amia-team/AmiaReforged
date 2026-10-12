@@ -61,6 +61,7 @@ public sealed class ShipSpellVfxService
 
         if (deckArea == null)
         {
+            if (targetShip.ShipType != ShipType.Player) return; // Abstract NPC ships intentionally have no deck assets.
             Log.Warn(
                 $"Cannot play ship spell VFX: " +
                 $"Deck area '{targetShip.DeckAreaResRef}' " +
@@ -70,23 +71,10 @@ public sealed class ShipSpellVfxService
             return;
         }
 
-        Location location =
-            Location.Create(
-                deckArea,
-                new System.Numerics.Vector3(
-                    42.0f,
-                    42.0f,
-                    0.0f),
-                0.0f);
-
-        //Log.Info(
-            //$"Playing ship spell VFX: " +
-            //$"VFX={vfx}, " +
-            //$"Ship={targetShip.ShipName}, " +
-            //$"Deck={targetShip.DeckAreaResRef}, " +
-            //$"Location=(42,42,0).");
-
-        // VFX implementation goes here.
+        NwWaypoint? impact = NwObject.FindObjectsWithTag<NwWaypoint>("SAILING_DECK_SPAWN")
+            .FirstOrDefault(w => w.IsValid && string.Equals(w.Area?.ResRef, targetShip.DeckAreaResRef, StringComparison.OrdinalIgnoreCase));
+        if (impact?.Location == null) return; // No guessed world location.
+        impact.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(vfx));
     }
 
 

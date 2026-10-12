@@ -8,9 +8,9 @@ namespace AmiaReforged.Core.Services.Sailing;
 [ServiceBinding(typeof(ShipCombatService))]
 public class ShipCombatService
 {
-    private const int MaxHull = 100;
+    private static readonly ShipWeapon Unarmed = new()
+    { ResRef = "", DisplayName = "Unarmed", Damage = 0, Cooldown = TimeSpan.Zero, MaxRange = 0, Arc = WeaponArc.Forward };
 
-    private const int RepairAmount = 25;
 
     private static readonly ShipWeapon DefaultCannon =
         new()
@@ -133,6 +133,7 @@ public class ShipCombatService
         _nextAttackAllowed =
             new();
 
+    private readonly HashSet<string> _unknownWeaponWarnings = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _cooldownLock =
         new();
 
@@ -145,11 +146,15 @@ public class ShipCombatService
     private readonly ShipCrewService
         _shipCrewService;
 
+    private readonly ShipRegistryService _registry;
+
     public ShipCombatService(
+        ShipRegistryService registry,
         ShipEncounterService shipEncounterService,
         ShipStatePersistenceService shipStatePersistenceService,
         ShipCrewService shipCrewService)
     {
+        _registry = registry;
         _shipEncounterService =
             shipEncounterService;
 
@@ -171,6 +176,7 @@ public class ShipCombatService
     public ShipWeapon GetWeapon(
         string? weaponResRef)
     {
+        if (weaponResRef == "") return Unarmed;
         if (!string.IsNullOrWhiteSpace(
                 weaponResRef) &&
             Weapons.TryGetValue(
@@ -180,13 +186,13 @@ public class ShipCombatService
             return weapon;
         }
 
-        Log.Warn(
-            $"Unknown ship weapon ResRef " +
-            $"'{weaponResRef}'. " +
-            $"Using default Cannon.");
+        if (_unknownWeaponWarnings.Add(weaponResRef ?? "<null>"))
+            Log.Warn("Unknown ship weapon ResRef '{0}'; using default Cannon.", weaponResRef);
 
         return DefaultCannon;
     }
+    private static bool IsUnarmed(ShipState ship) => !ship.AllowsWeapons || CutterRentalFleet.IsCutter(ship) || ship.WeaponResRef == "";
+    public ShipWeapon GetWeapon(ShipState ship) => IsUnarmed(ship) ? Unarmed : GetWeapon(ship.WeaponResRef);
 
     public IReadOnlyCollection<ShipWeapon>
         GetAvailableWeapons()
@@ -198,6 +204,7 @@ public class ShipCombatService
         ShipState ship,
         string weaponResRef)
     {
+        if (!ship.AllowsWeapons || CutterRentalFleet.IsCutter(ship)) return false;
         if (!Weapons.TryGetValue(
                 weaponResRef,
                 out ShipWeapon? weapon))
@@ -209,8 +216,8 @@ public class ShipCombatService
             return false;
         }
 
-        ship.WeaponResRef =
-            weapon.ResRef;
+        if (!_registry.IsCurrent(ship) || !ShipActionRules.IsActive(ship) || ship.IsDisabled) return false;
+        ship.WeaponResRef = weapon.ResRef;
 
         //Log.Info(
             //$"Ship '{ship.ShipName}' equipped " +
@@ -244,7 +251,8 @@ public class ShipCombatService
             return false;
         }
 
-        if (role != ShipCrewRole.Captain)
+        if (role != ShipCrewRole.Captain || !_shipCrewService.IsPlayerPresent(shipName, player) ||
+            _registry.GetShip(shipName)?.HelmsmanPCKey != player.PlayerName)
         {
             //Log.Info(
                 //$"Combat access denied: " +
@@ -263,387 +271,60 @@ public class ShipCombatService
     // Attack - Player Authorized
     // ---------------------------------------------------------------------
 
-    public async Task<ShipAttackResult>
-        TryAttack(
-            ShipState attacker,
-            NwPlayer player)
+    public Task<ShipAttackResult> TryAttack(ShipState attacker, ShipState? target, NwPlayer player)
     {
-        if (!CanOperateWeapons(
-                attacker.ShipName,
-                player))
-        {
-            ShipWeapon weapon =
-                GetWeapon(
-                    attacker.WeaponResRef);
-
-            //Log.Info(
-                //$"Ship attack denied: " +
-                //$"Ship={attacker.ShipName}, " +
-                //$"Player={player.PlayerName}");
-
-            return ShipAttackResult.NotAuthorized(
-                weapon);
-        }
-
-        return await TryAttack(
-            attacker);
+        if (IsUnarmed(attacker)) return Task.FromResult(ShipAttackResult.UnarmedResult(Unarmed));
+        if (!CanOperateWeapons(attacker.ShipName, player))
+            return Task.FromResult(ShipAttackResult.NotAuthorized(GetWeapon(attacker)));
+        return Task.FromResult(ExecuteAttack(attacker, target));
     }
 
-    // ---------------------------------------------------------------------
-    // Attack
-    // ---------------------------------------------------------------------
-
-    public async Task<ShipAttackResult>
-        TryAttack(
-            ShipState attacker)
+    public Task<ShipAttackResult> TryNpcAttack(ShipState attacker, ShipState? target)
     {
-        ShipWeapon weapon =
-            GetWeapon(
-                attacker.WeaponResRef);
+        if (IsUnarmed(attacker)) return Task.FromResult(ShipAttackResult.UnarmedResult(Unarmed));
+        if (attacker.ShipType != ShipType.Pirate || !string.IsNullOrEmpty(attacker.HelmsmanPCKey))
+            return Task.FromResult(ShipAttackResult.NotAuthorized(GetWeapon(attacker.WeaponResRef)));
+        return Task.FromResult(ExecuteAttack(attacker, target));
+    }
 
-        // -----------------------------------------------------------------
-        // Attacker disabled
-        // -----------------------------------------------------------------
-
-        if (attacker.Hull <= 0)
-        {
-            //Log.Info(
-                //$"Ship '{attacker.ShipName}' " +
-                //"cannot attack because it is disabled.");
-
-            return ShipAttackResult.AttackerDisabledResult(
-                weapon);
-        }
-
-        // -----------------------------------------------------------------
-        // Find target
-        // -----------------------------------------------------------------
-
-        if (!_shipEncounterService.TryGetTarget(
-                attacker,
-                out ShipState? targetShip,
-                out ShipEncounter? encounter) ||
-            targetShip == null ||
-            encounter == null)
-        {
-            //Log.Info(
-                //$"Ship '{attacker.ShipName}' " +
-                //"cannot attack because it has " +
-                //"no encounter target.");
-
-            return ShipAttackResult.NoTarget(
-                weapon);
-        }
-
-        // -----------------------------------------------------------------
-        // Target disabled
-        // -----------------------------------------------------------------
-
-        if (targetShip.Hull <= 0)
-        {
-            //Log.Info(
-                //$"Ship '{targetShip.ShipName}' " +
-                //"is already disabled.");
-
-            return ShipAttackResult.Disabled(
-                targetShip,
-                weapon);
-        }
-
-        // -----------------------------------------------------------------
-        // Range
-        // -----------------------------------------------------------------
-
-        if (encounter.Distance >
-            weapon.MaxRange)
-        {
-            //Log.Info(
-                //$"Ship '{attacker.ShipName}' " +
-                //$"cannot attack " +
-                //$"'{targetShip.ShipName}': " +
-                //$"distance={encounter.Distance:0.00}, " +
-                //$"weapon range={weapon.MaxRange:0.00}.");
-
-            return ShipAttackResult.OutOfRange(
-                targetShip,
-                weapon,
-                encounter.Distance);
-        }
-
-        // -----------------------------------------------------------------
-        // Firing arc
-        // -----------------------------------------------------------------
-
-        if (!IsTargetInFiringArc(
-                attacker,
-                targetShip,
-                weapon))
-        {
-            //Log.Info(
-                //$"Ship '{attacker.ShipName}' " +
-                //$"cannot attack " +
-                //$"'{targetShip.ShipName}': " +
-                //$"target is outside the " +
-                //$"{weapon.Arc} firing arc.");
-
-            return ShipAttackResult.OutOfArc(
-                targetShip,
-                weapon,
-                encounter.Distance);
-        }
-
-        // -----------------------------------------------------------------
-        // Cooldown
-        // -----------------------------------------------------------------
-
-        DateTime now =
-            DateTime.UtcNow;
+    private ShipAttackResult ExecuteAttack(ShipState attacker, ShipState? target)
+    {
+        ShipWeapon weapon = GetWeapon(attacker);
+        if (IsUnarmed(attacker)) return ShipAttackResult.UnarmedResult(weapon);
+        if (!_registry.IsCurrent(attacker) || !ShipActionRules.IsActive(attacker))
+            return ShipAttackResult.InvalidActor(weapon);
+        if (attacker.IsDisabled) return ShipAttackResult.AttackerDisabledResult(weapon);
+        if (!_registry.IsCurrent(target) || !ShipActionRules.CanInteract(attacker, target))
+            return ShipAttackResult.NoTarget(weapon);
+        if (target!.IsDisabled) return ShipAttackResult.Disabled(target, weapon);
+        // Read current positions; cached encounter distance may belong to an earlier tick.
+        float distance = ShipActionRules.Distance(attacker, target);
+        if (distance > weapon.MaxRange) return ShipAttackResult.OutOfRange(target, weapon, distance);
+        if (!ShipActionRules.InFiringArc(attacker, target, weapon))
+            return ShipAttackResult.OutOfArc(target, weapon, distance);
 
         lock (_cooldownLock)
         {
-            if (_nextAttackAllowed.TryGetValue(
-                    attacker.ShipName,
-                    out DateTime nextAllowed))
-            {
-                TimeSpan remaining =
-                    nextAllowed - now;
-
-                if (remaining > TimeSpan.Zero)
-                {
-                    //Log.Info(
-                        //$"Ship '{attacker.ShipName}' " +
-                        //$"attack rejected by cooldown. " +
-                        //$"Weapon={weapon.DisplayName}, " +
-                        //$"Remaining={remaining.TotalSeconds:0.00}s.");
-
-                    return ShipAttackResult.Cooldown(
-                        weapon,
-                        remaining);
-                }
-            }
-
-            _nextAttackAllowed[
-                attacker.ShipName] =
-                now + weapon.Cooldown;
+            DateTime now = DateTime.UtcNow;
+            TimeSpan remaining = _nextAttackAllowed.GetValueOrDefault(attacker.ShipId) - now;
+            if (remaining > TimeSpan.Zero) return ShipAttackResult.Cooldown(weapon, remaining);
+            _nextAttackAllowed[attacker.ShipId] = now + weapon.Cooldown;
         }
-
-        // -----------------------------------------------------------------
-        // Damage
-        // -----------------------------------------------------------------
-
-        int previousHull =
-            targetShip.Hull;
-
-        int damage =
-            ApplyHullDamage(
-                targetShip,
-                weapon.Damage);
-
-        //Log.Info(
-            //$"Ship attack: " +
-            //$"{attacker.ShipName} -> " +
-            //$"{targetShip.ShipName}, " +
-            //$"Weapon={weapon.DisplayName}, " +
-            //$"Damage={damage}, " +
-            //$"Hull={previousHull}->{targetShip.Hull}, " +
-            //$"Distance={encounter.Distance:0.00}, " +
-            //$"Arc={weapon.Arc}");
-
-        // -----------------------------------------------------------------
-        // Disabled state
-        // -----------------------------------------------------------------
-
-        if (targetShip.Hull <= 0)
-        {
-            targetShip.Hull =
-                0;
-
-            targetShip.Underway =
-                false;
-
-            //Log.Info(
-                //$"Ship '{targetShip.ShipName}' " +
-                //"has been disabled. " +
-                //"Underway=false.");
-        }
-
-        // -----------------------------------------------------------------
-        // Persistence
-        // -----------------------------------------------------------------
-
-        await _shipStatePersistenceService.SaveState(
-            targetShip);
-
-        return ShipAttackResult.Successful(
-            targetShip,
-            weapon,
-            damage,
-            previousHull,
-            targetShip.Hull,
-            encounter.Distance);
+        int previousHull = target.Hull;
+        int damage = target.ApplyHullDamage(weapon.Damage);
+        ShipAttackResult result = ShipAttackResult.Successful(target, weapon, damage, previousHull, target.Hull, distance);
+        // Save captures synchronously and queues database work. A slow database must
+        // not suspend the world tick or resume a later NPC decision off the main thread.
+        _ = _shipStatePersistenceService.SaveState(target);
+        return result;
     }
 
-    // ---------------------------------------------------------------------
-    // Hull Damage
-    // ---------------------------------------------------------------------
-
-    private int ApplyHullDamage(
-        ShipState targetShip,
-        int requestedDamage)
-    {
-        if (requestedDamage <= 0)
-        {
-            return 0;
-        }
-
-        int previousHull =
-            Math.Clamp(
-                targetShip.Hull,
-                0,
-                MaxHull);
-
-        targetShip.Hull =
-            previousHull;
-
-        int actualDamage =
-            Math.Min(
-                requestedDamage,
-                previousHull);
-
-        targetShip.Hull =
-            Math.Clamp(
-                previousHull -
-                actualDamage,
-                0,
-                MaxHull);
-
-        return actualDamage;
-    }
-
-    // ---------------------------------------------------------------------
-    // Repair
-    // ---------------------------------------------------------------------
-
-
-    // ---------------------------------------------------------------------
-    // Firing Arc
-    // ---------------------------------------------------------------------
-
-    private bool IsTargetInFiringArc(
-        ShipState attacker,
-        ShipState target,
-        ShipWeapon weapon)
-    {
-        float dx =
-            target.X -
-            attacker.X;
-
-        float dy =
-            target.Y -
-            attacker.Y;
-
-        double targetAngle =
-            Math.Atan2(
-                dy,
-                dx) *
-            180.0 /
-            Math.PI;
-
-        if (targetAngle < 0.0)
-        {
-            targetAngle += 360.0;
-        }
-
-        double headingAngle =
-            attacker.Heading switch
-            {
-                Heading.East =>
-                    0.0,
-
-                Heading.North =>
-                    90.0,
-
-                Heading.West =>
-                    180.0,
-
-                Heading.South =>
-                    270.0,
-
-                _ =>
-                    0.0
-            };
-
-        double relativeAngle =
-            targetAngle -
-            headingAngle;
-
-        while (relativeAngle < 0.0)
-        {
-            relativeAngle += 360.0;
-        }
-
-        while (relativeAngle >= 360.0)
-        {
-            relativeAngle -= 360.0;
-        }
-
-        switch (weapon.Arc)
-        {
-            case WeaponArc.Forward:
-                return
-                    relativeAngle <= 45.0 ||
-                    relativeAngle >= 315.0;
-
-            case WeaponArc.Aft:
-                return
-                    relativeAngle >= 135.0 &&
-                    relativeAngle <= 225.0;
-
-            case WeaponArc.Port:
-                return
-                    relativeAngle >= 90.0 &&
-                    relativeAngle <= 180.0;
-
-            case WeaponArc.Starboard:
-                return
-                    relativeAngle >= 180.0 &&
-                    relativeAngle <= 270.0;
-
-            case WeaponArc.Broadside:
-                return
-                    (relativeAngle >= 45.0 &&
-                     relativeAngle <= 135.0) ||
-                    (relativeAngle >= 225.0 &&
-                     relativeAngle <= 315.0);
-
-            default:
-                return false;
-        }
-    }
-
-    // ---------------------------------------------------------------------
-    // Cooldown
-    // ---------------------------------------------------------------------
-
-    public TimeSpan GetCooldownRemaining(
-        ShipState ship)
+    public TimeSpan GetCooldownRemaining(ShipState ship)
     {
         lock (_cooldownLock)
         {
-            if (!_nextAttackAllowed.TryGetValue(
-                    ship.ShipName,
-                    out DateTime nextAllowed))
-            {
-                return TimeSpan.Zero;
-            }
-
-            TimeSpan remaining =
-                nextAllowed -
-                DateTime.UtcNow;
-
-            return remaining > TimeSpan.Zero
-                ? remaining
-                : TimeSpan.Zero;
+            TimeSpan remaining = _nextAttackAllowed.GetValueOrDefault(ship.ShipId) - DateTime.UtcNow;
+            return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
         }
     }
 
@@ -653,6 +334,9 @@ public class ShipCombatService
 
     public sealed class ShipAttackResult
     {
+        public bool HasNoWeapons { get; private init; }
+        public bool IsNotAuthorized { get; private init; }
+        public bool InvalidAttacker { get; private init; }
         public bool Success { get; }
 
         public bool IsCooldown { get; }
@@ -773,6 +457,11 @@ public class ShipCombatService
         // Not Authorized
         // -----------------------------------------------------------------
 
+        public static ShipAttackResult InvalidActor(ShipWeapon weapon) =>
+            new(false, false, false, false, false, false, false, TimeSpan.Zero, null, weapon, 0, 0, 0, 0) { InvalidAttacker = true };
+        public static ShipAttackResult UnarmedResult(ShipWeapon weapon) =>
+            new(false, false, false, false, false, false, false, TimeSpan.Zero, null, weapon, 0, 0, 0, 0) { HasNoWeapons = true };
+
         public static ShipAttackResult NotAuthorized(
             ShipWeapon weapon)
         {
@@ -790,7 +479,7 @@ public class ShipCombatService
                 0,
                 0,
                 0,
-                0.0f);
+                0.0f) { IsNotAuthorized = true };
         }
 
         // -----------------------------------------------------------------

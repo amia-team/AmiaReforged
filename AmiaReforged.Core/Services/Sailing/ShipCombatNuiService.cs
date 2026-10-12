@@ -7,12 +7,14 @@ using NLog;
 namespace AmiaReforged.Core.Services.Sailing;
 
 [ServiceBinding(typeof(ShipCombatNuiService))]
-public sealed class ShipCombatNuiService
+public sealed class ShipCombatNuiService : IDisposable
 {
     private const string WindowId =
         "ShipCombatNui";
 
-    private readonly Dictionary<string, string> _selectedTargets = new();
+    private readonly ShipTargetSelection _selection;
+    private NwModule? _module;
+    private bool _disposed;
 
     private readonly Dictionary<
         string,
@@ -25,6 +27,7 @@ public sealed class ShipCombatNuiService
     private readonly NuiBind<string> _distanceBind =
         new("combat_distance");
 
+    private readonly NuiBind<bool> _targetEnabled = new("combat_target_enabled");
     private readonly NuiBind<string> _targetNames =
     new("combat_target_names");
 
@@ -60,17 +63,18 @@ public sealed class ShipCombatNuiService
     // -----------------------------------------------------------------
 
     public ShipCombatNuiService(
+        CombatTargetSelectionService selectionService,
         ShipEncounterService shipEncounterService,
         PhysicalShipService physicalShipService,
         ShipSpellEffectService shipSpellEffectService,
         HelmService helmService,
         ShipSpellService shipSpellService)
     {
+        _selection = selectionService.Selection;
+        _physicalShipService = physicalShipService;
+        physicalShipService.PlayerDetached += HandlePlayerDetached;
         _shipEncounterService =
             shipEncounterService;
-
-        _physicalShipService =
-            physicalShipService;
 
         _shipSpellEffectService =
             shipSpellEffectService;
@@ -81,38 +85,47 @@ public sealed class ShipCombatNuiService
         _shipSpellService =
             shipSpellService;
 
-       // shipEncounterService.EncounterStarted +=
-       //     OnEncounterStarted;
+        // shipEncounterService.EncounterStarted +=
+        //     OnEncounterStarted;
 
-      //  shipEncounterService.EncounterEnded +=
-      //      OnEncounterEnded;
-foreach (NwPlaceable station in
-    NwObject.FindObjectsWithTag<NwPlaceable>(
-        "combat_station"))
-{
-    station.OnLeftClick -=
-        HandleCombatStationClick;
+        //  shipEncounterService.EncounterEnded +=
+        //      OnEncounterEnded;
+    }
 
-    station.OnLeftClick +=
-        HandleCombatStationClick;
-}
-        //Log.Info(
-            //"Ship Combat NUI Service initialized.");
+    internal void InitializeModule(NwModule module)
+    {
+        if (_disposed || _module != null) return;
+        _module = module;
+    }
+
+    public void RegisterInteractions()
+    {
+        if (_disposed || _module == null) return;
+        foreach (NwPlaceable station in
+            NwObject.FindObjectsWithTag<NwPlaceable>(
+                "combat_station"))
+        {
+            station.OnLeftClick -=
+                HandleCombatStationClick;
+
+            station.OnLeftClick +=
+                HandleCombatStationClick;
+        }
     }
 
     // -----------------------------------------------------------------
     // Encounter Started
     // -----------------------------------------------------------------
 
-    
+
     // -----------------------------------------------------------------
     // Open For Ship
     // -----------------------------------------------------------------
 
     private void OpenForShip(
         ShipState ship,
-        ShipState targetShip,
-        ShipEncounter encounter)
+        ShipState? targetShip,
+        ShipEncounter? encounter)
     {
         foreach (string playerName
                  in _physicalShipService.GetPlayersAboard(
@@ -171,8 +184,8 @@ foreach (NwPlaceable station in
     public void Open(
         NwPlayer player,
         ShipState ship,
-        ShipState targetShip,
-        ShipEncounter encounter)
+        ShipState? targetShip,
+        ShipEncounter? encounter)
     {
         if (_tokens.ContainsKey(
                 player.PlayerName))
@@ -185,12 +198,7 @@ foreach (NwPlaceable station in
 
             return;
         }
-        if (targetShip != null)
-{
-    _selectedTargets[player.PlayerName] =
-        targetShip.ShipName;
-}
-
+        _selection.Refresh(player.PlayerName, ship, _shipEncounterService.GetNearbyShips(ship));
         // -------------------------------------------------------------
         // Header
         // -------------------------------------------------------------
@@ -230,18 +238,18 @@ foreach (NwPlaceable station in
             InfoLabel(
                 NuiProperty<string>.CreateBind(
                     "combat_status"));
-// -------------------------------------------------------------
-// Target Selection
-// -------------------------------------------------------------
+        // -------------------------------------------------------------
+        // Target Selection
+        // -------------------------------------------------------------
 
-List<ShipState> nearbyShips =
-    _shipEncounterService
-        .GetNearbyShips(ship)
-        .ToList();
+        List<ShipState> nearbyShips =
+            _shipEncounterService
+                .GetNearbyShips(ship)
+                .ToList();
 
-List<NuiListTemplateCell> targetCells =
-[
-    new(
+        List<NuiListTemplateCell> targetCells =
+        [
+            new(
         new NuiLabel(_targetNames))
     {
         Width = 200f
@@ -249,22 +257,22 @@ List<NuiListTemplateCell> targetCells =
     new(
         new NuiButton("SELECT")
         {
-            Id = "btn_combat_target"
+            Id = "btn_combat_target", Enabled = _targetEnabled
         })
     {
         Width = 80f,
         VariableSize = false
     }
-];
+        ];
 
-NuiList targetList =
-    new(
-        targetCells,
-        _targetCount)
-    {
-        Width = 300f,
-        Height = 120f
-    };
+        NuiList targetList =
+            new(
+                targetCells,
+                _targetCount)
+            {
+                Width = 300f,
+                Height = 120f
+            };
         // -------------------------------------------------------------
         // Ship Magic
         // -------------------------------------------------------------
@@ -277,9 +285,9 @@ NuiList targetList =
             new();
 
         NwCreature? caster =
-            player.LoginCreature;
+            player.ControlledCreature;
 
-         if (caster != null)
+        if (caster != null)
         {
             List<ShipSpellEffectDefinition>
                 availableSpells =
@@ -370,44 +378,44 @@ NuiList targetList =
         column.Children.Add(
             Spacer());
 
-        
-   column.Children.Add(
-    SectionHeader(
-        "TARGET"));
 
-column.Children.Add(
-    targetList);
+        column.Children.Add(
+         SectionHeader(
+             "TARGET"));
 
-column.Children.Add(
-    target);
+        column.Children.Add(
+            targetList);
 
-column.Children.Add(
-    distance);
+        column.Children.Add(
+            target);
 
-column.Children.Add(
-    hull);
+        column.Children.Add(
+            distance);
 
-column.Children.Add(
-    Spacer());
+        column.Children.Add(
+            hull);
 
-      column.Children.Add(
-    status);
+        column.Children.Add(
+            Spacer());
 
-column.Children.Add(
-    Spacer());
+        column.Children.Add(
+      status);
 
-column.Children.Add(
-    new NuiButton(
-        "REFRESH")
-    {
-        Id = "btn_combat_refresh"
-    });
+        column.Children.Add(
+            Spacer());
 
-column.Children.Add(
-    Spacer());
+        column.Children.Add(
+            new NuiButton(
+                "REFRESH")
+            {
+                Id = "btn_combat_refresh"
+            });
 
-column.Children.Add(
-    spellHeader);
+        column.Children.Add(
+            Spacer());
+
+        column.Children.Add(
+            spellHeader);
 
         column.Children.Add(
             spellColumn);
@@ -415,6 +423,8 @@ column.Children.Add(
         // -------------------------------------------------------------
         // Window
         // -------------------------------------------------------------
+
+        column.Children.Add(new NuiRow { Children = [Button("ATTACK", "btn_combat_attack"), Button("BOARD", "btn_combat_board")] });
 
         NuiWindow window =
             new(
@@ -446,18 +456,19 @@ column.Children.Add(
 
         _tokens[player.PlayerName] =
             token;
-token.SetBindValue(
-    _targetCount,
-    nearbyShips.Count);
+        token.SetBindValues(_targetEnabled, _selection.Rows(player.PlayerName).Select(nearbyShips.Contains));
+        token.SetBindValue(
+            _targetCount,
+            _selection.Rows(player.PlayerName).Count);
 
-token.SetBindValues(
-    _targetNames,
-    nearbyShips
-        .Select(s => s.ShipName.ToUpper())
-        .ToList());
+        token.SetBindValues(
+            _targetNames,
+            _selection.Rows(player.PlayerName)
+                .Select(s => nearbyShips.Contains(s) ? s.ShipName.ToUpper() : $"{s.ShipName} (departed)")
+                .ToList());
 
-        player.OnNuiEvent +=
-            HandleCombatNuiEvent;
+        player.OnNuiEvent -= HandleCombatNuiEvent;
+        player.OnNuiEvent += HandleCombatNuiEvent;
 
         Update(
             player,
@@ -466,13 +477,13 @@ token.SetBindValues(
             encounter);
 
         //Log.Info(
-            //$"Ship Combat NUI opened for player " +
-            //$"{player.PlayerName}: " +
-            //$"{ship.ShipName} -> " +
-            //$"{targetShip.ShipName}.");
+        //$"Ship Combat NUI opened for player " +
+        //$"{player.PlayerName}: " +
+        //$"{ship.ShipName} -> " +
+        //$"{targetShip.ShipName}.");
     }
-        
-    
+
+
     // -----------------------------------------------------------------
     // Get Available Ship Spells
     // -----------------------------------------------------------------
@@ -480,82 +491,83 @@ token.SetBindValues(
     private List<ShipSpellEffectDefinition>
     GetAvailableShipSpells(
         NwCreature caster)
-{
-    List<ShipSpellEffectDefinition>
-        availableSpells =
-            new();
-
-    foreach (
-        ShipSpellEffectDefinition definition
-        in ShipSpellEffectService.GetDefinitions())
     {
-        NwSpell? spell =
-            NwSpell.FromSpellId(
-                definition.SpellId);
+        List<ShipSpellEffectDefinition>
+            availableSpells =
+                new();
 
-        if (spell == null)
+        foreach (
+            ShipSpellEffectDefinition definition
+            in ShipSpellEffectService.GetDefinitions())
         {
-            Log.Warn(
-                $"Ship spell unavailable: " +
-                $"Could not resolve spell ID " +
-                $"{definition.SpellId}.");
+            NwSpell? spell =
+                NwSpell.FromSpellId(
+                    definition.SpellId);
 
-            continue;
-        }
+            if (spell == null)
+            {
+                Log.Warn(
+                    $"Ship spell unavailable: " +
+                    $"Could not resolve spell ID " +
+                    $"{definition.SpellId}.");
 
-        NwClass? castingClass =
-            _shipSpellService.GetCastingClass(
-                caster,
-                spell);
+                continue;
+            }
 
-        if (castingClass == null)
-        {
-            //Log.Info(
+            NwClass? castingClass =
+                _shipSpellService.GetCastingClass(
+                    caster,
+                    spell);
+
+            if (castingClass == null)
+            {
+                //Log.Info(
                 //$"Ship spell not available to caster: " +
                 //$"Caster={caster.Name}, " +
                 //$"Spell={definition.DisplayName}, " +
                 //$"SpellId={definition.SpellId}.");
 
-            continue;
-        }
+                continue;
+            }
 
-        availableSpells.Add(
-            definition);
+            availableSpells.Add(
+                definition);
 
-        //Log.Info(
+            //Log.Info(
             //$"Ship spell available: " +
             //$"Caster={caster.Name}, " +
             //$"Spell={definition.DisplayName}, " +
             //$"SpellId={definition.SpellId}, " +
             //$"Class={castingClass.ClassType}.");
-    }
+        }
 
-    //Log.Info(
+        //Log.Info(
         //$"Ship spell availability complete: " +
         //$"Caster={caster.Name}, " +
         //$"Available={availableSpells.Count}.");
 
-    return availableSpells;
-}
-// -----------------------------------------------------------------
-// Selected Combat Target
-// -----------------------------------------------------------------
+        return availableSpells;
+    }
+    // -----------------------------------------------------------------
+    // Selected Combat Target
+    // -----------------------------------------------------------------
 
-private ShipState? GetSelectedTarget(NwPlayer player)
-{
-    if (!_selectedTargets.TryGetValue(
-            player.PlayerName,
-            out string? targetShipName))
+    private ShipState? GetSelectedTarget(NwPlayer player)
     {
-        return null;
+        string? sourceName = _physicalShipService.GetShipForPlayer(player.PlayerName);
+        ShipState? source = sourceName == null ? null : _helmService.GetShip(sourceName);
+        return source == null ? null : _selection.GetSelected(player.PlayerName, source, _shipEncounterService.GetNearbyShips(source));
+    }
+    public ShipState? GetSelectedCombatTarget(NwPlayer player) => GetSelectedTarget(player);
+
+    private void HandlePlayerDetached(string ship, string playerName)
+    {
+        if (!_selection.ClearForSource(playerName, ship)) return;
+        NwPlayer? player = NwModule.Instance.Players.FirstOrDefault(p => p.PlayerName == playerName);
+        if (player != null) Close(player);
+        else _tokens.Remove(playerName);
     }
 
-    return _helmService.GetShip(targetShipName);
-}
-public ShipState? GetSelectedCombatTarget(NwPlayer player)
-{
-    return GetSelectedTarget(player);
-}
     // -----------------------------------------------------------------
     // Combat NUI Event
     // -----------------------------------------------------------------
@@ -563,32 +575,45 @@ public ShipState? GetSelectedCombatTarget(NwPlayer player)
     private void HandleCombatNuiEvent(
         ModuleEvents.OnNuiEvent obj)
     {
-        if (!_tokens.ContainsKey(
-                obj.Player.PlayerName))
+        if (!_tokens.TryGetValue(obj.Player.PlayerName, out NuiWindowToken token) || token.Token != obj.Token.Token)
         {
             return;
         }
 
-   if (obj.EventType !=
-    NuiEventType.Click)
-{
-    return;
-}
-if (obj.ElementId == "btn_combat_target")
-{
-    SelectCombatTarget(
-        obj.Player,
-        obj.ArrayIndex);
+        if (obj.EventType == NuiEventType.Close)
+        {
+            Close(obj.Player);
+            return;
+        }
+        if (obj.EventType != NuiEventType.Click)
+        {
+            return;
+        }
+        if (obj.ElementId == "btn_combat_attack" || obj.ElementId == "btn_combat_board")
+        {
+            string? sourceName = _physicalShipService.GetShipForPlayer(obj.Player.PlayerName);
+            ShipState? source = sourceName == null ? null : _helmService.GetShip(sourceName);
+            if (source == null) return;
+            ShipState? target = GetSelectedCombatTarget(obj.Player);
+            if (obj.ElementId == "btn_combat_attack") _ = _helmService.AttackTarget(source.ShipName, obj.Player, target);
+            else _helmService.RequestBoarding(source.ShipName, obj.Player, target);
+            return;
+        }
+        if (obj.ElementId == "btn_combat_target")
+        {
+            SelectCombatTarget(
+                obj.Player,
+                obj.ArrayIndex);
 
-    return;
-}
-if (obj.ElementId == "btn_combat_refresh")
-{
-    RebuildCombatWindow(
-        obj.Player);
+            return;
+        }
+        if (obj.ElementId == "btn_combat_refresh")
+        {
+            RebuildCombatWindow(
+                obj.Player);
 
-    return;
-}
+            return;
+        }
         if (!obj.ElementId.StartsWith(
                 "ship_spell_",
                 StringComparison.Ordinal))
@@ -616,100 +641,27 @@ if (obj.ElementId == "btn_combat_refresh")
             spellId);
     }
     //rebuild combat ui
-    private void RebuildCombatWindow(
-    NwPlayer player)
-{
-    string? shipName =
-        _physicalShipService.GetShipForPlayer(
-            player.PlayerName);
-
-    if (shipName == null)
-        return;
-
-    ShipState? ship =
-        _helmService.GetShip(
-            shipName);
-
-    if (ship == null)
-        return;
-
-    ShipState? targetShip =
-        GetSelectedTarget(player);
-
-    ShipEncounter? encounter = null;
-
-    if (targetShip != null)
+    private void RebuildCombatWindow(NwPlayer player)
     {
-        _shipEncounterService.TryGetEncounter(
-            ship,
-            targetShip,
-            out encounter);
+        string? sourceName = _physicalShipService.GetShipForPlayer(player.PlayerName);
+        ShipState? source = sourceName == null ? null : _helmService.GetShip(sourceName);
+        if (source == null) { Close(player); return; }
+        ShipState? selected = GetSelectedCombatTarget(player);
+        // Retain the selection while changing the window token; prior-token clicks are rejected.
+        player.OnNuiEvent -= HandleCombatNuiEvent;
+        if (_tokens.Remove(player.PlayerName, out NuiWindowToken previous)) SailingWindowLifecycle.Close(previous);
+        ShipEncounter? encounter = null;
+        if (selected != null) _shipEncounterService.TryGetEncounter(source, selected, out encounter);
+        Open(player, source, selected, encounter);
     }
-
-    if (targetShip == null ||
-        encounter == null)
-    {
-        RefreshCombatWindow(player);
-        return;
-    }
-
-    Close(player);
-
-    Open(
-        player,
-        ship,
-        targetShip,
-        encounter);
-}
     //target
-    private void SelectCombatTarget(
-    NwPlayer player,
-    int index)
-{
-    string? shipName =
-        _physicalShipService.GetShipForPlayer(
-            player.PlayerName);
-
-    if (shipName == null)
-        return;
-
-    ShipState? ship =
-        _helmService.GetShip(shipName);
-
-    if (ship == null)
-        return;
-
-    List<ShipState> nearbyShips =
-        _shipEncounterService
-            .GetNearbyShips(ship)
-            .ToList();
-
-    if (index < 0 ||
-        index >= nearbyShips.Count)
+    private void SelectCombatTarget(NwPlayer player, int index)
     {
-        Log.Warn(
-            $"Invalid combat target index: " +
-            $"Player={player.PlayerName}, " +
-            $"Index={index}, " +
-            $"Available={nearbyShips.Count}.");
-
-        return;
+        string? sourceName = _physicalShipService.GetShipForPlayer(player.PlayerName);
+        ShipState? source = sourceName == null ? null : _helmService.GetShip(sourceName);
+        if (source != null) _selection.Select(player.PlayerName, source, index, _shipEncounterService.GetNearbyShips(source));
+        RefreshCombatWindow(player);
     }
-
-    ShipState selectedShip =
-        nearbyShips[index];
-
-    _selectedTargets[player.PlayerName] =
-        selectedShip.ShipName;
-
-    //Log.Info(
-        //$"Combat target selected: " +
-        //$"Player={player.PlayerName}, " +
-        //$"Ship={ship.ShipName}, " +
-        //$"Target={selectedShip.ShipName}.");
-
-    RefreshCombatWindow(player);
-}
 
     // -----------------------------------------------------------------
     // Process Ship Spell
@@ -763,25 +715,25 @@ if (obj.ElementId == "btn_combat_refresh")
         // Re-check availability.
         // -------------------------------------------------------------
 
-       NwClass? castingClass =
-    _shipSpellService.GetCastingClass(
-        caster,
-        spell);
+        NwClass? castingClass =
+     _shipSpellService.GetCastingClass(
+         caster,
+         spell);
 
-if (castingClass == null)
-{
-    player.SendServerMessage(
-        $"You do not currently have " +
-        $"{definition.DisplayName} available.");
+        if (castingClass == null)
+        {
+            player.SendServerMessage(
+                $"You do not currently have " +
+                $"{definition.DisplayName} available.");
 
-    Log.Warn(
-        $"Ship spell rejected: " +
-        $"Player={player.PlayerName}, " +
-        $"Spell={definition.DisplayName}, " +
-        $"SpellId={spellId}.");
+            Log.Warn(
+                $"Ship spell rejected: " +
+                $"Player={player.PlayerName}, " +
+                $"Spell={definition.DisplayName}, " +
+                $"SpellId={spellId}.");
 
-    return;
-}
+            return;
+        }
 
         // -------------------------------------------------------------
         // Definition requirements.
@@ -801,82 +753,39 @@ if (castingClass == null)
         if (ship == null)
             return;
 
-       ShipState? selectedTarget = null;
+        ShipState? selectedTarget = null;
 
-if (definition.RequiresEncounter)
-{
-    selectedTarget =
-        GetSelectedCombatTarget(player);
+        if (definition.RequiresEncounter)
+        {
+            selectedTarget =
+                GetSelectedCombatTarget(player);
 
-    if (selectedTarget == null ||
-        !_shipEncounterService.TryGetEncounter(
-            ship,
-            selectedTarget,
-            out ShipEncounter? encounter) ||
-        encounter == null)
-    {
-        player.SendServerMessage(
-            "There is no enemy ship in range.");
+            if (selectedTarget == null ||
+                !_shipEncounterService.TryGetEncounter(
+                    ship,
+                    selectedTarget,
+                    out ShipEncounter? encounter) ||
+                encounter == null)
+            {
+                player.SendServerMessage(
+                    "There is no enemy ship in range.");
 
-        return;
-    }
-}
+                return;
+            }
+        }
 
         // -------------------------------------------------------------
         // Execute the sailing effect.
         // -------------------------------------------------------------
 
-// -------------------------------------------------------------
-// Execute the sailing spell.
-// -------------------------------------------------------------
+        // -------------------------------------------------------------
+        // Execute the sailing spell.
+        // -------------------------------------------------------------
 
-bool spellSucceeded =
-    _shipSpellEffectService.ProcessSpell(
-        player,
-        caster,
-        spell,
-        selectedTarget);
-
-if (!spellSucceeded)
-{
-    RefreshCombatWindow(
-        player);
-
-    return;
-}
-
-// -------------------------------------------------------------
-// Only consume a prepared spell slot after the
-// sailing spell successfully executes.
-// -------------------------------------------------------------
-
-if (_shipSpellService.IsPreparedCaster(
-        castingClass))
-{
-    if (!_shipSpellService.ConsumeMemorizedSpell(
-            caster,
-            spell))
-    {
-        player.SendServerMessage(
-            $"You have no ready memorized " +
-            $"{definition.DisplayName} spell available.");
-
-        Log.Warn(
-            $"Ship spell rejected: " +
-            $"No memorized slot available. " +
-            $"Player={player.PlayerName}, " +
-            $"Spell={definition.DisplayName}, " +
-            $"SpellId={spell.Id}.");
+        _shipSpellService.TryCastFromCombat(player, caster, spell, selectedTarget);
 
         RefreshCombatWindow(
             player);
-
-        return;
-    }
-}
-
-RefreshCombatWindow(
-    player);
     }
 
     // -----------------------------------------------------------------
@@ -890,67 +799,54 @@ RefreshCombatWindow(
             _physicalShipService.GetShipForPlayer(
                 player.PlayerName);
 
-        if (shipName == null)
-            return;
+        if (shipName == null) { Close(player); return; }
 
         ShipState? ship =
             _helmService.GetShip(
                 shipName);
 
-        if (ship == null)
+        if (ship == null || !ship.IsActiveWorld) { Close(player); return; }
+        List<ShipState> nearbyShips =
+            _shipEncounterService
+                .GetNearbyShips(ship)
+                .ToList();
+
+        _selection.Refresh(player.PlayerName, ship, nearbyShips);
+        IReadOnlyList<ShipState> displayed = _selection.Rows(player.PlayerName);
+        NuiWindowToken token = _tokens[player.PlayerName];
+
+        token.SetBindValues(_targetEnabled, _selection.Rows(player.PlayerName).Select(nearbyShips.Contains));
+        token.SetBindValue(
+            _targetCount,
+            _selection.Rows(player.PlayerName).Count);
+
+        token.SetBindValues(
+            _targetNames,
+            _selection.Rows(player.PlayerName)
+                .Select(s => nearbyShips.Contains(s) ? s.ShipName.ToUpper() : $"{s.ShipName} (departed)")
+                .ToList());
+        ShipState? targetShip = GetSelectedTarget(player);
+        ShipEncounter? encounter = null;
+
+        if (targetShip != null)
+        {
+            _shipEncounterService.TryGetEncounter(
+                ship,
+                targetShip,
+                out encounter);
+        }
+
+        if (targetShip == null ||
+            encounter == null)
+        {
+            Update(
+                player,
+                ship,
+                null,
+                null);
+
             return;
-List<ShipState> nearbyShips =
-    _shipEncounterService
-        .GetNearbyShips(ship)
-        .ToList();
-
-NuiWindowToken token =
-    _tokens[player.PlayerName];
-
-token.SetBindValue(
-    _targetCount,
-    nearbyShips.Count);
-
-token.SetBindValues(
-    _targetNames,
-    nearbyShips
-        .Select(s => s.ShipName.ToUpper())
-        .ToList());
-   ShipState? targetShip =
-    GetSelectedTarget(player);
-if (targetShip != null)
-{
-    
-
-    if (!nearbyShips.Contains(targetShip))
-    {
-        _selectedTargets.Remove(
-            player.PlayerName);
-
-        targetShip = null;
-    }
-}
-ShipEncounter? encounter = null;
-
-if (targetShip != null)
-{
-    _shipEncounterService.TryGetEncounter(
-        ship,
-        targetShip,
-        out encounter);
-}
-
-if (targetShip == null ||
-    encounter == null)
-{
-    Update(
-        player,
-        ship,
-        null,
-        null);
-
-    return;
-}
+        }
 
         Update(
             player,
@@ -1008,7 +904,7 @@ if (targetShip == null ||
 
         token.SetBindValue(
             _hullBind,
-            $"Hull: {targetShip.Hull}%");
+            $"Hull: {targetShip.Hull}/{targetShip.MaximumHull}");
 
         token.SetBindValue(
             _statusBind,
@@ -1019,24 +915,23 @@ if (targetShip == null ||
     // Close
     // -----------------------------------------------------------------
 
-    public void Close(
-        NwPlayer player)
+    public void Close(NwPlayer player)
     {
-        if (!_tokens.Remove(
-                player.PlayerName,
-                out NuiWindowToken token))
-        {
-            return;
-        }
+        player.OnNuiEvent -= HandleCombatNuiEvent;
+        _selection.Clear(player.PlayerName);
+        if (_tokens.Remove(player.PlayerName, out NuiWindowToken token)) SailingWindowLifecycle.Close(token);
+    }
 
-        token.Close();
-
-        player.OnNuiEvent -=
-            HandleCombatNuiEvent;
-
-        //Log.Info(
-            //$"Ship Combat NUI closed for player " +
-            //$"{player.PlayerName}.");
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _physicalShipService.PlayerDetached -= HandlePlayerDetached;
+        foreach (NwPlayer player in _tokens.Values.Select(t => t.Player).ToArray()) Close(player);
+        _tokens.Clear();
+        if (_module?.IsValid == true)
+            foreach (NwPlaceable station in NwObject.FindObjectsWithTag<NwPlaceable>("combat_station")) station.OnLeftClick -= HandleCombatStationClick;
+        _module = null;
     }
 
     // -----------------------------------------------------------------
@@ -1100,97 +995,100 @@ if (targetShip == null ||
     ShipState ship,
     ShipState? targetShip,
     ShipEncounter? encounter)
-{
-    if (definition.RequiresEncounter &&
-        encounter == null)
     {
-        return false;
-    }
+        if (definition.RequiresEncounter &&
+            encounter == null)
+        {
+            return false;
+        }
 
-    if (definition.RequiresEnemyTarget &&
-        targetShip == null)
+        if (definition.RequiresEnemyTarget &&
+            targetShip == null)
+        {
+            return false;
+        }
+
+        if (definition.MaxRange > 0.0f &&
+            encounter != null &&
+            encounter.Distance > definition.MaxRange)
+        {
+            return false;
+        }
+
+        return true;
+    }
+    private void HandleCombatStationClick(
+        PlaceableEvents.OnLeftClick obj)
     {
-        return false;
-    }
+        NwPlayer player =
+            obj.ClickedBy;
 
-    if (definition.MaxRange > 0.0f &&
-        encounter != null &&
-        encounter.Distance > definition.MaxRange)
-    {
-        return false;
-    }
-
-    return true;
-}
-private void HandleCombatStationClick(
-    PlaceableEvents.OnLeftClick obj)
-{
-    NwPlayer player =
-        obj.ClickedBy;
-
-    //Log.Info(
+        //Log.Info(
         //$"Combat station clicked: " +
         //$"Player={player.PlayerName}, " +
         //$"Tag={obj.Placeable.Tag}, " +
         //$"ResRef={obj.Placeable.ResRef}.");
 
-    string? shipName =
-        _physicalShipService.GetShipForPlayer(
-            player.PlayerName);
+        string? shipName =
+            _physicalShipService.GetShipForPlayer(
+                player.PlayerName);
 
-    if (shipName == null)
-    {
-        player.SendServerMessage(
-            "You are not aboard a ship.",
-            ColorConstants.Orange);
+        if (shipName == null)
+        {
+            player.SendServerMessage(
+                "You are not aboard a ship.",
+                ColorConstants.Orange);
 
-        return;
+            return;
+        }
+
+        ShipState? ship =
+            _helmService.GetShip(
+                shipName);
+
+        if (ship == null)
+        {
+            Log.Warn(
+                $"Combat station clicked but ship state " +
+                $"could not be found: " +
+                $"Player={player.PlayerName}, " +
+                $"Ship={shipName}.");
+
+            return;
+        }
+
+        ShipState? targetShip = GetSelectedCombatTarget(player);
+        ShipEncounter? encounter = null;
+        if (targetShip != null) _shipEncounterService.TryGetEncounter(ship, targetShip, out encounter);
+
+        Open(
+            player,
+            ship,
+            targetShip,
+            encounter);
     }
-
-    ShipState? ship =
-        _helmService.GetShip(
-            shipName);
-
-    if (ship == null)
+    public void RefreshAll()
     {
-        Log.Warn(
-            $"Combat station clicked but ship state " +
-            $"could not be found: " +
-            $"Player={player.PlayerName}, " +
-            $"Ship={shipName}.");
-
-        return;
-    }
-
-    _shipEncounterService.TryGetTarget(
-        ship,
-        out ShipState? targetShip,
-        out ShipEncounter? encounter);
-
-    Open(
-        player,
-        ship,
-        targetShip,
-        encounter);
-}
-public void RefreshAll()
-{
-     //Log.Info(
+        //Log.Info(
         //$"Combat NUI RefreshAll: OpenWindows={_tokens.Count}");
-    foreach (string playerName in _tokens.Keys.ToList())
-    {
-        NwPlayer? player =
-            NwModule.Instance.Players.FirstOrDefault(
-                p =>
-                    string.Equals(
-                        p.PlayerName,
-                        playerName,
-                        StringComparison.Ordinal));
+        foreach (string playerName in _tokens.Keys.ToList())
+        {
+            NwPlayer? player =
+                NwModule.Instance.Players.FirstOrDefault(
+                    p =>
+                        string.Equals(
+                            p.PlayerName,
+                            playerName,
+                            StringComparison.Ordinal));
 
-        if (player == null)
-            continue;
+            if (player == null)
+            {
+                _tokens.Remove(playerName);
+                _selection.Clear(playerName);
+                continue;
+            }
 
-        RefreshCombatWindow(player);
+            try { RefreshCombatWindow(player); } catch (Exception ex) { Log.Error(ex, "Combat refresh failed for {0}.", playerName); }
+        }
     }
-}
 }

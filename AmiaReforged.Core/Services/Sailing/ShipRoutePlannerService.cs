@@ -185,7 +185,7 @@ public class ShipRoutePlannerService
             SailingLocation? entry =
                 _sailingAreaService.GetEntryLocation(
                     currentArea,
-                    direction);
+                    direction switch { "North" => "South", "South" => "North", "East" => "West", "West" => "East", _ => direction });
 
             if (entry != null)
             {
