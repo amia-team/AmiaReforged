@@ -99,6 +99,8 @@ public sealed class ShipPartyTransitionService : IDisposable
         string? port = null, ShipLandfall? landfall = null, ShipBoardingRequest? boarding = null)
     {
         if (_disposed || _module == null || !player.IsValid) return;
+        if (travel is Travel.Board or Travel.Retrieve or Travel.Checkout && !ShipActionRules.AllowsOrdinaryBoarding(ship))
+        { player.SendServerMessage("Pirate decks require the explicit HOSTILE BOARD action."); return; }
         if (_sessions.ContainsKey(player.PlayerName) || _occupied.ContainsKey(player.PlayerName))
         { player.SendServerMessage("Resolve or cancel your existing sailing travel confirmation first."); return; }
         if (player.LoginCreature is not { IsValid: true, IsLoginPlayerCharacter: true, Area: { IsValid: true } area } creature ||

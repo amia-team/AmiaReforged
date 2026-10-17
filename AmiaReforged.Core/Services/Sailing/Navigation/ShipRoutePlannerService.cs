@@ -5,7 +5,7 @@ using NLog;
 namespace AmiaReforged.Core.Services.Sailing;
 
 [ServiceBinding(typeof(ShipRoutePlannerService))]
-public class ShipRoutePlannerService
+public partial class ShipRoutePlannerService
 {
     private static readonly Logger Log =
         LogManager.GetCurrentClassLogger();

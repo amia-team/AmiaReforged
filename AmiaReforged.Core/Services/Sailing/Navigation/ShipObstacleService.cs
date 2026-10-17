@@ -7,6 +7,25 @@ namespace AmiaReforged.Core.Services.Sailing;
 [ServiceBinding(typeof(ShipObstacleService))]
 public class ShipObstacleService
 {
+    /// <summary>Swept segment/rectangle collision, including edges and arbitrarily thin obstacles.</summary>
+    public bool IsSegmentClear(string area, float fromX, float fromY, float toX, float toY, float clearance = 0)
+    {
+        if (!float.IsFinite(fromX) || !float.IsFinite(fromY) || !float.IsFinite(toX) || !float.IsFinite(toY)) return false;
+        foreach (var obstacle in GetObstacles(area))
+        {
+            float enter = 0, leave = 1;
+            bool Axis(float start, float delta, float min, float max)
+            {
+                if (delta == 0) return start >= min && start <= max;
+                float a = (min - start) / delta, b = (max - start) / delta;
+                enter = Math.Max(enter, Math.Min(a, b)); leave = Math.Min(leave, Math.Max(a, b));
+                return enter <= leave;
+            }
+            if (Axis(fromX, toX - fromX, obstacle.MinX - clearance, obstacle.MaxX + clearance) &&
+                Axis(fromY, toY - fromY, obstacle.MinY - clearance, obstacle.MaxY + clearance)) return false;
+        }
+        return true;
+    }
     private readonly Dictionary<string, List<SailingObstacle>>
         _obstaclesByArea = new(StringComparer.OrdinalIgnoreCase);
 

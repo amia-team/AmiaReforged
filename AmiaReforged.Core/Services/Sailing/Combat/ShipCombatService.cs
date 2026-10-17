@@ -233,7 +233,13 @@ public class ShipCombatService
 
     public bool CanOperateWeapons(
         string shipName,
-        NwPlayer player)
+        NwPlayer player) => CanOperateWeapons(shipName, _registry.GetShip(shipName), player);
+
+    // The chart already holds the canonical vessel; avoid resolving its name across the fleet each tick.
+    public bool CanOperateWeapons(ShipState ship, NwPlayer player) =>
+        CanOperateWeapons(ship.ShipName, _registry.IsCurrent(ship) ? ship : null, player, logDenied: false);
+
+    private bool CanOperateWeapons(string shipName, ShipState? ship, NwPlayer player, bool logDenied = true)
     {
         ShipCrewRole? role =
             _shipCrewService.GetRole(
@@ -242,7 +248,7 @@ public class ShipCombatService
 
         if (role == null)
         {
-            Log.Warn(
+            if (logDenied) Log.Warn(
                 $"Combat access denied: " +
                 $"Player={player.PlayerName}, " +
                 $"Ship={shipName}, " +
@@ -252,7 +258,7 @@ public class ShipCombatService
         }
 
         if (role != ShipCrewRole.Captain || !_shipCrewService.IsPlayerPresent(shipName, player) ||
-            _registry.GetShip(shipName)?.HelmsmanPCKey != player.PlayerName)
+            ship?.HelmsmanPCKey != player.PlayerName)
         {
             //Log.Info(
                 //$"Combat access denied: " +
@@ -290,6 +296,38 @@ public class ShipCombatService
     private ShipAttackResult ExecuteAttack(ShipState attacker, ShipState? target)
     {
         ShipWeapon weapon = GetWeapon(attacker);
+        if (ValidateAttack(attacker, target, weapon) is { } blocked) return blocked;
+
+        lock (_cooldownLock)
+        {
+            DateTime now = DateTime.UtcNow;
+            TimeSpan remaining = _nextAttackAllowed.GetValueOrDefault(attacker.ShipId) - now;
+            if (remaining > TimeSpan.Zero) return ShipAttackResult.Cooldown(weapon, remaining);
+            _nextAttackAllowed[attacker.ShipId] = now + weapon.Cooldown;
+        }
+        int previousHull = target!.Hull;
+        int damage = target.ApplyHullDamage(weapon.Damage);
+        ShipAttackResult result = ShipAttackResult.Successful(target, weapon, damage, previousHull, target.Hull, ShipActionRules.Distance(attacker, target));
+        // Save captures synchronously and queues database work. A slow database must
+        // not suspend the world tick or resume a later NPC decision off the main thread.
+        _ = _shipStatePersistenceService.SaveState(target);
+        return result;
+    }
+
+    /// <summary>Read-only preview. Null means ready now; never reserves cooldown or applies damage.
+    /// Authorization is supplied by the caller using CanOperateWeapons. Execution always revalidates.</summary>
+    public ShipAttackResult? InspectAttack(ShipState attacker, ShipState? target, bool authorized)
+    {
+        ShipWeapon weapon = GetWeapon(attacker);
+        if (IsUnarmed(attacker)) return ShipAttackResult.UnarmedResult(weapon);
+        if (!authorized) return ShipAttackResult.NotAuthorized(weapon);
+        if (ValidateAttack(attacker, target, weapon) is { } blocked) return blocked;
+        TimeSpan remaining = GetCooldownRemaining(attacker);
+        return remaining > TimeSpan.Zero ? ShipAttackResult.Cooldown(weapon, remaining) : null;
+    }
+
+    private ShipAttackResult? ValidateAttack(ShipState attacker, ShipState? target, ShipWeapon weapon)
+    {
         if (IsUnarmed(attacker)) return ShipAttackResult.UnarmedResult(weapon);
         if (!_registry.IsCurrent(attacker) || !ShipActionRules.IsActive(attacker))
             return ShipAttackResult.InvalidActor(weapon);
@@ -303,20 +341,7 @@ public class ShipCombatService
         if (!ShipActionRules.InFiringArc(attacker, target, weapon))
             return ShipAttackResult.OutOfArc(target, weapon, distance);
 
-        lock (_cooldownLock)
-        {
-            DateTime now = DateTime.UtcNow;
-            TimeSpan remaining = _nextAttackAllowed.GetValueOrDefault(attacker.ShipId) - now;
-            if (remaining > TimeSpan.Zero) return ShipAttackResult.Cooldown(weapon, remaining);
-            _nextAttackAllowed[attacker.ShipId] = now + weapon.Cooldown;
-        }
-        int previousHull = target.Hull;
-        int damage = target.ApplyHullDamage(weapon.Damage);
-        ShipAttackResult result = ShipAttackResult.Successful(target, weapon, damage, previousHull, target.Hull, distance);
-        // Save captures synchronously and queues database work. A slow database must
-        // not suspend the world tick or resume a later NPC decision off the main thread.
-        _ = _shipStatePersistenceService.SaveState(target);
-        return result;
+        return null;
     }
 
     public TimeSpan GetCooldownRemaining(ShipState ship)

@@ -515,7 +515,7 @@ static class DockyardDropdownChecks
     private static void EventContract(Action<bool, string> check, [System.Runtime.CompilerServices.CallerFilePath] string sourcePath = "")
     {
         string dir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, ".."));
-        string source = File.ReadAllText(Path.Combine(dir, "ShipRetrievalNuiService.cs"));
+        string source = File.ReadAllText(Path.Combine(dir, "NUI", "ShipRetrievalNuiService.cs"));
         check(source.Contains("view.Token.Token != evt.Token.Token") && source.Contains("view.Selection.Closed") && source.Contains("view.Busy || view.Publishing") &&
             source.Contains("view.Token.GetBindValue(_modeSelection) != (int)view.Selection.Mode") && source.Contains("view.Token.GetBindValue(_shipSelection) != view.Selection.SelectedValue") &&
             source.Contains("TryAction(evt.ElementId, view.Selection") && !source.Contains("evt.ArrayIndex"),
@@ -543,8 +543,8 @@ static class DockyardDropdownChecks
             source.Contains("\"ship_retrieval_window\""), "Close/dispose detach event observers, retire the mapping before native close and preserve the window ID on reopen.");
         check(source.Contains("DockyardShipList.Create") && source.Contains("_rentals.Definitions, _rentals.ForAccount(state.Account)") &&
             !source.Contains("Southport Cutter 01") && !source.Contains("Sea Sprite"), "Dropdown options come from domain queries without hardcoded fleet names.");
-        string trade = File.ReadAllText(Path.Combine(dir, "ShipTradeNuiService.cs"));
-        string party = File.ReadAllText(Path.Combine(dir, "ShipPartyTransitionService.cs"));
+        string trade = File.ReadAllText(Path.Combine(dir, "NUI", "ShipTradeNuiService.cs"));
+        string party = File.ReadAllText(Path.Combine(dir, "Boarding", "ShipPartyTransitionService.cs"));
         check(trade.Contains("NotifyViewChanged(player)") && trade.Contains("ViewChanged.GetInvocationList()") && party.Contains("TravelFinished.GetInvocationList()") &&
             party.Contains("IsTravelPending(string playerName)"), "Presentation observers notify after trade/travel and isolate callback failures from transactions.");
     }
@@ -1225,9 +1225,12 @@ static class NauticalChartChecks
             var expected = new[] { "left_button", "ahead_button", "right_button", "astern_button", "stop_button", "dock_button", "hail_button",
                 "trade_button", "port_market_button", "attack_button", "hail_contact_button", "board_button", "accept_board_button", "reject_board_button",
                 "weapon_cannon_button", "weapon_ballista_button", "weapon_catapult_button", "weapon_heavy_cannon_button", "repair_button",
-                "test_navigation_button", "leave_button" };
+                "test_navigation_button", "leave_button", "hostile_board_button", "chart_confirm", "chart_cancel" };
             check(buttons.Order().SequenceEqual(expected.Order()) && side.Children.OfType<NuiLabel>().All(l => l.Height >= 28),
                 "Every existing Sailing command remains present, with readable labels and unchanged event identities.");
+            var hostileButton = NauticalChartRecoveryChecks.Elements(side).OfType<NuiButton>().Single(b => b.Id == "hostile_board_button");
+            check(hostileButton.Enabled is NuiBind<bool> { Key: "sailing_hostile_enabled" },
+                "The distinct HOSTILE BOARD action has its own live eligibility binding while consensual BOARD remains present.");
             var list = side.Children.OfType<NuiList>().Single();
             check(list.RowTemplate[1].Element.Id == "sailing_target_select" && ((NuiBind<int>)list.RowCount).Key == "sailing_target_count",
                 "Sailing target selection remains its own row binding and does not use the Combat window's selection.");

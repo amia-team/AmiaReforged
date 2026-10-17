@@ -7,7 +7,7 @@ namespace AmiaReforged.Core.Services.Sailing;
 public enum PirateCombatState { Idle, Acquire, Pursue, Position, Attack, Disengage }
 
 [ServiceBinding(typeof(PirateAiService))]
-public sealed class PirateAiService(ShipNavigationService navigation, ShipCombatService combat)
+public sealed class PirateAiService(ShipNavigationService navigation, ShipCombatService combat, HostileBoardingService? boarding = null)
 {
     private const float DetectionRange = 80f;
     private sealed class Decision
@@ -31,6 +31,8 @@ public sealed class PirateAiService(ShipNavigationService navigation, ShipCombat
 
     private async Task UpdatePirate(ShipState pirate, ShipState[] ships)
     {
+        // The already-stopped NPC stays engaged on deck, including a resolved encounter.
+        if (boarding?.IsShipEngaged(pirate) == true) return;
         if (!_decisions.TryGetValue(pirate, out Decision? decision)) _decisions[pirate] = decision = new();
         if (!ShipActionRules.IsActive(pirate) || pirate.IsDisabled || pirate.HelmsmanPCKey != null)
         { navigation.CancelNavigation(pirate); decision.Target = null; decision.State = PirateCombatState.Disengage; return; }

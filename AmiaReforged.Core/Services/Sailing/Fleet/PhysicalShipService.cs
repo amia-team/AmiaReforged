@@ -259,6 +259,7 @@ public class PhysicalShipService : IDisposable
     private bool AddPlayerAboard(string shipName, NwPlayer player, bool recovering)
     {
         if (IsTransferPending(player.PlayerName) || !HasPhysicalShip(shipName) || _registry.GetShip(shipName) is not { IsActiveWorld: true } aboardShip ||
+            !ShipActionRules.AllowsOrdinaryBoarding(aboardShip) ||
             (recovering && CutterRentalFleet.IsCutter(aboardShip) && !ShipAccessService.MayRecoverRentalVisit(aboardShip,
                 MaritimeIdentity.Account(player), player.LoginCreature?.GetObjectVariable<LocalVariableString>(RentalVisitVariable).Value)) ||
             (_access != null && !(recovering
@@ -570,7 +571,7 @@ public class PhysicalShipService : IDisposable
         string? tracked = GetShipForPlayer(player.PlayerName);
         if (tracked != null) return IsPlayerPresent(tracked, player);
         PhysicalShip[] matches = _physicalShips.Values.Where(physical =>
-            _registry.GetShip(physical.ShipName) is { IsActiveWorld: true } &&
+            _registry.GetShip(physical.ShipName) is { IsActiveWorld: true } state && ShipActionRules.AllowsOrdinaryBoarding(state) &&
             (string.Equals(area.ResRef, physical.DeckAreaResRef, StringComparison.OrdinalIgnoreCase) ||
              string.Equals(area.ResRef, physical.CabinAreaResRef, StringComparison.OrdinalIgnoreCase))).ToArray();
         // Shared/ambiguous decks cannot assign a player to an arbitrary first ship.
@@ -611,13 +612,16 @@ public class PhysicalShipService : IDisposable
     public async Task<bool> TryTransferPlayersAsync(IReadOnlyList<NwPlayer> players, string? fromShip, string? toShip,
         Location destination, Func<bool>? validateAction = null, System.Action? beforeCommit = null,
         bool allowStoredTarget = false, Func<Task>? prepareCommit = null, Func<Task>? abortCommit = null,
-        Func<NwPlayer, bool>? validateDeparture = null)
+        Func<NwPlayer, bool>? validateDeparture = null, bool allowUnavailableSource = false)
     {
         ShipState? sourceShip = fromShip == null ? null : _registry.GetShip(fromShip);
         ShipState? targetShip = toShip == null ? null : _registry.GetShip(toShip);
         bool TargetEligible(NwPlayer player) => toShip == null || (HasPhysicalShip(toShip) && _registry.IsCurrent(targetShip) &&
             (_access == null || _access.CanBoard(targetShip!, player) || allowStoredTarget && _access.CanRetrieve(targetShip!, player, true)) &&
             (targetShip!.IsActiveWorld || (allowStoredTarget && targetShip.IsStored && targetShip.IsDocking && !targetShip.IsInitializing)));
+        // Hostile recovery supplies a durable visit/deck validator. Destination access,
+        // player identity, reservations, frame-awaited arrival and rollback still apply.
+        if (allowUnavailableSource && validateAction == null) return false;
         if (_disposed || players.Count == 0 || destination.Area is not { IsValid: true } || validateAction?.Invoke() == false) return false;
         if (toShip != null && GetPhysicalShip(toShip) is { } target &&
             !string.Equals(destination.Area.ResRef, target.DeckAreaResRef, StringComparison.OrdinalIgnoreCase) &&
@@ -627,7 +631,7 @@ public class PhysicalShipService : IDisposable
         {
             if (!player.IsValid || player.ControlledCreature is not { IsValid: true } creature || creature.Location is not { } previous ||
                 GetShipForPlayer(player.PlayerName) != fromShip ||
-                fromShip != null && (!IsPlayerPresent(fromShip, player) || sourceShip is not { IsActiveWorld: true }) ||
+                fromShip != null && !allowUnavailableSource && (!IsPlayerPresent(fromShip, player) || sourceShip is not { IsActiveWorld: true }) ||
                 !TargetEligible(player) || validateDeparture?.Invoke(player) == false) return false;
             participants.Add((player, creature, previous));
         }
@@ -639,14 +643,14 @@ public class PhysicalShipService : IDisposable
         {
             void ValidateAll()
             {
-                if (fromShip != null && (!_registry.IsCurrent(sourceShip) || !sourceShip!.IsActiveWorld) || validateAction?.Invoke() == false)
+                if (fromShip != null && !allowUnavailableSource && (!_registry.IsCurrent(sourceShip) || !sourceShip!.IsActiveWorld) || validateAction?.Invoke() == false)
                     throw new InvalidOperationException("Ship or membership changed during transfer.");
                 foreach (var entry in participants)
                 {
                     ValidateParticipant(entry.Player, entry.Creature);
                     if (GetShipForPlayer(entry.Player.PlayerName) != fromShip || !TargetEligible(entry.Player) ||
                         !moving.Contains(entry.Creature) && (validateDeparture?.Invoke(entry.Player) == false ||
-                            fromShip != null && !IsPlayerPresent(fromShip, entry.Player)))
+                            fromShip != null && !allowUnavailableSource && !IsPlayerPresent(fromShip, entry.Player)))
                         throw new InvalidOperationException("A participant's consent, access or departure changed during transfer.");
                 }
             }
@@ -654,7 +658,7 @@ public class PhysicalShipService : IDisposable
                 (Func<Task>)(async () => { ValidateAll(); moving.Add(entry.Creature);
                     await MoveCreatureAsync(entry.Player, entry.Creature, destination, ValidateAll, false, () =>
                     {
-                        if (validateDeparture?.Invoke(entry.Player) == false || fromShip != null && !IsPlayerPresent(fromShip, entry.Player))
+                        if (validateDeparture?.Invoke(entry.Player) == false || fromShip != null && !allowUnavailableSource && !IsPlayerPresent(fromShip, entry.Player))
                             throw new InvalidOperationException("Participant left the departure interaction before the jump was queued.");
                     }); }),
                 (Func<Task>)(() => MoveCreatureAsync(entry.Player, entry.Creature, entry.Previous,
@@ -816,6 +820,7 @@ public class PhysicalShipService : IDisposable
             GetPhysicalShip(shipName);
 
         if (physicalShip == null || _registry.GetShip(shipName) is not { IsActiveWorld: true } boardingShip ||
+            !ShipActionRules.AllowsOrdinaryBoarding(boardingShip) ||
             (_access != null && !_access.CanBoard(boardingShip, player)))
         {
             player.SendServerMessage(
@@ -959,6 +964,8 @@ public class PhysicalShipService : IDisposable
             _registry.GetShip(physicalShip.ShipName) is not { IsActiveWorld: true } clickedShip ||
             !string.Equals(placeable.Area?.ResRef, clickedShip.AreaResRef, StringComparison.OrdinalIgnoreCase))
         { player.SendServerMessage("This ship representation is unavailable here."); return; }
+        if (!ShipActionRules.AllowsOrdinaryBoarding(clickedShip))
+        { player.SendServerMessage("Use HOSTILE BOARD with an explicitly selected enemy ship."); return; }
         if (BoardingTravelRequested != null) BoardingTravelRequested(clickedShip, player, placeable);
         else ObserveInteraction(BoardShipAsync(physicalShip.ShipName, player));
     }

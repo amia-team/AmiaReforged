@@ -23,6 +23,8 @@ public class ShipNavigationService
     // Temporary obstacle avoidance state
     // -----------------------------------------------------------------
     private readonly SailingAreaService _sailingAreaService;
+    private readonly Dictionary<ShipState, string> _courseFailures = new();
+    public string? GetCourseFailure(ShipState ship) => _courseFailures.GetValueOrDefault(ship);
     private readonly Dictionary<
     ShipState,
     ShipNavigationRoute>
@@ -50,6 +52,7 @@ public class ShipNavigationService
         ShipState ship,
         ShipNavigationRoute route)
     {
+        _courseFailures.Remove(ship);
         _routes[ship] = route;
 
         ShipNavigationWaypoint? waypoint =
@@ -76,6 +79,7 @@ public class ShipNavigationService
         HashSet<ShipState> current = fleet.ToHashSet();
         foreach (ShipState ship in _routes.Keys.Where(s => !current.Contains(s)).ToArray()) _routes.Remove(ship);
         foreach (ShipState ship in _avoidanceHeadings.Keys.Where(s => !current.Contains(s)).ToArray()) _avoidanceHeadings.Remove(ship);
+        foreach (ShipState ship in _courseFailures.Keys.Where(s => !current.Contains(s)).ToArray()) _courseFailures.Remove(ship);
     }
 
     public void CancelNavigation(ShipState ship)
@@ -88,6 +92,7 @@ public class ShipNavigationService
     public void ClearRoute(
         ShipState ship)
     {
+        _courseFailures.Remove(ship);
         if (_routes.Remove(
                 ship))
         {
@@ -348,17 +353,19 @@ public class ShipNavigationService
         float deltaY =
             targetY - ship.Y;
 
+        float headingThreshold = GetRoute(ship)?.IsChartCourse == true ? 0.0001f : DestinationThreshold;
+
         bool east =
-            deltaX > DestinationThreshold;
+            deltaX > headingThreshold;
 
         bool west =
-            deltaX < -DestinationThreshold;
+            deltaX < -headingThreshold;
 
         bool north =
-            deltaY > DestinationThreshold;
+            deltaY > headingThreshold;
 
         bool south =
-            deltaY < -DestinationThreshold;
+            deltaY < -headingThreshold;
 
         // Axis tolerances must agree with the radial arrival test. A target offset
         // by (0.8, 0.8) is outside radius 1, even though both axes are within 1.
@@ -383,6 +390,21 @@ public class ShipNavigationService
 
     public float GetMovementDistance(ShipState ship, Heading heading, float maximumDistance)
     {
+        // A chart course is already planned around land. Stop instead of entering reactive
+        // detours/recalculation loops if its remaining leg becomes invalid or obstructed.
+        if (GetRoute(ship) is { IsChartCourse: true } chartRoute)
+        {
+            var next = chartRoute.CurrentWaypoint;
+            if (next == null || !string.Equals(ship.AreaResRef, NauticalChartGeometry.OceanArea, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(next.AreaResRef, ship.AreaResRef, StringComparison.OrdinalIgnoreCase) ||
+                !NauticalChartGeometry.InWorld(ship.X, ship.Y) || !NauticalChartGeometry.InWorld(next.X, next.Y) ||
+                !_shipObstacleService.IsSegmentClear(ship.AreaResRef, ship.X, ship.Y, next.X, next.Y))
+            {
+                CancelNavigation(ship);
+                _courseFailures[ship] = "Course blocked. Select a new destination.";
+                return 0;
+            }
+        }
         ShipNavigationWaypoint? waypoint = GetCurrentWaypoint(ship);
         string? area = waypoint?.AreaResRef ?? ship.DestinationAreaResRef;
         if (!string.Equals(area, ship.AreaResRef, StringComparison.OrdinalIgnoreCase) || GetDesiredHeading(ship) != heading)
@@ -395,7 +417,18 @@ public class ShipNavigationService
             Heading.East or Heading.West => dx,
             _ => MathF.Min(dx, dy)
         };
-        return MathF.Min(maximumDistance, remaining);
+        float distance = MathF.Min(maximumDistance, remaining);
+        if (GetRoute(ship)?.IsChartCourse == true)
+        {
+            GetNextPosition(ship, heading, distance, out float x, out float y);
+            if (!NauticalChartGeometry.InWorld(x, y) || !_shipObstacleService.IsSegmentClear(ship.AreaResRef, ship.X, ship.Y, x, y))
+            {
+                CancelNavigation(ship);
+                _courseFailures[ship] = "Course blocked. Select a new destination.";
+                return 0;
+            }
+        }
+        return distance;
     }
 
     public bool IsWaitingForAreaTransition(
@@ -460,8 +493,11 @@ public class ShipNavigationService
                 deltaX * deltaX +
                 deltaY * deltaY);
 
-        return distance <=
-               DestinationThreshold;
+        // Hit chart turns precisely so the next axis-aligned leg retains its planned clearance.
+        var route = GetRoute(ship);
+        float threshold = route?.IsChartCourse == true && route.CurrentWaypointIndex < route.Waypoints.Count - 1
+            ? 0.0001f : DestinationThreshold;
+        return distance <= threshold;
     }
     //--------------------------------------------------
     // Obstacle-Aware Navigation
@@ -475,6 +511,7 @@ public class ShipNavigationService
         Heading desiredHeading =
             GetDesiredHeading(
                 ship);
+        if (GetRoute(ship)?.IsChartCourse == true) return desiredHeading;
 
         // -------------------------------------------------------------
         // Direct route is clear.

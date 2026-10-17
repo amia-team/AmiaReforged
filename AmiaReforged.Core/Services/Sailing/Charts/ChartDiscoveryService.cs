@@ -47,8 +47,7 @@ public sealed class ChartDiscoveryService : IDisposable
     {
         if (!ShipActionRules.IsActive(ship)) return false;
         bool[,] grid = Grid(account, ship.AreaResRef);
-        int centerX = Math.Clamp((int)(ship.X / 40f), 0, 15);
-        int centerY = 15 - Math.Clamp((int)(ship.Y / 40f), 0, 15);
+        var (centerX, centerY) = NauticalChartGeometry.Cell(ship.X, ship.Y);
         bool changed = false;
         for (int x = Math.Max(centerX - 2, 0); x <= Math.Min(centerX + 2, 15); x++)
         for (int y = Math.Max(centerY - 2, 0); y <= Math.Min(centerY + 2, 15); y++)

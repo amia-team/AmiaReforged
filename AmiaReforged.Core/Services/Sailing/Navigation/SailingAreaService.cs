@@ -8,10 +8,10 @@ namespace AmiaReforged.Core.Services.Sailing;
 public class SailingAreaService
 {
     private const float AreaMinX = 0.0f;
-    private const float AreaMaxX = 640.0f;
+    private const float AreaMaxX = NauticalChartGeometry.WorldSize;
 
     private const float AreaMinY = 0.0f;
-    private const float AreaMaxY = 640.0f;
+    private const float AreaMaxY = NauticalChartGeometry.WorldSize;
 
     private readonly Dictionary<
         string,

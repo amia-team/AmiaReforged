@@ -18,6 +18,7 @@ public sealed class SailingModuleLifecycleService : IInitializable, IDisposable
     private readonly ShipRetrievalNuiService _retrieval;
     private readonly ShipTradeNuiService _trade;
     private readonly ShipPartyTransitionService _partyTravel;
+    private readonly HostileBoardingService _hostileBoarding;
     private readonly ShipSpellService _spells;
     private readonly ShipNativeSpellDispatcher _dispatcher;
     private readonly ShipCombatNuiService _combat;
@@ -31,10 +32,11 @@ public sealed class SailingModuleLifecycleService : IInitializable, IDisposable
     public SailingModuleLifecycleService(EventService events, SailingFileStore files, PhysicalShipService physical,
         HelmService helm, ShipRetrievalNuiService retrieval, ShipTradeNuiService trade, ShipSpellService spells,
         ShipNativeSpellDispatcher dispatcher, ShipCombatNuiService combat, SailingBootstrapService bootstrap,
-        ShipNavigationLoopService navigation, MaritimeLedgerService ledger, ShipPartyTransitionService partyTravel)
+        ShipNavigationLoopService navigation, MaritimeLedgerService ledger, ShipPartyTransitionService partyTravel, HostileBoardingService hostileBoarding)
     {
         _ledger = ledger;
         _partyTravel = partyTravel;
+        _hostileBoarding = hostileBoarding;
         _events = events; _files = files; _physical = physical; _helm = helm;
         _retrieval = retrieval; _trade = trade; _spells = spells; _dispatcher = dispatcher;
         _combat = combat; _bootstrap = bootstrap; _navigation = navigation;
@@ -73,6 +75,7 @@ public sealed class SailingModuleLifecycleService : IInitializable, IDisposable
             _retrieval.InitializeModule(_module);
             _trade.InitializeModule(_module);
             _partyTravel.InitializeModule(_module);
+            _hostileBoarding.InitializeModule(_module);
             _helm.InitializeModule(_module);
             _spells.InitializeModule(_module);
             _dispatcher.InitializeModule();

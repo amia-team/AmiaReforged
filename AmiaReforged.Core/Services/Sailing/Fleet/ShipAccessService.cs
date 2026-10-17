@@ -14,7 +14,7 @@ public sealed class ShipAccessService(MaritimeLedgerService ledger)
         ship.Rental is { Status: ShipRentalStatus.RecoveryRequired } rental && (rental.RenterAccount == account || rental.Guests.Contains(account)));
     public static bool MayRecoverRentalVisit(ShipState ship, string account, string? visitId) =>
         MayRecoverMembership(ship, account, true) && (!CutterRentalFleet.IsCutter(ship) || ship.Rental?.RentalId == visitId);
-    public static bool MayCommand(ShipState ship, string account) => Communal(ship) || Owns(ship, account);
+    public static bool MayCommand(ShipState ship, string account) => ship.ShipType != ShipType.Pirate && (Communal(ship) || Owns(ship, account));
     public bool CanBoard(ShipState ship, NwPlayer player) => (Communal(ship) || ledger.Ready && !ledger.HasRecovery) && MayBoard(ship, MaritimeIdentity.Account(player));
     public bool CanCommand(ShipState ship, NwPlayer player) => (Communal(ship) || ledger.Ready && !ledger.HasRecovery) && MayCommand(ship, MaritimeIdentity.Account(player));
     public bool CanRetrieve(ShipState ship, NwPlayer player, bool checkout) =>

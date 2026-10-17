@@ -26,6 +26,7 @@ public sealed class RentalVesselOption
 [ServiceBinding(typeof(MaritimeOptions))]
 public sealed class MaritimeOptions
 {
+    public HostileBoardingOptions HostileBoarding { get; set; } = new();
     public bool RentalsEnabled { get; set; } = Environment.GetEnvironmentVariable("AMIA_SAILING_RENTALS_ENABLED") == "true";
     public List<RentalVesselOption> RentalVessels { get; set; } = CutterRentalFleet.DefaultSlots();
     public int MarketAdjustmentSeconds { get; set; } = 300;
@@ -59,6 +60,8 @@ public sealed class MaritimeOptions
     }
     public void Validate()
     {
+        if (HostileBoarding == null) throw new ArgumentException("Missing hostile boarding configuration.");
+        HostileBoarding.Validate();
         if (!float.IsFinite(PartyBoardingRadius) || PartyBoardingRadius is < 1 or > 50 || PartyConfirmationSeconds is < 15 or > 180 ||
             MarketAdjustmentSeconds < 60 || MaximumQuantity is < 1 or > 10000 || MerchantGoldLimit < 1 ||
             MerchantPurchaseQuantity is < 1 or > 1000 || RentalVessels == null || Markets == null ||

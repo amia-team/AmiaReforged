@@ -13,6 +13,9 @@ public sealed class ShipCombatNuiService : IDisposable
         "ShipCombatNui";
 
     private readonly ShipTargetSelection _selection;
+    private readonly HostileBoardingService? _hostileBoarding;
+    private readonly NuiBind<bool> _hostileEnabled = new("combat_hostile_enabled");
+    private readonly NuiBind<string> _hostileReason = new("combat_hostile_reason");
     private NwModule? _module;
     private bool _disposed;
 
@@ -68,9 +71,10 @@ public sealed class ShipCombatNuiService : IDisposable
         PhysicalShipService physicalShipService,
         ShipSpellEffectService shipSpellEffectService,
         HelmService helmService,
-        ShipSpellService shipSpellService)
+        ShipSpellService shipSpellService, HostileBoardingService? hostileBoarding = null)
     {
         _selection = selectionService.Selection;
+        _hostileBoarding = hostileBoarding;
         _physicalShipService = physicalShipService;
         physicalShipService.PlayerDetached += HandlePlayerDetached;
         _shipEncounterService =
@@ -425,10 +429,12 @@ public sealed class ShipCombatNuiService : IDisposable
         // -------------------------------------------------------------
 
         column.Children.Add(new NuiRow { Children = [Button("ATTACK", "btn_combat_attack"), Button("BOARD", "btn_combat_board")] });
+        column.Children.Add(new NuiButton("HOSTILE BOARD") { Id = "btn_combat_hostile_board", Enabled = _hostileEnabled, Height = 35 });
+        column.Children.Add(InfoLabel(_hostileReason, 44));
 
         NuiWindow window =
             new(
-                column,
+                new NuiGroup { Layout = column, Border = false, Scrollbars = NuiScrollbars.Y },
                 NuiProperty<string>.CreateValue(
                     "Ship Combat"));
 
@@ -437,7 +443,7 @@ public sealed class ShipCombatNuiService : IDisposable
                 -1.0f,
                 -1.0f,
                 500.0f,
-                380.0f);
+                480.0f);
 
         window.Closable =
             true;
@@ -589,13 +595,15 @@ public sealed class ShipCombatNuiService : IDisposable
         {
             return;
         }
-        if (obj.ElementId == "btn_combat_attack" || obj.ElementId == "btn_combat_board")
+        if (obj.ElementId is "btn_combat_attack" or "btn_combat_board" or "btn_combat_hostile_board")
         {
             string? sourceName = _physicalShipService.GetShipForPlayer(obj.Player.PlayerName);
             ShipState? source = sourceName == null ? null : _helmService.GetShip(sourceName);
             if (source == null) return;
             ShipState? target = GetSelectedCombatTarget(obj.Player);
             if (obj.ElementId == "btn_combat_attack") _ = _helmService.AttackTarget(source.ShipName, obj.Player, target);
+            else if (obj.ElementId == "btn_combat_hostile_board")
+            { if (_hostileBoarding != null) _ = _hostileBoarding.BoardAsync(obj.Player, source, target); }
             else _helmService.RequestBoarding(source.ShipName, obj.Player, target);
             return;
         }
@@ -871,6 +879,11 @@ public sealed class ShipCombatNuiService : IDisposable
         {
             return;
         }
+
+        var hostile = _hostileBoarding?.Eligibility(player, ship, GetSelectedCombatTarget(player)) ??
+            HostileBoardingEligibility.Denied("Hostile boarding unavailable");
+        token.SetBindValue(_hostileEnabled, hostile.Allowed);
+        token.SetBindValue(_hostileReason, hostile.Reason);
 
         if (targetShip == null ||
             encounter == null)

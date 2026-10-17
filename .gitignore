@@ -461,3 +461,4 @@ $RECYCLE.BIN/
 !.vscode/launch.json
 !.vscode/extensions.json
 AmiaReforged.PwEngine/coverage-report/
+*.md

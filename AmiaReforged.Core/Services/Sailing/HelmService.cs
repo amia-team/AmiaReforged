@@ -36,6 +36,7 @@ public class HelmService : IDisposable
     private readonly ShipPortService _ports;
     private readonly ShipRetrievalNuiService _retrieval;
     private readonly ShipPartyTransitionService _partyTravel;
+    private readonly HostileBoardingService? _hostileBoarding;
     private IReadOnlyCollection<ShipState> Ships => _registry.GetShips();
     private readonly ShipSpellEffectStateService _shipSpellEffectStateService;
     private readonly Dictionary<string, string> _playerShips = new();
@@ -112,13 +113,14 @@ public class HelmService : IDisposable
         ShipTradeNuiService tradeNui,
         ShipSpellEffectStateService shipSpellEffectStateService,
         ShipStorageService shipStorageService,
-        SailingAreaService sailingAreaService, ShipPartyTransitionService partyTravel)
+        SailingAreaService sailingAreaService, ShipPartyTransitionService partyTravel, HostileBoardingService? hostileBoarding = null)
     {
         _registry = registry;
         _movement = movement;
         _ports = ports;
         _retrieval = retrieval;
         _partyTravel = partyTravel;
+        _hostileBoarding = hostileBoarding;
         _shipRoutePlannerService =
         shipRoutePlannerService;
 
@@ -578,39 +580,11 @@ public class HelmService : IDisposable
             switch (obj.ElementId)
             {
                 case "ahead_button":
-                    _shipNavigationService.CancelNavigation(ship);
-                    if (ship.IsActiveWorld && !ship.IsDisabled) ship.Underway = true;
-
-                    //Log.Info(
-                    //$"Ship '{shipName}' underway.");
-
-                    UpdateSailingNui(ship);
-                    break;
-
                 case "stop_button":
-                    _shipNavigationService.CancelNavigation(ship);
-                    _ = _shipStatePersistenceService.SaveState(ship);
-
-                    //Log.Info(
-                    //$"Ship '{shipName}' stopped.");
-
-                    UpdateSailingNui(ship);
-                    break;
-
                 case "astern_button":
-                    MoveAstern(
-                        shipName,
-                        obj.Player);
-                    break;
-
                 case "left_button":
-                    TurnLeft(
-                        shipName);
-                    break;
-
                 case "right_button":
-                    TurnRight(
-                        shipName);
+                    HandleNavigationCommand(ship, obj.ElementId);
                     break;
 
                 case "test_navigation_button":
@@ -643,6 +617,11 @@ public class HelmService : IDisposable
                     RequestBoarding(
                         shipName,
                         obj.Player, _sailingNuiService.GetSelectedSailingTarget(obj.Player, ship));
+                    break;
+
+                case "hostile_board_button":
+                    if (_hostileBoarding != null) ObserveTransfer(_hostileBoarding.BoardAsync(obj.Player, ship,
+                        _sailingNuiService.GetSelectedSailingTarget(obj.Player, ship)));
                     break;
 
                 case "accept_board_button":
@@ -1556,6 +1535,8 @@ public class HelmService : IDisposable
 
     public async Task RecoverPlayerContextAsync(NwPlayer player)
     {
+        if (_hostileBoarding != null && await _hostileBoarding.RecoverPlayerAsync(player)) return;
+        await NwTask.SwitchToMainThread();
         if (_physicalShipService.IsTransferPending(player.PlayerName) || _physicalShipService.RecoverPlayerMembership(player)) return;
         string? area = player.ControlledCreature?.Area?.ResRef;
         if (area == null) return;
@@ -1819,9 +1800,7 @@ public class HelmService : IDisposable
             if (!ship.IsActiveWorld) continue;
             try
             {
-                if (_shipNavigationService.IsNavigating(ship)) NavigateShip(ship);
-                else if (ship.Underway && !string.IsNullOrWhiteSpace(ship.HelmsmanPCKey))
-                    TryMoveShip(ship, SailingStep * _shipSpellEffectStateService.GetMovementMultiplier(ship));
+                AdvanceShipMovement(ship);
                 UpdateDockingState(ship);
                 if (ship.ShipType != ShipType.Player || ship.IsDisabled || string.IsNullOrWhiteSpace(ship.HelmsmanPCKey)) continue;
                 // Conversions mutate the registry, so movement enumerates a fleet snapshot.
@@ -1845,6 +1824,8 @@ public class HelmService : IDisposable
         }
         fleet = Ships.ToArray();
         _shipEncounterService.CheckEncounters(fleet); // Exactly one fleet reconciliation per tick.
+        if (_hostileBoarding != null) await _hostileBoarding.TickAsync();
+        await NwTask.SwitchToMainThread();
         _shipBoardingService.Cleanup();
         Dictionary<string, NwPlayer> players = NwModule.Instance.Players.ToDictionary(p => p.PlayerName, StringComparer.Ordinal);
         foreach (ShipState ship in fleet.Where(s => s.IsActiveWorld))
@@ -1861,9 +1842,51 @@ public class HelmService : IDisposable
         {
             if (!players.TryGetValue(viewer.Key, out NwPlayer? player)) { _playerShips.Remove(viewer.Key); continue; }
             ShipState? ship = GetShip(viewer.Value);
-            if (ship == null || !ship.IsActiveWorld) continue;
+            if (ship == null)
+            {
+                _sailingNuiService.Close(player); // Retire chart overlays whose vessel left the registry.
+                continue;
+            }
+            if (!ship.IsActiveWorld) continue;
             try { _sailingNuiService.Update(player, ship, fleet); }
             catch (Exception ex) { Log.Error(ex, "Sailing refresh failed for {0}.", viewer.Key); }
+        }
+    }
+
+    // Shared with the fleet tick so command regression checks exercise its actual movement branch.
+    private void AdvanceShipMovement(ShipState ship)
+    {
+        if (!ship.IsActiveWorld) return;
+        if (_shipNavigationService.IsNavigating(ship)) NavigateShip(ship);
+        else if (ship.Underway && !string.IsNullOrWhiteSpace(ship.HelmsmanPCKey))
+            TryMoveShip(ship, SailingStep * _shipSpellEffectStateService.GetMovementMultiplier(ship));
+    }
+
+    // The NUI ownership/presence checks run before dispatch. Keep the commands usable
+    // without native UI objects so regression checks can exercise the same handlers.
+    private bool HandleNavigationCommand(ShipState ship, string elementId)
+    {
+        switch (elementId)
+        {
+            case "ahead_button":
+                _shipNavigationService.CancelNavigation(ship);
+                if (ship.IsActiveWorld && !ship.IsDisabled) ship.Underway = true;
+                UpdateSailingNui(ship);
+                return true;
+            case "stop_button":
+            case "astern_button":
+                _shipNavigationService.CancelNavigation(ship);
+                _ = _shipStatePersistenceService.SaveState(ship);
+                UpdateSailingNui(ship);
+                return true;
+            case "left_button":
+                TurnLeft(ship.ShipName);
+                return true;
+            case "right_button":
+                TurnRight(ship.ShipName);
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -1965,7 +1988,9 @@ public class HelmService : IDisposable
             GetShip(shipName);
 
         if (ship == null || !ship.IsActiveWorld || ship.IsDisabled) return;
-        _shipNavigationService.CancelNavigation(ship);
+        // Manual steering takes over the course without changing propulsion.
+        _shipNavigationService.ClearRoute(ship);
+        _shipNavigationService.ClearDestination(ship);
 
         ship.Heading = ship.Heading switch
         {
@@ -1995,7 +2020,9 @@ public class HelmService : IDisposable
             GetShip(shipName);
 
         if (ship == null || !ship.IsActiveWorld || ship.IsDisabled) return;
-        _shipNavigationService.CancelNavigation(ship);
+        // Manual steering takes over the course without changing propulsion.
+        _shipNavigationService.ClearRoute(ship);
+        _shipNavigationService.ClearDestination(ship);
 
         ship.Heading = ship.Heading switch
         {
@@ -2040,28 +2067,6 @@ public class HelmService : IDisposable
 
         UpdateSailingNui(
         ship);
-    }
-
-    private void MoveAstern(
-        string shipName,
-        NwPlayer player)
-    {
-        ShipState? ship =
-            GetShip(shipName);
-
-        if (ship == null)
-        {
-            return;
-        }
-
-        _shipNavigationService.CancelNavigation(ship);
-        float movementDistance =
-        SailingStep *
-        _shipSpellEffectStateService.GetMovementMultiplier(ship);
-
-        TryMoveShip(
-            ship,
-            -movementDistance);
     }
 
     private void TryMoveShip(ShipState ship, float distance)

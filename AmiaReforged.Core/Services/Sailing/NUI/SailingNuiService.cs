@@ -6,7 +6,7 @@ using NLog;
 namespace AmiaReforged.Core.Services.Sailing;
 
 [ServiceBinding(typeof(SailingNuiService))]
-public class SailingNuiService : IDisposable
+public partial class SailingNuiService : IDisposable
 {
     private const string WindowId = "sailing";
     private const float MapWorldSize =
@@ -25,6 +25,9 @@ public class SailingNuiService : IDisposable
     private readonly Dictionary<string, NuiGroup> _contentGroups = new();
     private readonly ShipTargetSelection _selection = new();
     private readonly ShipRegistryService _registry;
+    private readonly HostileBoardingService? _hostileBoarding;
+    private readonly NuiBind<bool> _hostileEnabled = new("sailing_hostile_enabled");
+    private readonly NuiBind<string> _hostileReason = new("sailing_hostile_reason");
     private readonly NauticalChartWindowCache _charts = new();
     private readonly Dictionary<string, ShipState> _chartShips = new();
     private readonly Dictionary<string, float> _chartSizes = new();
@@ -151,9 +154,14 @@ public class SailingNuiService : IDisposable
     ChartDiscoveryService chartDiscoveryService,
     ChartLandmarkService chartLandmarkService,
     //HelmService helmService,
-    ShipNavigationService shipNavigationService, IslandService islands)
+    ShipNavigationService shipNavigationService, IslandService islands,
+    ShipRoutePlannerService chartPlanner, PhysicalShipService chartPhysical,
+    HostileBoardingService? hostileBoarding = null)
     {
         _registry = registry;
+        _chartPlanner = chartPlanner;
+        _chartPhysical = chartPhysical;
+        _hostileBoarding = hostileBoarding;
         _islands = islands;
         _shipEncounterService =
             shipEncounterService;
@@ -309,6 +317,7 @@ public class SailingNuiService : IDisposable
         _contentGroups[player.PlayerName] = content;
         _charts.Open(player.PlayerName);
         _chartShips[player.PlayerName] = ship;
+        _courseSessions[player.PlayerName] = new(player.PlayerName, ship, _chartPlanner, _shipNavigationService, _shipObstacleService);
         _chartSizes[player.PlayerName] = size;
         token.SetBindValue(_geometryBind, new NuiRect(-1, -1, size + NauticalChartGeometry.WindowWidthOverhead,
             size + NauticalChartGeometry.WindowHeightOverhead));
@@ -334,11 +343,11 @@ public class SailingNuiService : IDisposable
         var left = new NuiColumn { Width = size, Height = panelHeight, Margin = 0, Padding = 0, Children =
         [
             map,
-            InfoLabel("Gold: yours/course   Blue: player   Green: merchant"),
-            InfoLabel("Red: pirate   Grey: neutral   Port: diamond   Target: ring")
+            InfoLabel(new NuiBind<string>("chart_legend1")),
+            InfoLabel(new NuiBind<string>("chart_legend2"))
         ] };
         foreach (var legend in left.Children.OfType<NuiLabel>())
-        { legend.Width = size; legend.Tooltip = "Dark fill: uncharted. Rings identify Sailing selection; diamonds identify discovered ports."; }
+        { legend.Width = size; legend.Tooltip = new NuiBind<string>("chart_legend_help"); }
 
         var panel = new NuiColumn { Width = NauticalChartGeometry.SidebarWidth, Height = panelHeight, Margin = 0, Padding = 0 };
         panel.Children.Add(InfoLabel(ship.ShipName));
@@ -365,6 +374,10 @@ public class SailingNuiService : IDisposable
 
         float essentialHeight = panel.Children.Sum(c => c.Height ?? 0);
         var details = new NuiColumn { Width = NauticalChartGeometry.SidebarContentWidth, Margin = 0, Padding = 0 };
+        details.Children.Add(InfoLabel(_coursePreviewBind));
+        var courseControls = Controls(("CONFIRM COURSE", "chart_confirm"), ("CANCEL PREVIEW", "chart_cancel"));
+        foreach (var button in courseControls.Children.OfType<NuiButton>()) button.Enabled = _coursePreviewEnabled;
+        details.Children.Add(courseControls);
         details.Children.Add(Controls(("HAIL", "hail_button"), ("TRADE", "trade_button")));
         details.Children.Add(Controls(("PORT MARKET", "port_market_button"), ("ATTACK", "attack_button")));
         details.Children.Add(InfoLabel(_waypointsBind));
@@ -379,6 +392,8 @@ public class SailingNuiService : IDisposable
         details.Children.Add(SectionHeader("BOARDING"));
         details.Children.Add(InfoLabel(_boardingBind));
         details.Children.Add(Controls(("BOARD", "board_button"), ("ACCEPT", "accept_board_button"), ("REJECT", "reject_board_button")));
+        details.Children.Add(new NuiButton("HOSTILE BOARD") { Id = "hostile_board_button", Enabled = _hostileEnabled, Height = 32 });
+        details.Children.Add(InfoLabel(_hostileReason));
         details.Children.Add(SectionHeader("SHIP STATUS"));
         details.Children.Add(InfoLabel(_statusBind)); details.Children.Add(InfoLabel(_hullBind));
         details.Children.Add(InfoLabel(_weaponBind));
@@ -402,10 +417,22 @@ public class SailingNuiService : IDisposable
         float width = size + 12 + NauticalChartGeometry.SidebarWidth;
         var body = new NuiRow { Width = width, Height = panelHeight, Margin = 0, Padding = 0, Children =
             [left, new NuiSpacer { Width = 12, Height = panelHeight, Margin = 0, Padding = 0 }, instruments] };
-        var title = SectionHeader("NAUTICAL CHART / NORTH UP"); title.Width = width; title.Margin = 0; title.Padding = 2;
+        var zoomLabel = InfoLabel(new NuiBind<string>("chart_zoom_label")); zoomLabel.Width = 76;
+        zoomLabel.Tooltip = "Nautical chart / north up. Local zoom follows your ship and clamps at ocean edges.";
+        NuiButton ZoomButton(string label, string id, float buttonWidth, string enabled) => new(label)
+        { Id = id, Width = buttonWidth, Height = 28, Margin = 0, Padding = 2, Enabled = new NuiBind<bool>(enabled), Tooltip = label };
+        var north = InfoLabel("NORTH UP"); north.Width = 76;
+        var zoomControls = new NuiRow { Width = size + 12, Height = 28, Margin = 0, Padding = 0, Children =
+        [zoomLabel, ZoomButton("ZOOM -", "chart_zoom_out", 80, "chart_zoom_out_on"),
+            ZoomButton("ZOOM +", "chart_zoom_in", 80, "chart_zoom_in_on"),
+            ZoomButton("RESET (1x)", "chart_zoom_reset", 104, "chart_zoom_out_on"), north] };
+        var chartToggle = new NuiButton(new NuiBind<string>("chart_toggle")) { Id = "sailing_chart_toggle",
+            Width = NauticalChartGeometry.SidebarContentWidth, Height = 28, Margin = 0, Padding = 2,
+            Tooltip = "Switch chart presentation. Tactical: heading arrows, true-position dots, weapon sectors and Sailing target instruments." };
+        var header = new NuiRow { Width = width, Height = 28, Margin = 0, Padding = 0, Children = [zoomControls, chartToggle] };
         return new NuiColumn { Width = width, Height = panelHeight + 28, Margin = 0, Padding = 0, Children =
         [
-            title, body
+            header, body
         ] };
     }
     private static NuiGroup MapGroup(NuiColumn root) => (NuiGroup)((NuiColumn)((NuiRow)root.Children[1]).Children[0]).Children[0];
@@ -432,7 +459,23 @@ public class SailingNuiService : IDisposable
 
     private void HandleChartEvent(Anvil.API.Events.ModuleEvents.OnNuiEvent evt)
     {
-        // HelmService continues owning close/click actions; this subscriber only handles chart geometry.
+        if (OwnsEvent(evt) && evt.EventType == NuiEventType.Click && evt.ElementId is "chart_zoom_in" or "chart_zoom_out" or "chart_zoom_reset" &&
+            _charts.TryGet(evt.Player.PlayerName, out var zoomChart) && _chartShips.TryGetValue(evt.Player.PlayerName, out var zoomShip))
+        {
+            _coursePresses.Remove(evt.Player.PlayerName);
+            if (zoomChart.HandleZoomControl(evt.ElementId) && _registry.IsCurrent(zoomShip)) Update(evt.Player, zoomShip);
+            return;
+        }
+        if (OwnsEvent(evt) && evt.EventType == NuiEventType.Click && evt.ElementId == "sailing_chart_toggle" &&
+            _charts.TryGet(evt.Player.PlayerName, out var chart) && _chartShips.TryGetValue(evt.Player.PlayerName, out var chartShip))
+        {
+            chart.ToggleMode();
+            _coursePresses.Remove(evt.Player.PlayerName);
+            if (_registry.IsCurrent(chartShip)) Update(evt.Player, chartShip);
+            return;
+        }
+        if (HandleCourseEvent(evt)) return;
+        // HelmService owns helm/boarding actions and close; this subscriber also handles chart geometry.
         if (!OwnsEvent(evt) || evt.EventType != NuiEventType.Watch || evt.ElementId != _geometryBind.Key ||
             !_chartShips.TryGetValue(evt.Player.PlayerName, out var ship)) return;
         var rect = evt.Token.GetBindValue(_geometryBind);
@@ -451,7 +494,7 @@ public class SailingNuiService : IDisposable
             var root = CreateLayout(ship, size);
             evt.Token.SetGroupLayout(content, root);
             _mapGroups[evt.Player.PlayerName] = MapGroup(root);
-            _charts.Open(evt.Player.PlayerName);
+            if (_charts.TryGet(evt.Player.PlayerName, out var existingChart)) existingChart.InvalidateLayout();
         }
         if (_registry.IsCurrent(ship)) Update(evt.Player, ship);
     }
@@ -510,8 +553,12 @@ public class SailingNuiService : IDisposable
         var frame = NauticalChartProjection.Capture(ship, _shipNavigationService, visibleShips, visibleOcean,
             _chartLandmarkService.GetLandmarks(ship.AreaResRef), _chartMarkerService.GetMarkers(ship.AreaResRef),
             _islands.GetIslands(), (x, y) => cells[x * 16 + y] == '1', selected?.ShipId);
+        frame = ApplyCoursePreview(player, ship, token, frame);
         if (_charts.TryGet(player.PlayerName, out var renderer) && _mapGroups.TryGetValue(player.PlayerName, out var mapGroup))
         {
+            if (renderer.Mode == SailingChartMode.Tactical)
+                frame = frame with { Tactical = TacticalChartProjection.Capture(frame, ship, selected, _shipCombatService,
+                    _shipCombatService.GetWeapon(ship).Damage > 0 && _shipCombatService.CanOperateWeapons(ship, player)) };
             var update = renderer.Prepare(frame, _chartSizes[player.PlayerName]);
             if (update.Layout != null) token.SetGroupLayout(mapGroup, update.Layout);
             NauticalChartRenderer.Publish(token, update.Changes);
@@ -588,6 +635,9 @@ public class SailingNuiService : IDisposable
         token.SetBindValue(_encounterDistanceBind, selected == null ? "Distance: --" :
             $"Distance: {ShipActionRules.Distance(ship, selected):0.0}m");
         token.SetBindValue(_targetSummaryBind, NauticalChartReadouts.TargetSummary(ship, selected));
+        var hostile = _hostileBoarding?.Eligibility(player, ship, selected) ?? HostileBoardingEligibility.Denied("Hostile boarding unavailable");
+        token.SetBindValue(_hostileEnabled, hostile.Allowed);
+        token.SetBindValue(_hostileReason, hostile.Reason);
         if (_shipBoardingService.TryGetRequestForPlayer(player.PlayerName, out ShipBoardingRequest? incoming) && incoming != null)
             token.SetBindValue(_boardingBind, $"BOARDING REQUEST: {incoming.RequestingShip.ShipName}");
         else token.SetBindValue(_boardingBind, _shipBoardingService.HasRequestFromPlayer(player.PlayerName) ?
@@ -835,6 +885,8 @@ public class SailingNuiService : IDisposable
 
     public void Close(NwPlayer player)
     {
+        if (_courseSessions.Remove(player.PlayerName, out var course)) course.Close();
+        _coursePresses.Remove(player.PlayerName);
         player.OnNuiEvent -= HandleChartEvent;
         _selection.Clear(player.PlayerName);
         _mapGroups.Remove(player.PlayerName);

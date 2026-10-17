@@ -6,9 +6,10 @@ namespace AmiaReforged.Core.Services.Sailing;
 /// <summary>The existing 640-world-unit chart transform, independent of display size.</summary>
 public static class NauticalChartGeometry
 {
-    public const float WorldSize = 640;
-    public const float ReferenceDisplaySize = 800;
-    public const int Cells = 16;
+    public const float WorldSize = ChartViewport.WorldSize;
+    public const string OceanArea = "ocean_01";
+    public const float ReferenceDisplaySize = ChartViewport.ReferenceDisplaySize;
+    public const int Cells = ChartViewport.Cells;
     public const float WorldCellSize = WorldSize / Cells;
     public const float SidebarWidth = 320;
     public const float SidebarContentWidth = 304;
@@ -26,18 +27,20 @@ public static class NauticalChartGeometry
     public static float ResizedSize(float width, float height) => Quantize(Math.Min(width - WindowWidthOverhead, height - WindowHeightOverhead));
     private static float Quantize(float size) => float.IsFinite(size) ? Math.Clamp(MathF.Floor(size / Cells) * Cells, MinimumDisplaySize, 800) : 640;
     public static bool InWorld(float x, float y) => float.IsFinite(x) && float.IsFinite(y) && x >= 0 && y >= 0 && x <= WorldSize && y <= WorldSize;
-    public static ChartPoint Project(float x, float y, float size) => new(x / WorldSize * size, (1 - y / WorldSize) * size);
+    public static ChartPoint Project(float x, float y, float size) => ChartViewport.Create(size).Project(x, y);
+    /// <summary>Inverse of Project in chart-local NUI pixels; edges are inclusive, outside clicks rejected.</summary>
+    public static bool TryUnproject(float x, float y, float size, out ChartPoint world)
+    {
+        return ChartViewport.Create(size).TryUnproject(x, y, out world);
+    }
     public static (int X, int Y) Cell(float x, float y) =>
         (Math.Clamp((int)(x / WorldCellSize), 0, 15), 15 - Math.Clamp((int)(y / WorldCellSize), 0, 15));
-    public static ChartRect FogCell(int x, int y, float size) => new(x * (size / Cells), y * (size / Cells), size / Cells, size / Cells);
+    public static ChartRect FogCell(int x, int y, float size) => ChartViewport.Create(size).FogCell(x, y);
     public static ChartRect Artwork(float x, float y, float width, float height, float size)
     {
         // Existing geographic widths/heights were NUI pixels on the original 800-pixel chart.
         // Scale the footprint and preserve its geographic centre; the group scissors excess at an edge.
-        var point = Project(x, y, size);
-        width = (float.IsFinite(width) && width > 0 ? width : 14) * size / ReferenceDisplaySize;
-        height = (float.IsFinite(height) && height > 0 ? height : 14) * size / ReferenceDisplaySize;
-        return new(point.X - width / 2, point.Y - height / 2, width, height);
+        return ChartViewport.Create(size).Artwork(x, y, width, height);
     }
     public static ChartRect Marker(float x, float y, float width, float height, float size)
     {
@@ -48,9 +51,7 @@ public static class NauticalChartGeometry
     }
     public static ChartRect CenteredMarker(float x, float y, float width, float height, float size)
     {
-        var point = Project(x, y, size);
-        // Draw at the true geographic anchor. The owning map surface scissors edge pixels.
-        return new(point.X - width / 2, point.Y - height / 2, width, height);
+        return ChartViewport.Create(size).CenteredMarker(x, y, width, height);
     }
     public static ChartPoint HeadingVector(Heading heading) => heading switch
     {
@@ -186,18 +187,20 @@ public static class NauticalChartProjection
         return new(ship.ShipId, ship.AreaResRef, new(fog), contacts.ToArray(), features.DistinctBy(f => f.Id).ToArray(), localRoute.ToArray(),
             "Heading: " + NauticalChartGeometry.HeadingSuffix(ship.Heading).ToUpperInvariant(),
             "Movement: " + (ship.IsDisabled ? "DISABLED" : ship.Underway ? "UNDERWAY" : "STOPPED"),
-            "Mode: " + (activeRoute ? route?.Loop == true ? "ROUTE / CIRCUIT" : "ROUTE" : ship.Underway ? "MANUAL" : "STOPPED"),
-            destination, "Waypoints remaining: " + (activeRoute ? route != null ? remaining.Length.ToString(CultureInfo.InvariantCulture) : "1" : "0"));
+            "Mode: " + (activeRoute ? route?.IsChartCourse == true ? "AUTOPILOT" : route?.Loop == true ? "ROUTE / CIRCUIT" : "ROUTE" : ship.Underway ? "MANUAL" : "STOPPED"),
+            destination, "Waypoints remaining: " + (activeRoute ? route != null ? remaining.Length.ToString(CultureInfo.InvariantCulture) : "1" : "0"))
+            { ChartCourse = activeRoute && route?.IsChartCourse == true };
     }
 
     public static ChartRouteSegment[] Segments(NauticalChartFrame frame, float size)
     {
+        var viewport = frame.Viewport ?? ChartViewport.Create(size);
         var own = frame.Markers.LastOrDefault(m => m.Kind == ChartContactKind.OwnShip);
         if (own == null) return [];
-        var result = new List<ChartRouteSegment>(); var from = NauticalChartGeometry.Project(own.X, own.Y, size);
+        var result = new List<ChartRouteSegment>(); var from = viewport.Project(own.X, own.Y);
         foreach (var waypoint in frame.Route)
         {
-            var to = NauticalChartGeometry.Project(waypoint.X, waypoint.Y, size);
+            var to = viewport.Project(waypoint.X, waypoint.Y);
             if (NauticalChartGeometry.ClipLine(from, to, size, out var segment)) result.Add(segment);
             from = to;
         }
