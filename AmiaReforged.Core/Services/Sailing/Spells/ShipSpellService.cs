@@ -64,6 +64,7 @@ public sealed class ShipSpellService : IDisposable
         try { module.OnClientLeave += HandleDisconnect; }
         catch { module.OnSpellCast -= HandleSpellCast; throw; }
         _module = module;
+        Log.Info("Ship spell pre-cast and disconnect subscriptions initialized.");
     }
 
     // ---------------------------------------------------------------------
@@ -76,18 +77,34 @@ public sealed class ShipSpellService : IDisposable
         // the sailing dispatcher applies effects at successful script impact.
         if (eventData.Caster is NwCreature caster && caster.IsPlayerControlled(out NwPlayer? player) &&
             eventData.Item == null && eventData.Spell is { } spell &&
-            TryGetNativeSource(player, out ShipState? source) && ShipSpellEffectService.TryGetDefinition(spell, out _))
+            ShipSpellEffectService.TryGetDefinition(spell, out _))
         {
+            if (!TryGetNativeSource(player, out ShipState? source))
+            { Log.Info("Ship spell pre-cast ignored: player={0}, spell={1}, reason=no registered aboard source.", player.PlayerName, spell.Id); return; }
             ShipState? target = SelectedTarget(player, source!);
-            if (eventData.PreventSpellCast || !_shipSpellEffectService.CanProcessSpell(player, caster, spell, target))
+            if (!CaptureNativeCast(player.PlayerName, spell.Id, source!, target, eventData.PreventSpellCast,
+                    () => _shipSpellEffectService.CanProcessSpell(player, caster, spell, target)))
             {
-                _nativeCasts.Cancel(player.PlayerName);
                 eventData.PreventSpellCast = true;
                 player.SendServerMessage("Your ship cannot cast that spell now. Offensive spells require a valid Combat target in range.");
                 return;
             }
-            _nativeCasts.Begin(player.PlayerName, spell.Id, source!, target, DateTime.UtcNow);
         }
+    }
+
+    private bool CaptureNativeCast(string player, int spellId, ShipState source, ShipState? target,
+        bool prevented, Func<bool> validate)
+    {
+        if (prevented || !validate())
+        {
+            _nativeCasts.Cancel(player);
+            Log.Warn("Ship spell pre-cast rejected: player={0}, spell={1}, source={2}, target={3}, alreadyPrevented={4}.",
+                player, spellId, source.ShipId, target?.ShipId, prevented);
+            return false;
+        }
+        _nativeCasts.Begin(player, spellId, source, target, DateTime.UtcNow);
+        Log.Info("Ship spell captured: player={0}, spell={1}, source={2}, target={3}.", player, spellId, source.ShipId, target?.ShipId);
+        return true;
     }
 
     /// <summary>
@@ -99,14 +116,32 @@ public sealed class ShipSpellService : IDisposable
     public bool ProcessNativeSpellImpact(SpellEvents.OnSpellCast evt)
     {
         if (evt.Item != null || evt.Caster is not NwCreature caster ||
-            !caster.IsPlayerControlled(out NwPlayer? player) || evt.Spell == null || evt.SpellCastClass == null ||
-            (!PreparedCasterClasses.Contains(evt.SpellCastClass.ClassType) &&
-             !SpontaneousCasterClasses.Contains(evt.SpellCastClass.ClassType))) return false;
-        if (!TryGetNativeSource(player, out ShipState? source) || _casting.Contains(player.PlayerName) ||
-            !_nativeCasts.TryComplete(player.PlayerName, evt.Spell.Id, source!, DateTime.UtcNow, out NativeShipCastBook.Cast? cast)) return false;
-        if (!_shipSpellEffectService.ProcessSpell(player, caster, evt.Spell, cast!.Target, playCasterAnimation: false))
-        { player.SendServerMessage("Your sailing spell completed, but its ship target is no longer eligible."); return false; }
-        return true;
+            !caster.IsPlayerControlled(out NwPlayer? player) || evt.Spell == null) return false;
+        if (!TryGetNativeSource(player, out ShipState? source))
+        { Log.Warn("Ship spell impact rejected: player={0}, spell={1}, reason=source membership/presence lost.", player.PlayerName, evt.Spell.Id); return false; }
+        return CompleteNativeCast(player.PlayerName, evt.Spell.Id, source!, evt.SpellCastClass?.ClassType,
+            target => _shipSpellEffectService.CanProcessSpell(player, caster, evt.Spell, target),
+            () => _shipSpellVfxService.PlayCasterSpellVfx(caster, evt.Spell), target =>
+        {
+            // Preserve the previously working custom conjure animation. Native
+            // resource payment remains engine-owned; no ready slot is required here.
+            bool applied = _shipSpellEffectService.ProcessSpell(player, caster, evt.Spell, target, playCasterAnimation: false);
+            if (!applied) player.SendServerMessage("Your sailing spell completed, but its ship target is no longer eligible.");
+            return applied;
+        });
+    }
+
+    private bool CompleteNativeCast(string player, int spellId, ShipState source, ClassType? castingClass,
+        Func<ShipState?, bool> validate, System.Action animate, Func<ShipState?, bool> apply)
+    {
+        if (castingClass == null || !PreparedCasterClasses.Contains(castingClass.Value) && !SpontaneousCasterClasses.Contains(castingClass.Value))
+        { Log.Warn("Ship spell impact rejected: player={0}, spell={1}, reason=unsupported/missing cast class, class={2}.", player, spellId, castingClass); return false; }
+        if (_casting.Contains(player) || !_nativeCasts.TryComplete(player, spellId, source, DateTime.UtcNow, out var cast))
+        { Log.Warn("Ship spell impact rejected: player={0}, spell={1}, source={2}, reason=no matching pending cast or Combat cast busy.", player, spellId, source.ShipId); return false; }
+        if (!validate(cast!.Target))
+        { Log.Warn("Ship spell impact rejected: player={0}, spell={1}, reason=effect validation changed.", player, spellId); return false; }
+        animate();
+        return apply(cast.Target);
     }
 
     public bool TryGetNativeSource(NwPlayer player, out ShipState? source)
@@ -140,7 +175,10 @@ public sealed class ShipSpellService : IDisposable
     public bool TryCastFromCombat(NwPlayer player, NwCreature caster, NwSpell spell, ShipState? target)
     {
         string name = player.PlayerName;
-        if (!_casting.Add(name)) return false;
+        if (!_casting.Add(name))
+        { Log.Warn("Combat ship spell rejected: player={0}, spell={1}, reason=cast already in progress.", name, spell.Id); return false; }
+        Log.Info("Combat ship spell request: player={0}, spell={1}, source={2}, target={3}.",
+            name, spell.Id, _physicalShipService.GetShipForPlayer(name), target?.ShipId);
         try
         {
             foreach (CreatureClassInfo info in caster.Classes)
@@ -166,6 +204,7 @@ public sealed class ShipSpellService : IDisposable
                         () => _shipSpellEffectService.ProcessSpell(player, caster, spell, target));
                 }
             }
+            Log.Warn("Combat ship spell rejected: player={0}, spell={1}, reason=no eligible ready prepared slot or known spontaneous use.", name, spell.Id);
             return false;
         }
         finally { _casting.Remove(name); }

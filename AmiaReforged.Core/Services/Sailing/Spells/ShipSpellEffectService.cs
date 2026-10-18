@@ -74,16 +74,46 @@ public sealed class ShipSpellEffectService
         if (!TryGetDefinition(spell, out ShipSpellEffectDefinition? definition) || definition == null) return false;
         string? sourceName = _physicalShipService.GetShipForPlayer(player.PlayerName);
         ShipState? source = sourceName == null ? null : _registry.GetShip(sourceName);
-        if (!_registry.IsCurrent(source) || !ShipActionRules.IsActive(source) || source!.IsDisabled ||
-            !_physicalShipService.IsPlayerPresent(source.ShipName, player) || !caster.IsValid ||
-            !ReferenceEquals(player.ControlledCreature, caster)) return false;
-        if (!caster.IsDMAvatar && caster.Area?.GetObjectVariable<LocalVariableInt>("NoCasting").Value == 1) return false;
+        string? reason = DefinitionRejection(source, definition, selectedTarget);
+        if (reason == null && (!_physicalShipService.IsPlayerPresent(source!.ShipName, player) || !caster.IsValid ||
+            !ReferenceEquals(player.ControlledCreature, caster))) reason = "caster identity/presence changed";
+        if (reason == null && !caster.IsDMAvatar && caster.Area?.GetObjectVariable<LocalVariableInt>("NoCasting").Value == 1)
+            reason = "NoCasting area restriction";
+        if (reason == null) return true;
+        Log.Warn("Ship spell validation rejected: player={0}, spell={1}, source={2}, target={3}, reason={4}.",
+            player.PlayerName, spell.Id, source?.ShipId, selectedTarget?.ShipId, reason);
+        return false;
+    }
+
+    private string? DefinitionRejection(ShipState? source, ShipSpellEffectDefinition definition, ShipState? selectedTarget)
+    {
+        if (!_registry.IsCurrent(source) || !ShipActionRules.IsActive(source) || source!.IsDisabled) return "source inactive/unregistered/disabled";
         if (definition.RequiresEnemyTarget || definition.RequiresEncounter)
         {
             if (!_registry.IsCurrent(selectedTarget) || !ShipActionRules.CanInteract(source, selectedTarget) ||
-                selectedTarget!.IsDisabled || !_shipEncounterService.IsInEncounter(source, selectedTarget)) return false;
-            if (definition.MaxRange > 0 && ShipActionRules.Distance(source, selectedTarget) > definition.MaxRange) return false;
+                selectedTarget!.IsDisabled || !_shipEncounterService.IsInEncounter(source, selectedTarget)) return "target missing/inactive/outside encounter";
+            if (definition.MaxRange > 0 && ShipActionRules.Distance(source, selectedTarget) > definition.MaxRange) return "target outside spell range";
         }
+        return null;
+    }
+
+    private bool ApplyHullSpell(ShipState source, ShipState target, ShipSpellEffectDefinition definition,
+        Action<ShipState> impact, out int damage)
+    {
+        damage = 0;
+        if (definition.EffectType != ShipSpellEffectType.Offensive || DefinitionRejection(source, definition, target) != null) return false;
+        damage = target.ApplyHullDamage(definition.HullDamage);
+        impact(target);
+        Log.Info("Ship spell damage: spell={0}, source={1}, target={2}, damage={3}, hull={4}.",
+            definition.SpellId, source.ShipId, target.ShipId, damage, target.Hull);
+        return true;
+    }
+
+    private bool ApplyMovementSpell(ShipState source, ShipSpellEffectDefinition definition)
+    {
+        if (definition.EffectType != ShipSpellEffectType.Movement || DefinitionRejection(source, definition, null) != null) return false;
+        _shipSpellEffectStateService.ApplySpeedBoost(source, definition.DisplayName,
+            (definition.SpeedMultiplier - 1f) * 100f, definition.Duration);
         return true;
     }
 
@@ -272,9 +302,7 @@ public sealed class ShipSpellEffectService
         int previousHull =
         targetShip.Hull;
 
-        int actualDamage = targetShip.ApplyHullDamage(definition.HullDamage);
-        _shipSpellVfxService.PlayFireball(
-         targetShip);
+        if (!ApplyHullSpell(attackingShip, targetShip, definition, _shipSpellVfxService.PlayFireball, out int actualDamage)) return false;
         if (targetShip.Hull <= 0)
         {
             targetShip.Hull = 0;
@@ -418,9 +446,7 @@ public sealed class ShipSpellEffectService
         int previousHull =
             targetShip.Hull;
 
-        damage = targetShip.ApplyHullDamage(damage);
-        _shipSpellVfxService.PlayLightningBolt(
-        targetShip);
+        if (!ApplyHullSpell(attackingShip, targetShip, definition, _shipSpellVfxService.PlayLightningBolt, out damage)) return false;
         if (targetShip.Hull <= 0)
         {
             targetShip.Hull = 0;
@@ -510,11 +536,7 @@ public sealed class ShipSpellEffectService
             return false;
         }
 
-        _shipSpellEffectStateService.ApplySpeedBoost(
-            ship,
-            "Gust of Wind",
-            100.0f,
-            TimeSpan.FromSeconds(60));
+        if (!ApplyMovementSpell(ship, ShipSpellDefinitions.All[(int)Spell.GustOfWind])) return false;
 
         player.SendServerMessage(
             "Gust of Wind fills your sails! " +
