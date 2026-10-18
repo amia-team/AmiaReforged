@@ -31,6 +31,19 @@ static class Regression
     private static async Task RunAsync()
     {
         Console.WriteLine($"Runtime: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}; target: net8.0.");
+        if (Environment.GetCommandLineArgs().Contains("--magic"))
+        {
+            ShipMagicChecks.Run(Check);
+            Console.WriteLine($"PASS: {_checks} targeted ship magic assertions.");
+            return;
+        }
+        if (Environment.GetCommandLineArgs().Contains("--transfers"))
+        {
+            await DeferredTransferChecks.Run(Check);
+            await ShipExitChecks.Run(Check);
+            Console.WriteLine($"PASS: {_checks} targeted transfer regression assertions.");
+            return;
+        }
         if (Environment.GetCommandLineArgs().Contains("--api"))
         {
             foreach (Type type in typeof(Anvil.API.NwPlayer).Assembly.GetTypes().Where(t => t.Name == "OnSpellCast" || t.Name == "MemorizedSpellSlot"))
@@ -38,6 +51,7 @@ static class Regression
             return;
         }
         SteeringChecks.Run(Check);
+        ShipMagicChecks.Run(Check);
         await HostileBoardingChecks.Run(Check);
         ChartCourseChecks.Run(Check);
         await TacticalChartChecks.Run(Check);

@@ -3,6 +3,11 @@ namespace AmiaReforged.Core.Services.Sailing;
 /// <summary>Awaits every arrival before publishing membership or helm changes.</summary>
 public static class ShipTransferTransaction
 {
+    /// <summary>A cross-area safe jump may land away from an occupied shared spawn.
+    /// Same-area movement still needs positional evidence that the queued jump ran.</summary>
+    public static bool ArrivalConfirmed(bool destinationAreaMatches, bool sameAreaMove, float distance) =>
+        destinationAreaMatches && float.IsFinite(distance) && (!sameAreaMove || distance <= 3f);
+
     public static async Task<bool> ExecuteAsync(
         IReadOnlyList<(Func<Task> Move, Func<Task> Rollback, Action Validate)> transfers, Action commit,
         Action<Exception>? report = null, Func<Task>? prepareCommit = null, Func<Task>? abortCommit = null)
@@ -24,12 +29,14 @@ public static class ShipTransferTransaction
         }
         catch (Exception ex)
         {
+            // Record the cause before a compensating native jump can obscure it
+            // (or a client/process failure can interrupt rollback).
+            report?.Invoke(ex);
             if (abortCommit != null)
                 try { await abortCommit(); } catch (Exception abort) { report?.Invoke(abort); }
             // Never teleport participants whose move was not attempted.
             for (int index = attempted - 1; index >= 0; index--)
                 try { await transfers[index].Rollback(); } catch (Exception rollback) { report?.Invoke(rollback); }
-            report?.Invoke(ex);
             return false;
         }
     }

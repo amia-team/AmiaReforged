@@ -37,4 +37,13 @@ public sealed class PartyTravelConsent(string initiator, IReadOnlyList<PartyTrav
         Started = true; participants = selected; return true;
     }
     public void Cancel() => Cancelled = true;
+
+    // Native window closure is presentation cleanup once confirmation has been
+    // consumed. Disconnects and explicit cancellation still use Cancel().
+    public bool CloseConfirmation()
+    {
+        if (Started) return false;
+        Cancel();
+        return true;
+    }
 }

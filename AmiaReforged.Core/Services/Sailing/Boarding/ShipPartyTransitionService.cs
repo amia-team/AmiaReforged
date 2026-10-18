@@ -15,6 +15,8 @@ public sealed class ShipPartyTransitionService : IDisposable
     private sealed class Session(NwPlayer leader, ShipState ship, Travel travel, NwArea area, Vector3 anchor,
         NwPlaceable? interaction, Dictionary<string, Participant> roster, PartyTravelConsent consent)
     {
+        public string Id { get; } = Guid.NewGuid().ToString("N");
+        public bool Finished { get; set; }
         public NwPlayer Leader { get; } = leader;
         public ShipState Ship { get; } = ship;
         public Travel Travel { get; } = travel;
@@ -220,7 +222,17 @@ public sealed class ShipPartyTransitionService : IDisposable
         var s = view.Session;
         try
         {
-            if (evt.EventType == NuiEventType.Close || evt.EventType == NuiEventType.Click && evt.ElementId == "travel_cancel")
+            if (evt.EventType == NuiEventType.Close)
+            {
+                if (view.Leader)
+                {
+                    if (!s.Consent.CloseConfirmation()) return;
+                    Cancel(s, "Travel cancelled. No one was moved.");
+                }
+                else if (!s.Consent.Started) Answer(evt.Player, s, false);
+                return;
+            }
+            if (evt.EventType == NuiEventType.Click && evt.ElementId == "travel_cancel")
             {
                 if (view.Leader || s.Consent.Started) Cancel(s, "Travel cancelled; return to original positions will be attempted if movement has begun.");
                 else Answer(evt.Player, s, false);
@@ -240,9 +252,15 @@ public sealed class ShipPartyTransitionService : IDisposable
             if (!s.Consent.TryStart(withParty, DateTime.UtcNow, name => Exclusion(s, s.Roster[name]) == null, out var selected))
             { view.Token.SetBindValue(_feedback, "Waiting for answers, or an accepted participant is no longer eligible. Refresh status or cancel and try again."); Refresh(s); return; }
             s.Selected = selected;
-            view.Token.SetBindValue(_feedback, "Transfer in progress. Each arrival is verified before membership changes.");
+            NLog.LogManager.GetCurrentClassLogger().Info(
+                "Sailing travel START: request={0}, travel={1}, ship={2}, source={3}, destination={4}, participants={5}.",
+                s.Id, s.Travel, s.Ship.ShipId, s.Area.ResRef, s.Destination, string.Join(",", selected));
+            // Retire native tokens before the first jump. A close event during an
+            // individual arrival must not cancel/roll back the rest of the party.
+            foreach (var pair in _views.Where(p => p.Value.Session == s).ToArray()) CloseView(pair.Key);
             bool success = await ExecuteAsync(s);
             await NwTask.SwitchToMainThread();
+            NLog.LogManager.GetCurrentClassLogger().Info("Sailing travel END: request={0}, success={1}.", s.Id, success);
             foreach (string name in s.Selected)
                 if (s.Roster[name].Player is { IsValid: true } p) p.SendServerMessage(success
                     ? $"Travel complete: {s.Destination}." : "Group travel failed. Return to original positions was attempted; no group membership commit occurred.");
@@ -250,7 +268,7 @@ public sealed class ShipPartyTransitionService : IDisposable
         }
         catch (Exception ex)
         {
-            NLog.LogManager.GetCurrentClassLogger().Error(ex, "Sailing party transition failed.");
+            NLog.LogManager.GetCurrentClassLogger().Error(ex, "Sailing party transition failed: request={0}, ship={1}.", s.Id, s.Ship.ShipId);
             await NwTask.SwitchToMainThread(); Cancel(s, "Sailing travel failed. Review the transfer log if anyone could not return to their original position.");
             Finish(s);
         }
@@ -298,6 +316,8 @@ public sealed class ShipPartyTransitionService : IDisposable
     }
     private void Cancel(Session s, string message)
     {
+        NLog.LogManager.GetCurrentClassLogger().Warn("Sailing travel CANCEL: request={0}, ship={1}, started={2}, reason={3}",
+            s.Id, s.Ship.ShipId, s.Consent.Started, message);
         s.Consent.Cancel();
         foreach (var p in s.Roster.Values.Where(p => p.Player.IsValid && _occupied.GetValueOrDefault(p.Player.PlayerName) == s))
             p.Player.SendServerMessage(message);
@@ -306,6 +326,8 @@ public sealed class ShipPartyTransitionService : IDisposable
     }
     private void Finish(Session s)
     {
+        if (s.Finished) return;
+        s.Finished = true;
         if (s.Boarding != null) _boarding.CancelAcceptedTravel(s.Boarding);
         foreach (var pair in _views.Where(p => p.Value.Session == s).ToArray()) CloseView(pair.Key);
         foreach (var pair in _occupied.Where(p => p.Value == s).ToArray()) _occupied.Remove(pair.Key);

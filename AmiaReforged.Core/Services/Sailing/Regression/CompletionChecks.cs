@@ -4,6 +4,157 @@ using AmiaReforged.Core.Services.Sailing;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
+// Executes production dispatch, cast correlation, validation, hull/effect and VFX
+// services. Only native character/slot access and VFX emission are simulated.
+static class ShipMagicChecks
+{
+    private const System.Reflection.BindingFlags Private = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+    public static void Run(Action<bool, string> check)
+    {
+        var emitted = new List<(ShipState Ship, Anvil.API.VfxType Effect)>();
+        var animations = new List<(int Id, float Speed, float Duration)>();
+        var vfx = (ShipSpellVfxService)typeof(ShipSpellVfxService).GetConstructors(Private).Single().Invoke([
+            (Action<ShipState, Anvil.API.VfxType>)((ship, effect) => emitted.Add((ship, effect))),
+            (Action<int, float, float>)((id, speed, duration) => animations.Add((id, speed, duration)))]);
+        Dictionary<Type, object> services = new()
+        {
+            [typeof(Anvil.Services.EventService)] = new Anvil.Services.EventService([]),
+            [typeof(AmiaReforged.Core.Services.DatabaseContextFactory)] = new AmiaReforged.Core.Services.DatabaseContextFactory(),
+            [typeof(ShipPersistenceOptions)] = new ShipPersistenceOptions { Backend = SailingPersistenceBackend.Disabled },
+            [typeof(ShipSpellVfxService)] = vfx
+        };
+        try
+        {
+            var resolve = StartupChecks.CreateResolver(services);
+            var spells = (ShipSpellService)resolve(typeof(ShipSpellService));
+            var dispatcher = (ShipNativeSpellDispatcher)resolve(typeof(ShipNativeSpellDispatcher));
+            var effects = (ShipSpellEffectService)resolve(typeof(ShipSpellEffectService));
+            var effectState = (ShipSpellEffectStateService)resolve(typeof(ShipSpellEffectStateService));
+            var registry = (ShipRegistryService)resolve(typeof(ShipRegistryService));
+            var physical = (PhysicalShipService)resolve(typeof(PhysicalShipService));
+            var encounters = (ShipEncounterService)resolve(typeof(ShipEncounterService));
+            var selection = ((CombatTargetSelectionService)resolve(typeof(CombatTargetSelectionService))).Selection;
+            var source = new ShipState { ShipId = "spell-source", ShipName = "source", DeckAreaResRef = "deck", AreaResRef = "ocean_01" };
+            var target = new ShipState { ShipId = "spell-npc", ShipName = "npc", DeckAreaResRef = "absent-npc-deck",
+                AreaResRef = "ocean_01", X = 10, ShipType = ShipType.Pirate, RepresentationTag = "npc-ocean-ship" };
+            registry.Register(source); registry.Register(target); encounters.CheckEncounters([source, target]);
+            var membership = (Dictionary<string, HashSet<string>>)typeof(PhysicalShipService).GetField("_aboardPlayers", Private)!.GetValue(physical)!;
+            ShipCrewLifecycle.TransferMembership(membership, null, source.ShipName, "caster");
+            selection.Refresh("caster", source, [target]); selection.Select("caster", source, 0, [target]);
+            var capture = typeof(ShipSpellService).GetMethod("CaptureNativeCast", Private)!;
+            var complete = typeof(ShipSpellService).GetMethod("CompleteNativeCast", Private)!;
+            var validate = typeof(ShipSpellEffectService).GetMethod("DefinitionRejection", Private)!;
+            var damage = typeof(ShipSpellEffectService).GetMethod("ApplyHullSpell", Private)!;
+            var movement = typeof(ShipSpellEffectService).GetMethod("ApplyMovementSpell", Private)!;
+            var animate = typeof(ShipSpellVfxService).GetMethod("PlayCasterAnimation", Private)!;
+            var route = typeof(ShipNativeSpellDispatcher).GetMethod("DispatchImpact", Private)!;
+            var initialize = typeof(ShipNativeSpellDispatcher).GetMethod("InitializeBindings", Private)!;
+            var resolveImpact = typeof(ShipSpellVfxService).GetMethod("ResolveImpact", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
+                .MakeGenericMethod(typeof(string));
+            int oceanLookups = 0;
+            check((string?)resolveImpact.Invoke(null, [(Func<string?>)(() => "deck waypoint"), (Func<string?>)(() => { oceanLookups++; return "ocean object"; })]) == "deck waypoint" && oceanLookups == 0,
+                "Native VFX resolution preserves existing deck impacts without redirecting them to the ocean.");
+            check((string?)resolveImpact.Invoke(null, [(Func<string?>)(() => null), (Func<string?>)(() => "ocean object")]) == "ocean object" &&
+                resolveImpact.Invoke(null, [(Func<string?>)(() => null), (Func<string?>)(() => null)]) == null,
+                "An NPC without an interior uses its real representation; absent resources never invent a location.");
+            var bindings = new[] { ((int)Anvil.API.Spell.Fireball, (string?)"shared_impact"),
+                ((int)Anvil.API.Spell.LightningBolt, (string?)"shared_impact"), ((int)Anvil.API.Spell.GustOfWind, (string?)"gust_impact") };
+            initialize.Invoke(dispatcher, [bindings]); initialize.Invoke(dispatcher, [bindings]);
+            check(dispatcher.ExecutionOrder < 0, "The actual sailing dispatcher precedes Anvil's ordinary script factory.");
+            check(dispatcher.ExecuteScript("unrelated_script", 0) == Anvil.Services.ScriptHandleResult.NotHandled,
+                "Unrelated script dispatch never constructs native spell context or consumes a cast.");
+            int assignments = 0;
+            Action animation = () => animate.Invoke(vfx, [(Action<Action>)(action => { assignments++; action(); })]);
+            bool Valid(ShipSpellEffectDefinition definition, ShipState? selected) =>
+                physical.GetShipForPlayer("caster") == source.ShipName && validate.Invoke(effects, [source, definition, selected]) == null;
+            bool Begin(ShipSpellEffectDefinition definition, ShipState? selected, bool prevented = false) =>
+                (bool)capture.Invoke(spells, ["caster", definition.SpellId, source, selected, prevented, (Func<bool>)(() => Valid(definition, selected))])!;
+            bool Apply(ShipSpellEffectDefinition definition, ShipState? selected)
+            {
+                if (definition.EffectType == ShipSpellEffectType.Movement) return (bool)movement.Invoke(effects, [source, definition])!;
+                Action<ShipState> impact = definition.SpellId == (int)Anvil.API.Spell.Fireball ? vfx.PlayFireball : vfx.PlayLightningBolt;
+                object?[] args = [source, selected, definition, impact, 0];
+                bool result = (bool)damage.Invoke(effects, args)!;
+                if (result) check((int)args[4]! == 10, "Actual offensive application preserves the configured ten hull damage.");
+                return result;
+            }
+            bool Complete(ShipSpellEffectDefinition definition, Anvil.API.ClassType? castingClass) =>
+                (bool)complete.Invoke(spells, ["caster", definition.SpellId, source, castingClass,
+                    (Func<ShipState?, bool>)(selected => Valid(definition, selected)), animation,
+                    (Func<ShipState?, bool>)(selected => Apply(definition, selected))])!;
+            Anvil.Services.ScriptHandleResult Dispatch(ShipSpellEffectDefinition definition, Func<bool> process, bool aboard = true) =>
+                (Anvil.Services.ScriptHandleResult)route.Invoke(dispatcher, [definition.SpellId == (int)Anvil.API.Spell.GustOfWind ? "gust_impact" : "shared_impact",
+                    definition.SpellId, aboard, process])!;
+
+            foreach (var spell in new[] { Anvil.API.Spell.Fireball, Anvil.API.Spell.LightningBolt })
+            foreach (var castingClass in new[] { Anvil.API.ClassType.Wizard, Anvil.API.ClassType.Sorcerer })
+            {
+                var definition = ShipSpellDefinitions.All[(int)spell]; target.Hull = 100; int paid = 1;
+                int beforeVfx = emitted.Count, beforeAnimation = animations.Count;
+                var selected = selection.GetSelected("caster", source, registry.GetShips());
+                check(selected == target && Begin(definition, selected), "Registered aboard caster captures the actual Combat-selected NPC target.");
+                paid--; // The engine pays between pre-cast and impact, for either caster type.
+                check(Dispatch(definition, () => Complete(definition, castingClass)) == Anvil.Services.ScriptHandleResult.Handled &&
+                    target.Hull == 90 && paid == 0, $"{spell}/{castingClass}: dispatch reaches damage without a second native resource debit.");
+                check(emitted.Count == beforeVfx + 1 && emitted[^1].Ship == target &&
+                    emitted[^1].Effect == (spell == Anvil.API.Spell.Fireball ? Anvil.API.VfxType.ImpFlameM : Anvil.API.VfxType.ImpLightningM),
+                    "Offensive damage invokes the actual VFX service for the exact targeted NPC, including NPCs without deck assets.");
+                check(animations.Count == beforeAnimation + 1 && animations[^1] == (NWN.Core.NWScript.ANIMATION_LOOPING_CONJURE1, 1f, 2f),
+                    "Authorized impact invokes one assigned conjure animation with the unchanged native parameters.");
+                Dispatch(definition, () => Complete(definition, castingClass));
+                check(target.Hull == 90 && emitted.Count == beforeVfx + 1 && animations.Count == beforeAnimation + 1 && paid == 0,
+                    "A duplicate impact cannot animate, apply VFX, deal damage or pay twice.");
+            }
+
+            var fire = ShipSpellDefinitions.All[(int)Anvil.API.Spell.Fireball];
+            int hull = target.Hull, impacts = emitted.Count, animated = animations.Count;
+            check(!Begin(fire, null) && !Complete(fire, Anvil.API.ClassType.Wizard), "A missing explicit target rejects capture and impact.");
+            target.X = 40; encounters.CheckEncounters([source, target]);
+            check(!Begin(fire, target), "An NPC outside the encounter/range is rejected before native impact.");
+            target.X = 10; encounters.CheckEncounters([source, target]);
+            check(!Begin(fire, target, prevented: true), "Another subsystem's prevented cast cannot produce a sailing effect.");
+            check(Begin(fire, target) && !Complete(fire, Anvil.API.ClassType.Fighter), "Unsupported casting classes cannot use a pending spell.");
+            check(Begin(fire, target) && !Complete(fire, null), "Missing native cast-class data fails explicitly without a free spell.");
+            check(Begin(fire, target), "A valid cast is captured before target invalidation.");
+            target.X = 40; encounters.CheckEncounters([source, target]);
+            Dispatch(fire, () => Complete(fire, Anvil.API.ClassType.Wizard));
+            check(target.Hull == hull && emitted.Count == impacts && animations.Count == animated,
+                "Target/encounter loss at impact invokes no damage, animation or impact VFX.");
+            target.X = 10; encounters.CheckEncounters([source, target]);
+            check(Begin(fire, target), "A native cast can begin immediately after boarding membership is published.");
+            ShipCrewLifecycle.TransferMembership(membership, source.ShipName, null, "caster");
+            var detached = (Action<string, string>?)typeof(PhysicalShipService).GetField("PlayerDetached", Private)!.GetValue(physical);
+            foreach (Action<string, string> subscriber in detached!.GetInvocationList())
+                if (subscriber.Target == spells) subscriber(source.ShipName, "caster");
+            check(!Begin(fire, target) && !Complete(fire, Anvil.API.ClassType.Wizard),
+                "Disembark membership plus the real detach subscription clears pending casts and forbids new aboard casts.");
+            int calls = 0;
+            check(Dispatch(fire, () => { calls++; return true; }, aboard: false) == Anvil.Services.ScriptHandleResult.NotHandled && calls == 0,
+                "Non-aboard impacts keep the ordinary native script path without invoking sailing effects.");
+            ShipCrewLifecycle.TransferMembership(membership, null, source.ShipName, "caster");
+            var gust = ShipSpellDefinitions.All[(int)Anvil.API.Spell.GustOfWind];
+            check(Begin(gust, null) && Dispatch(gust, () => Complete(gust, Anvil.API.ClassType.Wizard)) == Anvil.Services.ScriptHandleResult.Handled &&
+                effectState.GetMovementMultiplier(source) == 2f, "Gust dispatch reaches the real movement effect service with its existing multiplier.");
+            check(gust.Duration == TimeSpan.FromSeconds(60) && fire.MaxRange == 20 &&
+                ShipSpellDefinitions.All[(int)Anvil.API.Spell.LightningBolt].MaxRange == 25, "Spell duration, damage and ranges retain the working catalog values.");
+
+            foreach (bool prepared in new[] { true, false })
+            {
+                target.Hull = 100; int resources = 1;
+                check(SpellCastTransaction.Execute(() => resources--, () => resources++, () => Apply(fire, target)) &&
+                    resources == 0 && target.Hull == 90, $"Combat {(prepared ? "prepared slot" : "spontaneous use")} pays once for an actual effect.");
+                resources = 1; target.X = 40;
+                check(!SpellCastTransaction.Execute(() => resources--, () => resources++, () => Apply(fire, target)) && resources == 1,
+                    "Explicit effect rejection restores a Combat resource reservation.");
+                target.X = 10;
+            }
+            check(assignments == animations.Count, "Every custom animation is invoked in its assigned creature context once.");
+            Console.WriteLine("PASS: ship magic dispatch, captured targets, prepared/spontaneous authorization, resources, hull effects, animations, VFX and membership interactions.");
+        }
+        finally { foreach (var service in services.Values.OfType<IDisposable>().Reverse()) service.Dispose(); }
+    }
+}
+
 static class CompletionChecks
 {
     private static ShipState Ship(string id, ShipType type = ShipType.Player) => new()

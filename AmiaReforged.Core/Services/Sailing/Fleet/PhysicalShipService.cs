@@ -438,6 +438,7 @@ public class PhysicalShipService : IDisposable
         }
         using IDisposable? reservation = _transfers.TryReserve(participants.Select(p => p.Player.PlayerName).ToArray());
         if (reservation == null) return false;
+        string transferId = Guid.NewGuid().ToString("N");
         bool committed = false;
         try
         {
@@ -456,19 +457,19 @@ public class PhysicalShipService : IDisposable
                     if (GetShipForPlayer(entry.Player.PlayerName) != shipName)
                         throw new InvalidOperationException("Aboard membership changed during docking.");
                 }
-                return ((Func<Task>)(() => MoveCreatureAsync(entry.Player, entry.Creature, destination, Validate, false)),
+                return ((Func<Task>)(() => MoveCreatureAsync(entry.Player, entry.Creature, destination, Validate, false, transferId)),
                     (Func<Task>)(() => MoveCreatureAsync(entry.Player, entry.Creature, entry.Previous,
-                        () => ValidateRollback(entry.Player, entry.Creature), true)),
-                    (System.Action)(() => { Validate(); RequireArrival(entry.Creature, destination); }));
+                        () => ValidateRollback(entry.Player, entry.Creature), true, transferId)),
+                    (System.Action)(() => { Validate(); RequireArrival(entry.Creature, destination, entry.Previous.Area == destination.Area); }));
             }).ToArray();
             committed = await ShipTransferTransaction.ExecuteAsync(moves, () =>
             {
                 ValidateParty();
                 beforeCommit();
                 foreach (var entry in participants) RemovePlayerAboard(shipName, entry.Player);
-            }, ex => Log.Warn(ex, "Docking transfer failed; rollback attempted for {0}.", shipName));
-            Log.Info("Ship transfer transaction {0}: docking ship={1}, players={2}.",
-                committed ? "COMMIT" : "ROLLBACK ATTEMPTED", shipName, string.Join(",", participants.Select(p => p.Player.PlayerName)));
+            }, ex => Log.Warn(ex, "Docking transfer failed; rollback attempted for {0}, transfer={1}.", shipName, transferId));
+            Log.Info("Ship transfer transaction {0}: docking ship={1}, players={2}, transfer={3}.",
+                committed ? "COMMIT" : "ROLLBACK ATTEMPTED", shipName, string.Join(",", participants.Select(p => p.Player.PlayerName)), transferId);
             return committed;
         }
         finally
@@ -637,6 +638,7 @@ public class PhysicalShipService : IDisposable
         }
         using IDisposable? reservation = _transfers.TryReserve(participants.Select(p => p.Player.PlayerName).ToArray());
         if (reservation == null) return false;
+        string transferId = Guid.NewGuid().ToString("N");
         HashSet<NwCreature> moving = [];
         bool committed = false;
         try
@@ -656,20 +658,20 @@ public class PhysicalShipService : IDisposable
             }
             var moves = participants.Select(entry => (
                 (Func<Task>)(async () => { ValidateAll(); moving.Add(entry.Creature);
-                    await MoveCreatureAsync(entry.Player, entry.Creature, destination, ValidateAll, false, () =>
+                    await MoveCreatureAsync(entry.Player, entry.Creature, destination, ValidateAll, false, transferId, () =>
                     {
                         if (validateDeparture?.Invoke(entry.Player) == false || fromShip != null && !allowUnavailableSource && !IsPlayerPresent(fromShip, entry.Player))
                             throw new InvalidOperationException("Participant left the departure interaction before the jump was queued.");
                     }); }),
                 (Func<Task>)(() => MoveCreatureAsync(entry.Player, entry.Creature, entry.Previous,
-                    () => ValidateRollback(entry.Player, entry.Creature), true)),
-                (System.Action)(() => { ValidateAll(); RequireArrival(entry.Creature, destination); }))).ToArray();
+                    () => ValidateRollback(entry.Player, entry.Creature), true, transferId)),
+                (System.Action)(() => { ValidateAll(); RequireArrival(entry.Creature, destination, entry.Previous.Area == destination.Area); }))).ToArray();
             committed = await ShipTransferTransaction.ExecuteAsync(moves,
                 () => { beforeCommit?.Invoke(); CommitTransfers(players, fromShip, toShip); },
-                ex => Log.Warn(ex, "Ship group transfer failed; rollback attempted: from={0}, to={1}.", fromShip, toShip),
+                ex => Log.Warn(ex, "Ship group transfer failed; rollback attempted: from={0}, to={1}, transfer={2}.", fromShip, toShip, transferId),
                 prepareCommit, abortCommit);
-            Log.Info("Ship transfer transaction {0}: players={1}, from={2}, to={3}.",
-                committed ? "COMMIT" : "ROLLBACK ATTEMPTED", string.Join(",", participants.Select(p => p.Player.PlayerName)), fromShip, toShip);
+            Log.Info("Ship transfer transaction {0}: players={1}, from={2}, to={3}, transfer={4}.",
+                committed ? "COMMIT" : "ROLLBACK ATTEMPTED", string.Join(",", participants.Select(p => p.Player.PlayerName)), fromShip, toShip, transferId);
             return committed;
         }
         finally
@@ -697,18 +699,18 @@ public class PhysicalShipService : IDisposable
             throw new OperationCanceledException("Ship transfer participant disconnected or service stopped.");
     }
 
-    private static void RequireArrival(NwCreature creature, Location destination)
+    private static void RequireArrival(NwCreature creature, Location destination, bool sameAreaMove)
     {
-        if (!HasArrived(creature, destination))
+        if (!HasArrived(creature, destination, sameAreaMove))
             throw new InvalidOperationException("Transfer did not reach its destination area.");
     }
 
-    private static bool HasArrived(NwCreature creature, Location destination) => creature.IsValid &&
-        destination.Area is { IsValid: true } && creature.Area == destination.Area &&
-        System.Numerics.Vector3.Distance(creature.Position, destination.Position) <= 3f;
+    private static bool HasArrived(NwCreature creature, Location destination, bool sameAreaMove = false) => creature.IsValid &&
+        destination.Area is { IsValid: true } && ShipTransferTransaction.ArrivalConfirmed(creature.Area == destination.Area,
+            sameAreaMove, System.Numerics.Vector3.Distance(creature.Position, destination.Position));
 
     private async Task MoveCreatureAsync(NwPlayer player, NwCreature creature, Location destination,
-        System.Action validate, bool rollback, System.Action? validateDeparture = null)
+        System.Action validate, bool rollback, string transferId, System.Action? validateDeparture = null)
     {
         await NwTask.SwitchToMainThread();
         validate();
@@ -716,8 +718,9 @@ public class PhysicalShipService : IDisposable
         string playerName = player.PlayerName;
         string source = creature.Area?.ResRef ?? "<none>";
         string target = destination.Area.ResRef;
-        Log.Info("Ship transfer {0}: player={1}, creature={2}, source={3}, destination={4}, position={5}, api=NWScript.JumpToLocation.",
-            rollback ? "ROLLBACK MOVE" : "MOVE", playerName, creature.ObjectId, source, target, destination.Position);
+        bool sameAreaMove = creature.Area == destination.Area;
+        Log.Info("Ship transfer {0}: player={1}, creature={2}, source={3}, destination={4}, position={5}, transfer={6}, api=NWScript.JumpToLocation.",
+            rollback ? "ROLLBACK MOVE" : "MOVE", playerName, creature.ObjectId, source, target, destination.Position, transferId);
         // Match Anvil's object-context pattern. JumpToLocation inserts at the TOP
         // of the creature's queue; it still needs a server frame to execute.
         await creature.WaitForObjectContext();
@@ -726,7 +729,7 @@ public class PhysicalShipService : IDisposable
         ValidateDestination(destination);
         if (rollback) NWScript.ClearAllActions(0); // Cancel any unexecuted original jump before returning.
         NWScript.JumpToLocation(destination);
-        Log.Info("Ship transfer queued: player={0}, rollback={1}, immediateArea={2}.", playerName, rollback, creature.Area?.ResRef ?? "<none>");
+        Log.Info("Ship transfer queued: player={0}, rollback={1}, immediateArea={2}, transfer={3}.", playerName, rollback, creature.Area?.ResRef ?? "<none>", transferId);
         bool arrived = false;
         try
         {
@@ -734,7 +737,7 @@ public class PhysicalShipService : IDisposable
             {
                 await NwTask.NextFrame();
                 await NwTask.SwitchToMainThread();
-            }, () => HasArrived(creature, destination), () =>
+            }, () => HasArrived(creature, destination, sameAreaMove), () =>
             {
                 validate();
                 ValidateDestination(destination);
@@ -743,9 +746,9 @@ public class PhysicalShipService : IDisposable
         }
         finally
         {
-            Log.Info("Ship transfer after engine processing: player={0}, rollback={1}, destination={2}, actualArea={3}, actualPosition={4}, confirmed={5}.",
+            Log.Info("Ship transfer after engine processing: player={0}, rollback={1}, destination={2}, actualArea={3}, actualPosition={4}, confirmed={5}, transfer={6}.",
                 playerName, rollback, target, creature.IsValid ? creature.Area?.ResRef ?? "<none>" : "<invalid creature>",
-                creature.IsValid ? creature.Position.ToString() : "<unavailable>", arrived);
+                creature.IsValid ? creature.Position.ToString() : "<unavailable>", arrived, transferId);
         }
     }
 

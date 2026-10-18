@@ -14,6 +14,7 @@ static class DeferredTransferChecks
         public int Jumps;
         public int Frames;
         public int Cancellations;
+        public float Distance;
         private string? _queued;
         private TaskCompletionSource<bool> _frame = new();
         public void Jump(string destination) { Jumps++; _queued = destination; }
@@ -28,9 +29,11 @@ static class DeferredTransferChecks
         }
         public async Task Move(string destination, Action? validate = null, bool rollback = false, int maximumFrames = 300)
         {
+            bool sameAreaMove = Area == destination;
             if (rollback) Cancel();
             Jump(destination);
-            await ShipTransferTransaction.AwaitArrivalAsync(NextFrame, () => Area == destination,
+            await ShipTransferTransaction.AwaitArrivalAsync(NextFrame,
+                () => ShipTransferTransaction.ArrivalConfirmed(Area == destination, sameAreaMove, Distance),
                 validate ?? (() => { }), maximumFrames);
         }
         public void Require(string destination)
@@ -106,6 +109,7 @@ static class DeferredTransferChecks
                 (() => failed.Move("sea_sprite_d2", maximumFrames: 2), () => failed.Move("cordor_west", rollback: true),
                     () => failed.Require("sea_sprite_d2"))], () => { sea.IsStored = false; commits++; }, _ => reports++);
             failed.Advance(false); failed.Advance(false);
+            check(reports == 1, "The triggering failure is logged before awaiting native rollback, preserving return-to-deck diagnostics.");
             check(!timedOut.IsCompleted && failed.Cancellations == 1 && sea.IsStored && commits == 1,
                 "Timed-out arrival starts awaited rollback and cancels its unexecuted original jump.");
             failed.Advance();
@@ -169,6 +173,136 @@ static class DeferredTransferChecks
         check(!arrival.IsCompleted, "Even a same-area/immediate native change yields a frame before confirmation.");
         immediate.Advance(); await arrival;
         check(immediate.Frames == 1, "An immediate valid arrival completes after exactly one engine frame.");
+        await MultiplayerChecks(check);
+    }
+
+    private static async Task MultiplayerChecks(Action<bool, string> check)
+    {
+        var now = DateTime.UtcNow;
+        var islands = new IslandService(); var areas = new SailingAreaService();
+        var ship = new ShipState { ShipId = "party-ship", ShipName = "party-ship", DeckAreaResRef = "deck",
+            AreaResRef = "ocean_01", X = 120, Y = 90 };
+        var landfall = ShipDisembarkRules.Resolve(ship, islands.GetIslands(), areas.ContainsArea);
+        check(landfall is { PortId: "driftwood_isle", AreaResRef: "sea_islet1", X: 24, Y: 207, Z: 0 },
+            "Actual Driftwood configuration resolves its landfall independently of ship deck and boarding requests.");
+        check(!ShipTransferTransaction.ArrivalConfirmed(false, false, 0) &&
+            !ShipTransferTransaction.ArrivalConfirmed(true, true, 4) &&
+            !ShipTransferTransaction.ArrivalConfirmed(true, false, float.NaN) &&
+            ShipTransferTransaction.ArrivalConfirmed(true, false, 5),
+            "Cross-area arrival permits safe-jump displacement; wrong areas, invalid positions and unexecuted same-area moves remain rejected.");
+
+        for (int size = 1; size <= 4; size++)
+        for (int order = 0; order < size; order++)
+        {
+            string[] names = Enumerable.Range(0, size).Select(i => $"player-{i}").ToArray();
+            string[] followers = names.Skip(1).OrderBy(n => (Array.IndexOf(names, n) + order) % size).ToArray();
+            var consent = new PartyTravelConsent(names[0], followers.Select(n => new PartyTravelMember(n, n)).ToArray(), now.AddMinutes(1));
+            foreach (string name in followers)
+            {
+                check(consent.Answer(name, true, now) && !consent.Answer(name, true, now), "Duplicate acceptance cannot add a participant twice.");
+            }
+            check(consent.TryStart(true, now, _ => true, out var selected) && selected.Length == size &&
+                !consent.TryStart(true, now, _ => true, out _), $"{size}-player confirmation starts once, ordering={order}.");
+            check(!consent.CloseConfirmation() && consent.IsOpen(now), "Native/reentrant window close after confirmation cannot cancel travel.");
+            var engines = selected.ToDictionary(n => n, _ => new Engine("shore"));
+            // Simulated safe placement outside the old three-metre threshold.
+            if (size >= 3) engines[selected[2]].Distance = 5;
+            Dictionary<string, HashSet<string>> membership = new();
+            var reservations = new ShipTransferReservations(); int commits = 0;
+            using (var held = reservations.TryReserve(selected))
+            {
+                check(held != null, "Every selected participant is reserved before the first jump.");
+                var moves = selected.Select(name => (
+                    (Func<Task>)(() => engines[name].Move("deck", () => { if (!consent.IsOpen(now)) throw new OperationCanceledException(); })),
+                    (Func<Task>)(() => engines[name].Move("shore", rollback: true)),
+                    (Action)(() => engines[name].Require("deck")))).ToArray();
+                Task<bool> boarding = ShipTransferTransaction.ExecuteAsync(moves, () =>
+                {
+                    foreach (string name in selected) ShipCrewLifecycle.TransferMembership(membership, null, ship.ShipName, name);
+                    commits++;
+                });
+                foreach (string name in selected)
+                {
+                    check(reservations.TryReserve([name]) == null, "Repeated activation/reentrant transfer cannot reserve an in-flight player.");
+                    check(commits == 0 && membership.Count == 0, "Individual arrivals do not publish partial group membership.");
+                    engines[name].Advance(false);
+                    check(!boarding.IsCompleted && engines[name].Jumps == 1, "Delayed frames never requeue a forward transition.");
+                    check(!consent.CloseConfirmation(), "Window close between individual arrivals is harmless.");
+                    engines[name].Advance();
+                }
+                check(await boarding && commits == 1 && membership[ship.ShipName].SetEquals(selected),
+                    $"{size}-player boarding commits correct membership exactly once after all arrivals, ordering={order}.");
+            }
+            foreach (string name in selected)
+            {
+                using (var exitReservation = reservations.TryReserve([name]))
+                {
+                    check(exitReservation != null, "Completed boarding releases reservations for immediate disembark.");
+                    Task<bool> exit = ShipTransferTransaction.ExecuteAsync([
+                        (() => engines[name].Move(landfall!.AreaResRef), () => engines[name].Move("deck", rollback: true),
+                            () => engines[name].Require(landfall!.AreaResRef))],
+                        () => ShipCrewLifecycle.TransferMembership(membership, ship.ShipName, null, name));
+                    check(reservations.TryReserve([name]) == null, "Repeated exit activation cannot overlap disembark.");
+                    engines[name].Advance();
+                    check(await exit && engines[name].Area == "sea_islet1" && engines[name].Jumps == 2 && engines[name].Cancellations == 0,
+                        "Driftwood arrival immediately after party boarding has no rollback or return-to-deck jump.");
+                }
+            }
+            check(membership.Count == 0, "Successful disembarks remove only arrived players and leave no stale ship membership.");
+        }
+
+        var partial = new PartyTravelConsent("leader", [new("yes", "yes"), new("no", "no")], now.AddMinutes(1));
+        partial.Answer("yes", true, now);
+        check(!partial.TryStart(true, now, _ => true, out _), "Partial consent waits for pending participant answers.");
+        partial.Answer("no", false, now);
+        check(partial.TryStart(true, now, _ => true, out var subset) && subset.SequenceEqual(["leader", "yes"]),
+            "Rejected participants stay behind without invalidating accepted travel.");
+        var closed = new PartyTravelConsent("leader", [], now.AddMinutes(1));
+        check(closed.CloseConfirmation() && !closed.TryStart(false, now, _ => true, out _), "Closing an unconfirmed window cancels without movement.");
+        VerifyNativeAdapter(check);
+        var offlineBefore = new PartyTravelConsent("leader", [new("offline", "offline")], now.AddMinutes(1));
+        offlineBefore.Answer("offline", true, now);
+        check(!offlineBefore.TryStart(true, now, n => n != "offline", out _), "A disconnected accepted participant cannot start boarding.");
+
+        for (int disconnected = 0; disconnected < 4; disconnected++)
+        {
+            Engine[] engines = Enumerable.Range(0, 4).Select(_ => new Engine("shore")).ToArray();
+            bool[] online = [true, true, true, true]; int commits = 0, errors = 0;
+            var moves = Enumerable.Range(0, 4).Select(index => (
+                (Func<Task>)(() => engines[index].Move("deck", () => { if (online.Any(value => !value)) throw new OperationCanceledException(); })),
+                (Func<Task>)(() => online[index] ? engines[index].Move("shore", rollback: true) : Task.FromException(new OperationCanceledException())),
+                (Action)(() => engines[index].Require("deck")))).ToArray();
+            Task<bool> transfer = ShipTransferTransaction.ExecuteAsync(moves, () => commits++, _ => errors++);
+            for (int index = 0; index < disconnected; index++) engines[index].Advance();
+            online[disconnected] = false;
+            for (int frame = 0; frame < 16 && !transfer.IsCompleted; frame++) foreach (var engine in engines) engine.Advance();
+            check(transfer.IsCompleted && !await transfer && commits == 0 && errors == 2,
+                $"Disconnect in participant position {disconnected} aborts commit and reports failed native rollback independently.");
+            check(engines.Take(disconnected).All(e => e.Area == "shore" && e.Cancellations == 1) &&
+                engines.Skip(disconnected + 1).All(e => e.Jumps == 0),
+                "Disconnect restores earlier attempted players and never moves unattempted participants.");
+        }
+        Console.WriteLine("PASS: multiplayer boarding/disembark transfer simulations (1-4 players, ordering, consent, disconnect, reentry, Driftwood).");
+    }
+
+    private static void VerifyNativeAdapter(Action<bool, string> check,
+        [System.Runtime.CompilerServices.CallerFilePath] string file = "")
+    {
+        string root = Path.GetDirectoryName(Path.GetDirectoryName(file))!;
+        string party = File.ReadAllText(Path.Combine(root, "Boarding", "ShipPartyTransitionService.cs"));
+        string start = party[party.IndexOf("s.Selected = selected;", StringComparison.Ordinal)..
+            party.IndexOf("bool success = await ExecuteAsync(s);", StringComparison.Ordinal)];
+        check(start.Contains("CloseView(pair.Key)") && start.Contains(".ToArray()"),
+            "Native adapter retires a snapshot of confirmation windows before initiating any individual move.");
+        check(party.Contains("if (!s.Consent.CloseConfirmation()) return;") && party.Contains("if (s.Finished) return;"),
+            "Native close dispatch uses the tested consent rule, and duplicate completion cannot repeat lifecycle notifications.");
+        string physical = File.ReadAllText(Path.Combine(root, "Fleet", "PhysicalShipService.cs"));
+        check(physical.Contains("ShipTransferTransaction.ArrivalConfirmed(creature.Area == destination.Area,") &&
+            physical.Contains("entry.Previous.Area == destination.Area") && physical.Contains("HasArrived(creature, destination, sameAreaMove)"),
+            "Native polling and final participant validation use the tested cross-area/same-area arrival policy.");
+        check(physical.Contains("if (IsTransferPending(name)) continue;") &&
+            physical.Contains("if (!player.IsValid || IsTransferPending(player.PlayerName) ||"),
+            "Native cleanup and reconnect membership recovery continue to skip reserved participants.");
     }
 }
 #endif
